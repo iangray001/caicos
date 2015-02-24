@@ -1,7 +1,7 @@
 # Created by https://www.gitignore.io
 
 output.c
-
+tests.py
 
 ### OSX ###
 .DS_Store
