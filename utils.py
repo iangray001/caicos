@@ -1,29 +1,11 @@
 import re
-import sys, subprocess, glob
+import sys, glob
 
-import clang
 from pycparser import c_ast
 import pycparser
 
 import utils
-from numpy.distutils.fcompiler import none
 
-
-def get_libclang_path_osx():
-    proc = subprocess.Popen(["xcodebuild -find-library libclang.dylib", ""], stdout=subprocess.PIPE, shell=True)
-    (out, _) = proc.communicate()
-    return out.strip()
-
-def libclang_unknown_platform():
-    return ""
-
-def set_clang_path():
-    #Attempt to find libclang's library depending on current platform
-    path = {
-        'darwin': get_libclang_path_osx
-    }.get(sys.platform, libclang_unknown_platform)()
-
-    clang.cindex.Config.set_library_file(path)
 
 def getlineoffile(filename, lineno):
     try:
