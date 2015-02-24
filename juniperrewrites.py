@@ -24,6 +24,17 @@ class BetterNodeVisitor(object):
 
 
 
+def add_parent_links(ast):
+    """
+    Iterate over an AST annotating every node with a link to its parent node.
+    """
+    def recurse(node, parent):
+        node.parent = parent
+        for _, c in node.children():
+            recurse(c, node)
+    recurse(ast, None)
+
+
 def replace_child(parent, orignode, newnode):
     """
     Replace the node orignode, which is a child of parent, with the node newnode
@@ -33,38 +44,37 @@ def replace_child(parent, orignode, newnode):
             parent.child_name = newnode
             setattr(parent, child_name, newnode)
 
-
-class RAMVisitor(BetterNodeVisitor):
-    """
-    We are looking for structures like the following:
-        StructRef: .
-          ArrayRef: 
-            ID: __juniper_ram_master
-            BinaryOp: +
-              ID: r0
-              Constant: int, 3
-          ID: f
-    """
-    
-    def visit_StructRef(self, node, parent):
-        c = node.children()
-        if len(c) == 2:
-            if isinstance(c[0][1], c_ast.ArrayRef) and isinstance(c[1][1], c_ast.ID):
-                #Found a suitable StructRef. Now check the ID of the struct being refed
-                refch = c[0][1].children()
-                if len(refch) > 0 and isinstance(refch[0][1], c_ast.ID):
-                    if getattr(refch[0][1], 'name') == RAM_NAME:
-                        print str(node.coord) + ": " + utils.getlineoffile(node.coord.file, node.coord.line).strip()
-                        print c_generator.CGenerator().visit(node)
-                        print c[1][1].name
-
-                        blahnode = c_ast.ID("name")
-                        setattr(blahnode, 'name', "BLAH BLAH BLAH;")
-                        
-                        replace_child(parent, node, blahnode)
-                        
-                        
+                
 
 def rewrite_RAM_structure_dereferences(ast):
-    v = RAMVisitor()
+    class Visitor(BetterNodeVisitor):
+        """
+        We are looking for structures like the following:
+          ArrayRef:
+            StructRef: .
+              ArrayRef: 
+                ID: __juniper_ram_master
+                <Anything else>
+              ID: f
+            Constant: int, 2
+        """
+                
+        def visit_StructRef(self, node, parent):
+            if isinstance(parent, c_ast.ArrayRef):
+                print "oooooo"
+            c = node.children()
+            if len(c) == 2:
+                if isinstance(c[0][1], c_ast.ArrayRef) and isinstance(c[1][1], c_ast.ID):
+                    refch = c[0][1].children()
+                    if len(refch) > 0 and isinstance(refch[0][1], c_ast.ID):
+                        if getattr(refch[0][1], 'name') == RAM_NAME:
+                            print str(node.coord) + ": " + utils.getlineoffile(node.coord.file, node.coord.line).strip()
+                            #print c_generator.CGenerator().visit(node)
+                            print c[1][1].name
+                            print node.parent
+                            #blahnode = c_ast.ID("name")
+                            #setattr(blahnode, 'name', "BLAH BLAH BLAH;")
+                            #replace_child(parent, node, blahnode)
+                        
+    v = Visitor()
     v.visit(ast, None)
