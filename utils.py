@@ -58,7 +58,7 @@ def get_original_name_of_fn(ast, funcname):
     """
     class FuncDefVisitor(c_ast.NodeVisitor):
         def __init__(self):
-            found = None
+            self.found = None
         
         def visit_FuncDef(self, node):
             pattern = re.compile(
