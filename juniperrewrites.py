@@ -2,26 +2,8 @@ from pycparser import c_ast, c_generator
 
 import utils
 
-
 RAM_NAME = '__juniper_ram_master'
-
-
-
-# class BetterNodeVisitor(object):
-#     """
-#     A better Visitor superclass. This visitor does the same as c_ast.NodeVisitor 
-#     except it also provides the visit method with the parent of the visited node, 
-#     which is required to perform edits on the AST.
-#     """
-#     def visit(self, node, parent):
-#         method = 'visit_' + node.__class__.__name__
-#         visitor = getattr(self, method, self.generic_visit)
-#         return visitor(node, parent)
-# 
-#     def generic_visit(self, node, parent):
-#         for _, c in node.children():
-#             self.visit(c, node)
-
+RAM_ACCESS_NAME = 'juniper_ram_fetch_'
 
 
 def add_parent_links(ast):
@@ -84,7 +66,7 @@ def rewrite_RAM_structure_dereferences(ast):
                             if isinstance(node.parent, c_ast.ArrayRef):
                                 if len(node.parent.children()) >= 2 and isinstance(node.parent.children()[1][1], c_ast.Constant):
                                     arrayrefoffset = c_generator.CGenerator().visit(node.parent.children()[1][1])
-                                    call = "juniper_ram_fetch_" + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ")"
+                                    call = RAM_ACCESS_NAME + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ")"
                                     print "\tReplacement: " + call
                                     replacementnode = c_ast.ID("name")
                                     setattr(replacementnode, 'name', call)
