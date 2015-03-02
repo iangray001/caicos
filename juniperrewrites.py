@@ -38,6 +38,12 @@ def replace_node(orignode, newnode):
                 
 
 def rewrite_RAM_structure_dereferences(ast):
+    """
+    The replacement Jamaica headers use RAM_NAME as a global pointer to the external bus interface. 
+    Unfortunately, JamaicaBuilder assumes that the type of this pointer is a complex 
+    union-of-structs-of-arrays. This rewrites such accesses to use a set of memory access functions
+    declared in fpgaporting.h that allow a more HLS-friendly representation of RAM.
+    """
     class Visitor(c_ast.NodeVisitor):
         """
         We are looking for structures like the following:

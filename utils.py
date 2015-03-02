@@ -8,6 +8,10 @@ import utils
 
 
 def getlineoffile(filename, lineno):
+    """
+    Return a string of line number lineno of file filename. This is a slow operation
+    and should be called sparingly.
+    """
     try:
         fp = open(filename)
         for i, line in enumerate(fp):
@@ -89,6 +93,11 @@ def parse_jamaica_output(filename):
 
 
 def write_ast_to_file(ast, filename):
+    """
+    Run the provided AST through pycparser's C generator and write to filename. Will
+    overwrite if filename exists. Will fail if filename points into a directory which 
+    does not exist.
+    """
     generator = pycparser.c_generator.CGenerator()
     code = generator.visit(ast)
     outf = open(filename, "w+")
