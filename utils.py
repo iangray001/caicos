@@ -1,3 +1,4 @@
+import logging
 import re
 import sys, glob
 
@@ -32,11 +33,11 @@ def deglob_file(globbedname):
 	"""
 	matches = glob.glob(str(globbedname))
 	if len(matches) == 0:
-		print("The filename \"" + str(globbedname) + "\" does not match any files.")
-		sys.exit(-1)
+		logging.warning("The filename \"" + str(globbedname) + "\" does not match any files.")
+		return None
 	if len(matches) > 1:
-		print("Warning: Multiple matches for filename " + str(globbedname) + "\"")
-		print("Using: " + matches[0])
+		logging.warning("Multiple matches for filename " + str(globbedname) + "\"")
+		logging.warning("Using: " + matches[0])
 		return matches[0]
 	return matches[0]
 

@@ -1,6 +1,11 @@
+import logging
+import os
+
 from pycparser import c_ast, c_generator
 
+from utils import CaicosException
 import utils
+
 
 RAM_NAME = '__juniper_ram_master'
 RAM_ACCESS_NAME = 'juniper_ram_fetch_'
@@ -88,3 +93,27 @@ def rewrite_RAM_structure_dereferences(ast):
 						
 	v = Visitor()
 	v.visit(ast)
+
+
+
+def c_filename_of_javaclass(classname, c_output_base):
+	"""
+	The C file containing a given Java class is only semi-predictable, we need to glob for it.
+	Java class format x.y.classname is translated to an absolute file pathname.
+	Jamaica translates on a per-package basis, so many classes may be in the same C file.
+	"""
+	parts = classname.strip().split('.')
+	if not os.path.exists(c_output_base): return None
+
+	if len(parts) < 2:
+		raise CaicosException("Class name " + str(classname) + " appears to reference an unpackaged class, which is not supported by JamaicaBuilder or modern Java.")
+	
+	name = "PKG_"
+	for part in parts[:-1]:
+		name = name + part + "_"
+	name = name + "*.c"
+
+	return utils.deglob_file(os.path.join(c_output_base, name))
+
+	
+	
