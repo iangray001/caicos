@@ -1,4 +1,3 @@
-import logging
 import os
 
 from pycparser import c_ast, c_generator

@@ -7,9 +7,24 @@ import pycparser
 
 import utils
 
+theLogger = None
+
+
 
 class CaicosException(Exception):
 	pass
+
+
+def log():
+	global theLogger
+	if theLogger == None:
+		theLogger = logging.getLogger("Caicos")
+		ch = logging.StreamHandler()
+		ch.setLevel(logging.INFO)
+		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		ch.setFormatter(formatter)
+		theLogger.addHandler(ch)
+	return theLogger
 
 
 def getlineoffile(filename, lineno):
