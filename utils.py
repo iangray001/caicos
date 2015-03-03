@@ -7,6 +7,10 @@ import pycparser
 import utils
 
 
+class CaicosException(Exception):
+	pass
+
+
 def getlineoffile(filename, lineno):
 	"""
 	Return a string of line number lineno of file filename. This is a slow operation
