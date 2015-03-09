@@ -21,7 +21,7 @@ def log():
 		theLogger = logging.getLogger("Caicos")
 		ch = logging.StreamHandler()
 		ch.setLevel(logging.INFO)
-		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
 		ch.setFormatter(formatter)
 		theLogger.addHandler(ch)
 	return theLogger

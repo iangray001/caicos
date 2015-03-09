@@ -1,6 +1,7 @@
 import os, shutil
 
 from utils import log
+import juniperrewrites
 
 
 def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
@@ -30,7 +31,8 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 	
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
-		shutil.copyfile(f, os.path.join(targetdir, "src", os.path.basename(f)))	
+		if f.endswith(".c"): #We only parse C files
+			juniperrewrites.rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
 	script = open(os.path.join(targetdir, "script.tcl"), "w")
 	script.write(hls_script(os.path.join(targetdir, "src"), fpgapartname))

@@ -2,7 +2,7 @@ import os
 
 from pycparser import c_ast, c_generator
 
-from utils import CaicosException
+from utils import CaicosException, log
 import utils
 
 
@@ -69,7 +69,8 @@ def rewrite_RAM_structure_dereferences(ast):
 							
 							#Appropriate node found.
 							structmember = c[1][1].name #What was dereferenced ('i', 's', 'c', 'r', etc.)
-							print str(node.coord) + ":\n\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip()
+							log().info(str(node.coord) + ":")
+							log().info("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
 							functionargs = c_generator.CGenerator().visit(refch[1][1])
 							
 							#Is there a higher-level ArrayRef we are interested in?
@@ -77,15 +78,15 @@ def rewrite_RAM_structure_dereferences(ast):
 								if len(node.parent.children()) >= 2 and isinstance(node.parent.children()[1][1], c_ast.Constant):
 									arrayrefoffset = c_generator.CGenerator().visit(node.parent.children()[1][1])
 									call = RAM_ACCESS_NAME + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ")"
-									print "\tReplacement: " + call
+									log().info("\tReplacement: " + call)
 									replacementnode = c_ast.ID("name")
 									setattr(replacementnode, 'name', call)
 									replace_node(node.parent, replacementnode)
 								else:
-									print "Unsupported ArrayRef format detected"
+									log().error("Unsupported ArrayRef format detected")
 							else:
 								call = "juniper_ram_fetch_" + structmember + "(" + functionargs + ", 0)"
-								print "\tReplacement: " + call
+								log().info("\tReplacement: " + call)
 								replacementnode = c_ast.ID("name")
 								setattr(replacementnode, 'name', call)
 								replace_node(node, replacementnode)
@@ -115,4 +116,15 @@ def c_filename_of_javaclass(classname, c_output_base):
 	return utils.deglob_file(os.path.join(c_output_base, name))
 
 	
+
+def rewrite_source_file(inputfile, outputfile):
+	"""
+	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
+	"""
+	log().info("Parsing " + inputfile)
+	ast = utils.parse_jamaica_output(inputfile)
+	add_parent_links(ast)
+	rewrite_RAM_structure_dereferences(ast)
+	utils.write_ast_to_file(ast, outputfile)
+
 	
