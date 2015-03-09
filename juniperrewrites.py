@@ -135,6 +135,7 @@ def c_name_of_java_method(astcache, sig, c_output_base):
 	Find the name of the C method into which the given method signature was translated.
 	This is only partly deterministic so we need to search the AST.
 	"""
+	sig = sig.strip()
 	filetoparse = c_filename_of_java_method_sig(sig, c_output_base)
 	ast = astcache.get(filetoparse)
 	names = get_java_names_of_C_fns(ast)
@@ -145,7 +146,7 @@ def get_java_names_of_C_fns(ast):
 	"""
 	Search for all function definitions, extract the original 
 	Java version of the function (which will be inserted as a block comment by Jamaica)
-	and return as a dictionary of {java_name->c_name}.
+	and return as a dictionary of {java_method_sig->c_fn_name}.
 	"""
 	class FuncDefVisitor(c_ast.NodeVisitor):
 		def __init__(self):
