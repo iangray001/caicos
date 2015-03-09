@@ -5,6 +5,11 @@
 
 #ifdef __JAMAICA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 
 JBIEXPORT jamaica_float JBICALL jam_comp_java_lang_Float_58_floatValue17(jamaica_thread *ct,jamaica_ref r0) /* java/lang/Float.floatValue()F */  {
  jamaica_int32 tp;
@@ -62,3 +67,8 @@ LABEL_tSOE:    jamaica_throwStackOvrflwErr(ct);     return 0;
 #else
 #error 'jamaica.h' not found!
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
