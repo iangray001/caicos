@@ -1,4 +1,5 @@
 import os
+import re
 
 from pycparser import c_ast, c_generator
 
@@ -96,13 +97,13 @@ def rewrite_RAM_structure_dereferences(ast):
 
 
 
-def c_filename_of_javaclass(classname, c_output_base):
+def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 	"""
 	The C file containing a given Java class is only semi-predictable, we need to glob for it.
 	Java class format x.y.classname is translated to an absolute file pathname.
 	Jamaica translates on a per-package basis, so many classes may be in the same C file.
 	"""
-	parts = classname.strip().split('.')
+	parts = classname.strip().split(classdelimiter)
 	if not os.path.exists(c_output_base): return None
 
 	if len(parts) < 2:
@@ -115,14 +116,67 @@ def c_filename_of_javaclass(classname, c_output_base):
 
 	return utils.deglob_file(os.path.join(c_output_base, name))
 
+
+
+def c_filename_of_java_method_sig(sig, c_output_base):
+	"""
+	Return the C filename that contains the translation of the provided Java method signature.
+	Does not check that the signature is valid.
+	This is easy, because the entire package is translated into a single C file so we only need 
+	to strip out the type name (class name) and convert that.
+	"""
+	typename = sig[:sig.find('.')]
+	return c_filename_of_javaclass(typename, c_output_base, '/')
+
+
+
+def c_name_of_java_method(astcache, sig, c_output_base):
+	"""
+	Find the name of the C method into which the given method signature was translated.
+	This is only partly deterministic so we need to search the AST.
+	"""
+	filetoparse = c_filename_of_java_method_sig(sig, c_output_base)
+	ast = astcache.get(filetoparse)
+	names = get_java_names_of_C_fns(ast)
+	return names[sig]
+	
+	
+def get_java_names_of_C_fns(ast):
+	"""
+	Search for all function definitions, extract the original 
+	Java version of the function (which will be inserted as a block comment by Jamaica)
+	and return as a dictionary of {java_name->c_name}.
+	"""
+	class FuncDefVisitor(c_ast.NodeVisitor):
+		def __init__(self):
+			self.fns = {}
+		
+		def visit_FuncDef(self, node):
+			pattern = re.compile(
+				r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+				re.DOTALL | re.MULTILINE
+			)        
+			line = utils.getlineoffile(node.decl.coord.file, node.decl.coord.line)
+			comments = re.findall(pattern, line)
+			if len(comments) == 1:
+				c = comments[0]
+				if c[:2] == "/*" and c[-2:] == "*/":
+					javaname = c[2:-2].strip()
+					self.fns[javaname] = node.decl.name
+			else:
+				log().error("Unexpected comment format in Jamaica output: " + str(node.decl.coord.file) + " " + str(node.decl.coord.line))
+				
+	v = FuncDefVisitor()
+	v.visit(ast)
+	return v.fns
+	
 	
 
-def rewrite_source_file(inputfile, outputfile):
+def rewrite_source_file(astcache, inputfile, outputfile):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
 	"""
-	log().info("Parsing " + inputfile)
-	ast = utils.parse_jamaica_output(inputfile)
+	ast = astcache.get(inputfile)
 	add_parent_links(ast)
 	rewrite_RAM_structure_dereferences(ast)
 	utils.write_ast_to_file(ast, outputfile)

@@ -1,11 +1,8 @@
+import glob
 import logging
-import re
-import sys, glob
 
-from pycparser import c_ast
 import pycparser
 
-import utils
 
 theLogger = None
 
@@ -56,36 +53,6 @@ def deglob_file(globbedname):
 		return matches[0]
 	return matches[0]
 
-
-def get_original_name_of_fn(ast, funcname):
-	"""
-	Search for a function definition of name funcname. If found, extract the original 
-	Java version of the function (which will be inserted as a block comment by Jamaica)
-	"""
-	class FuncDefVisitor(c_ast.NodeVisitor):
-		def __init__(self):
-			self.found = None
-		
-		def visit_FuncDef(self, node):
-			pattern = re.compile(
-				r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-				re.DOTALL | re.MULTILINE
-			)        
-			line = utils.getlineoffile(node.decl.coord.file, node.decl.coord.line)
-			comments = re.findall(pattern, line)
-			if len(comments) == 1:
-				c = comments[0]
-				if c[:2] == "/*" and c[-2:] == "*/":
-					origname = c[2:-2].strip()
-					if funcname == None:
-						print "Function " + node.decl.name    + " originally: " + origname
-					else:
-						if node.decl.name == funcname:
-							self.found = origname
-				
-	v = FuncDefVisitor()
-	v.visit(ast)
-	return v.found
 
 
 def parse_jamaica_output(filename):
