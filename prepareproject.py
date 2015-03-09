@@ -4,7 +4,7 @@ from utils import log
 import juniperrewrites
 
 
-def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
+def copy_project_files(targetdir, fpgapartname, extrasourcefiles, astcache):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
@@ -32,7 +32,7 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
 		if f.endswith(".c"): #We only parse C files
-			juniperrewrites.rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
+			juniperrewrites.rewrite_source_file(astcache, f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
 	script = open(os.path.join(targetdir, "script.tcl"), "w")
 	script.write(hls_script(os.path.join(targetdir, "src"), fpgapartname))
