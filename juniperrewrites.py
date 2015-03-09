@@ -1,7 +1,9 @@
 import os
 import re
+import sys
 
 from pycparser import c_ast, c_generator
+import pycparser
 
 from utils import CaicosException, log
 import utils
@@ -146,7 +148,7 @@ def get_java_names_of_C_fns(ast):
 	"""
 	Search for all function definitions, extract the original 
 	Java version of the function (which will be inserted as a block comment by Jamaica)
-	and return as a dictionary of {java_method_sig->c_fn_name}.
+	and return as a dictionary of {java_method_sig->(c_fn_name, astnode)}.
 	"""
 	class FuncDefVisitor(c_ast.NodeVisitor):
 		def __init__(self):
@@ -163,7 +165,7 @@ def get_java_names_of_C_fns(ast):
 				c = comments[0]
 				if c[:2] == "/*" and c[-2:] == "*/":
 					javaname = c[2:-2].strip()
-					self.fns[javaname] = node.decl.name
+					self.fns[javaname] = (node.decl.name, node)
 			else:
 				log().error("Unexpected comment format in Jamaica output: " + str(node.decl.coord.file) + " " + str(node.decl.coord.line))
 				
@@ -171,6 +173,24 @@ def get_java_names_of_C_fns(ast):
 	v.visit(ast)
 	return v.fns
 	
+	
+def c_prototype_of_java_sig(sig, c_output_base, astcache):
+	"""
+	Given a Java signature, get the C function which implements it, as a C-style function prototype 
+	suitable for a header file.
+	
+	Note that this function performs a complete AST traversal of the target file. It is wasteful to 
+	call this to resolve a large number of signatures in the same package.
+	"""
+	filename = c_filename_of_java_method_sig(sig, c_output_base)
+	names = get_java_names_of_C_fns(astcache.get(filename))
+	node = names[sig][1];
+	declnode = node.children()[0][1]
+	if not isinstance(declnode, c_ast.Decl):
+		log().error("Unexpected function declaration format in file " + str(filename) + " for signature " + str(sig))
+		return None
+	return pycparser.c_generator.CGenerator().visit(declnode) + ";"
+
 	
 
 def rewrite_source_file(astcache, inputfile, outputfile):
