@@ -1,8 +1,7 @@
 #include <jamaica.h>
 #include <stdlib.h>
-
 #include "fpgaporting.h"
-#include "generatedcode.h"
+#include "toplevel.h"
 
 
 jamaica_thread t;

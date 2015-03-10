@@ -1,7 +1,8 @@
 import os, shutil
 
-from utils import log
+from juniperrewrites import c_prototype_of_java_sig
 import juniperrewrites
+from utils import log
 
 
 def copy_project_files(targetdir, fpgapartname, extrasourcefiles, astcache):
@@ -34,10 +35,12 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles, astcache):
 		if f.endswith(".c"): #We only parse C files
 			juniperrewrites.rewrite_source_file(astcache, f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
+	#The TCL script
 	script = open(os.path.join(targetdir, "script.tcl"), "w")
 	script.write(hls_script(os.path.join(targetdir, "src"), fpgapartname))
 	script.close()
-	
+
+
 	
 def hls_script(targetsrcdir, fpgapartname):
 	"""
@@ -60,3 +63,23 @@ def hls_script(targetsrcdir, fpgapartname):
 	s = s + 'csynth_design\n'
 	s = s + 'export_design -format ip_catalog\n'
 	return s
+
+
+def write_toplevel_header(functions, jamaicaoutputdir, astcache, outputfile):
+	"""
+	Prepare the header for the toplevel .cpp file.
+	This is a simple header guard, then the prototypes of the functions passed in
+	functions = [java_signatures_of_functions_to_prototype]
+	"""
+	s = 	"#ifndef TOPLEVEL_H_\n"
+	s = s + "#define TOPLEVEL_H_\n"
+	s = s + "\n"
+	s = s + "#include <jamaica.h>\n"
+	s = s + "\n"
+	for f in functions:
+		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir, astcache) + "\n"
+	s = s + "\n"
+	s = s + "#endif /* TOPLEVEL_H_ */\n"
+	hfile = open(outputfile, "w")
+	hfile.write(s)
+	hfile.close()
