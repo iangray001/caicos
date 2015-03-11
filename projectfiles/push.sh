@@ -7,7 +7,23 @@ HOSTNAMETEMP=/home/iang/vivado
 echo -e "\033[31m===========================================================================\033[0m"
 echo -e "\033[31m===========================================================================\033[0m"
 
-#Make the target directory
+#Delete and remake the target directory
+
+if [ -z "$HOSTNAMETEMP" ]; then
+	echo "Temp directory is unset."
+	exit
+else
+	if [ -z "$PROJECT" ]; then
+		echo "Project name is unset"
+		exit
+	fi
+fi
+
+if [ "clean" = $1 ]; then
+	echo "Cleaning remote directory..."
+	ssh -q $HOSTNAME "rm -rf $HOSTNAMETEMP/$PROJECT"
+fi
+
 ssh -q $HOSTNAME "mkdir $HOSTNAMETEMP/$PROJECT"
 
 echo -n "Copying project $PROJECT..."
