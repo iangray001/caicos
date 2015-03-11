@@ -1,5 +1,6 @@
 import glob
 import logging
+import os
 
 import pycparser
 
@@ -65,16 +66,18 @@ def parse_jamaica_output(filename):
 	if '*' in filename:
 		filename = deglob_file(filename)
 	
+	cwd = os.path.dirname(os.path.realpath(__file__))
+
 	cppargs = ['-E', 
 			   '-DNDEBUG', #Disable Jamaica debug support 
 			   '-U__GNUC__', #Prevents use of __attribute__, will cause an "unsupported compiler" #warning
 			   '-W#warnings', #And this hides that warning
 			   '-DJAMAICA_NATIVE_TIME_GET_HIGH_RESOLUTION_TIMESTAMP', #These are inline asm which seems not supported by pycparser
 			   '-DJAMAICA_NATIVE_THREAD_COMPARE_AND_SWAP',
-			   r'-I/Users/ian/Documents/pycparser/utils/fake_libc_include', #Override standard libc with pycparser's minimal version
-			   #r'-I/Users/ian/Documents/jamaica/current/target/linux-x86_64/include'
-			   r'-I/Users/ian/Dropbox/Work/VivadoHLS/jamaica/include'
-			   ]    
+			   #r'-I/Users/ian/Documents/pycparser/utils/fake_libc_include', #Override standard libc with pycparser's minimal version
+			   r'-I' + os.path.join(cwd, "stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
+			   r'-I' + os.path.join(cwd, "projectfiles", "include")
+			   ]
 	
 	return pycparser.parse_file(filename, use_cpp=True, cpp_path="gcc", cpp_args=cppargs)
 

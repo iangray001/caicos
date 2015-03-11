@@ -138,7 +138,7 @@
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
    */
-#define HAVE_DIRENT_H 1
+#define HAVE_DIRENT_H 0
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -304,7 +304,7 @@
 /* #undef HAVE_INTRIN_H */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
+#define HAVE_INTTYPES_H 0
 
 /* Define to 1 if you have the <in.h> header file. */
 /* #undef HAVE_IN_H */
@@ -626,7 +626,7 @@
 #define HAVE_STATVFS_DEFINED 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
+#define HAVE_STDINT_H 0
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
@@ -685,7 +685,7 @@
 /* #undef HAVE_SYS_NDIR_H */
 
 /* Define to 1 if you have the <sys/param.h> header file. */
-#define HAVE_SYS_PARAM_H 1
+#define HAVE_SYS_PARAM_H 0
 
 /* Define to 1 if you have the <sys/sched.h> header file. */
 /* #undef HAVE_SYS_SCHED_H */
@@ -721,7 +721,7 @@
 #define HAVE_SYS_TIME_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_TYPES_H 0
 
 /* Define to 1 if you have the <sys/un.h> header file. */
 #define HAVE_SYS_UN_H 1
