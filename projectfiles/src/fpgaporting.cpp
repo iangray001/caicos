@@ -54,50 +54,25 @@ void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f) {}
 
 
 jamaica_int8 jamaicaGC_GetArray8(jamaica_ref b, jamaica_int32 i) {return 0;}
-jamaica_int8 jamaicaGC_GetArray8_d0(jamaica_ref b, jamaica_int32 i) {return 0;}
 void jamaicaGC_SetArray8(jamaica_ref b, jamaica_int32 i, jamaica_int8 v) {}
-void jamaicaGC_SetArray8_d0(jamaica_ref b, jamaica_int32 i, jamaica_int8 v) {}
-
 jamaica_int16 jamaicaGC_GetArray16(jamaica_ref b, jamaica_int32 i) {return 0;}
-jamaica_int16 jamaicaGC_GetArray16_d0(jamaica_ref b, jamaica_int32 i) {return 0;}
 void jamaicaGC_SetArray16(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {}
-void jamaicaGC_SetArray16_d0(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {}
 
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i) {
 	//If a contiguous array:
 	return __juniper_ram_master[b + 4 + i].i;
-
 	//return b->data[i+4].i;
 }
 
-jamaica_int32 jamaicaGC_GetArray32_d0(jamaica_ref b, jamaica_int32 i) {
-	//If a contiguous array:
-	return __juniper_ram_master[b + 4 + i].i;
-}
-
 void jamaicaGC_SetArray32(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
-void jamaicaGC_SetArray32_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
-
 jamaica_int64 jamaicaGC_GetArray64(jamaica_ref b, jamaica_int32 i) {return 0;}
-jamaica_int64 jamaicaGC_GetArray64_d0(jamaica_ref b, jamaica_int32 i) {return 0;}
 void jamaicaGC_SetArray64(jamaica_ref b, jamaica_int32 i, jamaica_int64 v) {}
-void jamaicaGC_SetArray64_d0(jamaica_ref b, jamaica_int32 i, jamaica_int64 v) {}
-
 jamaica_double jamaicaGC_GetArrayDouble(jamaica_ref b, jamaica_int32 i) {return 0.0;}
-jamaica_double jamaicaGC_GetArrayDouble_d0(jamaica_ref b, jamaica_int32 i) {return 0.0;}
 void jamaicaGC_SetArrayDouble(jamaica_ref b, jamaica_int32 i, jamaica_double v) {}
-void jamaicaGC_SetArrayDouble_d0(jamaica_ref b, jamaica_int32 i, jamaica_double v) {}
-
 jamaica_float jamaicaGC_GetArrayFloat(jamaica_ref b, jamaica_int32 i) {return 0.0;}
-jamaica_float jamaicaGC_GetArrayFloat_d0(jamaica_ref b, jamaica_int32 i) {return 0.0;}
 void jamaicaGC_SetArrayFloat(jamaica_ref b, jamaica_int32 i, jamaica_float v) {}
-void jamaicaGC_SetArrayFloat_d0(jamaica_ref b, jamaica_int32 i, jamaica_float v) {}
-
 jamaica_int32 jamaicaGC_GetArray32Ref(jamaica_ref b, jamaica_int32 i) {return (jamaica_int32) 0;}
-jamaica_int32 jamaicaGC_GetArray32Ref_d0(jamaica_ref b, jamaica_int32 i) {return (jamaica_int32) 0;}
 void jamaicaGC_SetArray32Ref(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
-void jamaicaGC_SetArray32Ref_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
-
 
 
 

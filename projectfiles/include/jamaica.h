@@ -357,24 +357,29 @@ void jamaicaGC_SetArray32Ref_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v)
 #define JAMAICA_GET_ARRAY_DOUBLE_D0(b,ix, result) JAMAICA_GET_ARRAY_DOUBLE(b,ix, result)
 #define JAMAICA_SET_ARRAY_DOUBLE_D0(b,ix, v)      JAMAICA_SET_ARRAY_DOUBLE(b,ix, v)
 #else
-#define JAMAICA_GET_ARRAY8(b, ix, result)                   (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY8_D0(b, ix, result)            : (result = jamaicaGC_GetArray8   (   b,ix             ))
-#define JAMAICA_SET_ARRAY8(b, ix, v)                        (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY8_D0(b, ix, v)                 :           jamaicaGC_SetArray8   (   b,ix,v           )
-#define JAMAICA_GET_ARRAY16(b,ix, result)                   (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY16_D0(b,ix, result)            : (result = jamaicaGC_GetArray16  (   b,ix             ))
-#define JAMAICA_SET_ARRAY16(b,ix, v)                        (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY16_D0(b,ix, v)                 :           jamaicaGC_SetArray16  (   b,ix,v           )
-#define JAMAICA_GET_ARRAY32(b,ix, result)                   (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY32_D0(b,ix, result)            : (result = jamaicaGC_GetArray32  (   b,ix             ))
-#define JAMAICA_SET_ARRAY32(b,ix, v)                        (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY32_D0(b,ix, v)                 :           jamaicaGC_SetArray32  (   b,ix,v           )
-#define JAMAICA_GET_ARRAY64(b,ix, result)                   (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY64_D0(b,ix, result)            : (result = jamaicaGC_GetArray64  (   b,ix             ))
-#define JAMAICA_SET_ARRAY64(b,ix, v)                        (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY64_D0(b,ix, v)                 :           jamaicaGC_SetArray64  (   b,ix,v           )
-#define JAMAICA_GET_ARRAY_FLOAT(b,ix, result)               (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY_FLOAT_D0(b,ix, result)        : (result = jamaicaGC_GetArrayFloat ( b,ix             ))
-#define JAMAICA_SET_ARRAY_FLOAT(b,ix, v)                    (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY_FLOAT_D0(b,ix, v)             :           jamaicaGC_SetArrayFloat ( b,ix,v           )
-#define JAMAICA_GET_ARRAY_DOUBLE(b,ix, result)              (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY_DOUBLE_D0(b,ix, result)       : (result = jamaicaGC_GetArrayDouble( b,ix             ))
-#define JAMAICA_SET_ARRAY_DOUBLE(b,ix, v)                   (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY_DOUBLE_D0(b,ix, v)            :           jamaicaGC_SetArrayDouble( b,ix,v           )
+
+//In the original Jamaica model, these used to first check JAMAICA_GET_ARRAY_DEPTH(b) == 0.
+//If it did, then it would return the value of jamaicaGC_GetArrayXX_D0(b,ix), else jamaicaGC_GetArrayXX(b,ix)
+//The ternary operator used was non-standard C and not supported by HLS, so this functionality is rolled
+//into jamaicaGC_GetArrayXX
+#define JAMAICA_GET_ARRAY8(b, ix, result)                   (result = jamaicaGC_GetArray8(b,ix))
+#define JAMAICA_SET_ARRAY8(b, ix, v)                        jamaicaGC_SetArray8(b,ix,v)
+#define JAMAICA_GET_ARRAY16(b,ix, result)                   (result = jamaicaGC_GetArray16(b,ix))
+#define JAMAICA_SET_ARRAY16(b,ix, v)                        jamaicaGC_SetArray16(b,ix,v)
+#define JAMAICA_GET_ARRAY32(b,ix, result)                   (result = jamaicaGC_GetArray32(b,ix))
+#define JAMAICA_SET_ARRAY32(b,ix, v)                        jamaicaGC_SetArray32(b,ix,v)
+#define JAMAICA_GET_ARRAY64(b,ix, result)                   (result = jamaicaGC_GetArray64(b,ix))
+#define JAMAICA_SET_ARRAY64(b,ix, v)                        jamaicaGC_SetArray64(b,ix,v)
+#define JAMAICA_GET_ARRAY_FLOAT(b,ix, result)               (result = jamaicaGC_GetArrayFloat(b,ix))
+#define JAMAICA_SET_ARRAY_FLOAT(b,ix, v)                    jamaicaGC_SetArrayFloat(b,ix,v)
+#define JAMAICA_GET_ARRAY_DOUBLE(b,ix, result)              (result = jamaicaGC_GetArrayDouble(b,ix))
+#define JAMAICA_SET_ARRAY_DOUBLE(b,ix, v)                   jamaicaGC_SetArrayDouble(b,ix,v)
 #endif
-#define JAMAICA_GET_ARRAY32REF(b,ix,result)                 (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_ARRAY32REF_D0(b,ix,result)          : (result = jamaicaGC_GetArray32Ref ( b,ix             ))
-#define JAMAICA_SET_ARRAY32REF(b,ix,r)                      (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_ARRAY32REF_D0(b,ix,r)               :           jamaicaGC_SetArray32Ref ( b,ix,r           )
-#define JAMAICA_GET_REF_ARRAY(b,ix,result)                  (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_GET_REF_ARRAY_D0(b,ix,result)           : (result = jamaicaGC_GetRefArray (   b,ix             ))
-#define JAMAICA_SET_REF_ARRAY(ct,b,ix,r)                    (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_REF_ARRAY_D0(ct,b,ix,r)             :           jamaicaGC_SetRefArray (ct,b,ix,r           )
-#define JAMAICA_SET_REF_ARRAY_TO_NULL(ct,b,ix)              (JAMAICA_GET_ARRAY_DEPTH(b) == 0) ? JAMAICA_SET_REF_ARRAY_D0 (ct,b,ix, JAMAICA_NULL):           jamaicaGC_SetRefArray (ct,b,ix,JAMAICA_NULL)
+#define JAMAICA_GET_ARRAY32REF(b,ix,result)                 (result = jamaicaGC_GetArray32Ref(b,ix))
+#define JAMAICA_SET_ARRAY32REF(b,ix,r)                      jamaicaGC_SetArray32Ref(b,ix,r)
+#define JAMAICA_GET_REF_ARRAY(b,ix,result)                  (result = jamaicaGC_GetRefArray(b,ix))
+#define JAMAICA_SET_REF_ARRAY(ct,b,ix,r)                    jamaicaGC_SetRefArray(ct,b,ix,r)
+#define JAMAICA_SET_REF_ARRAY_TO_NULL(ct,b,ix)              jamaicaGC_SetRefArray(ct,b,ix,JAMAICA_NULL)
 
 
 //Other functions
