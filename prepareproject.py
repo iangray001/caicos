@@ -23,7 +23,6 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, part):
 		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 	"""
-	funcs = ["unitTests/Types.types(IFDLjava/lang/Float;Ljava/lang/Double;)D"]
 	files = []
 	for sig in funcs:
 		f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
