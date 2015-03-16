@@ -198,7 +198,7 @@ def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	for f in functions:
 		bindings[callid] = f #Note the binding of index to function
 		s = s + "\t\tcase " + str(callid) + ":\n"
-		s = s +"\t\t\treturn " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+		s = s +"\t\t\treturn (int) " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
 		s = s +"\n"
 		callid = callid + 1
 		
