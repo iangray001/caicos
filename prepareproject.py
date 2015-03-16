@@ -37,17 +37,13 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 		if f.endswith(".c"): #We only parse C files
 			juniperrewrites.rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
-	#The TCL script
-	script = open(os.path.join(targetdir, "script.tcl"), "w")
-	script.write(hls_script(os.path.join(targetdir, "src"), fpgapartname))
-	script.close()
-
 
 	
-def hls_script(targetsrcdir, fpgapartname):
+def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	"""
 	Prepare the TCL script which will control HLS.
-	Returns the script as a string.
+	All .cpp, .c or .h files in targetsrcdir will be added as sources in the script, so 
+	this should be called after rest of the project has been set up.
 	"""
 	s = "open_project prj\n"
 	s = s + "set_top hls\n"
@@ -64,7 +60,10 @@ def hls_script(targetsrcdir, fpgapartname):
 	s = s + 'create_clock -period 10 -name default\n'
 	s = s + 'csynth_design\n'
 	s = s + 'export_design -format ip_catalog\n'
-	return s
+
+	script = open(outputfilename, "w")
+	script.write(s)
+	script.close()
 
 
 def get_args_max(functions, jamaicaoutputdir):
@@ -103,6 +102,33 @@ def write_toplevel_header(functions, jamaicaoutputdir, outputfile):
 		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir) + "\n"
 	s = s + "\n"
 	s = s + "#endif /* TOPLEVEL_H_ */\n"
+	hfile = open(outputfile, "w")
+	hfile.write(s)
+	hfile.close()
+
+
+def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
+	"""
+	Prepare functions.cpp, which contains the dispatch functions that calls the translated methods.
+	"""
+	bindings = {}
+	callid = 0
+	
+	s = "#include <toplevel.h>\n"
+	s = s + "\n"
+	s = s + "int juniper_call(int call_id) {\n"
+	s = s + "\tswitch(call_id) {\n"
+	
+	for f in functions:
+		bindings[callid] = f #Note the binding of index to function
+		s = s + "\t\tcase " + str(callid) + ":\n"
+		s = s +"\t\t\treturn CALL " + str(f) + "\n"
+		s = s +"\n"
+		
+	s = s + "\t\tdefault:\n"
+	s = s + "\t\t\treturn 0;\n"
+	s = s + "\t}\n"
+	s = s + "}\n"
 	hfile = open(outputfile, "w")
 	hfile.write(s)
 	hfile.close()
