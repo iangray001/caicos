@@ -66,21 +66,31 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	script.close()
 
 
+def get_paramlist_of_sig(sig, jamaicaoutputdir):
+	"""
+	Given a Java signature, find the corresponding C function declaration in the AST
+	and then parse to the parameter list. Returns a c_ast.ParamList or None in the
+	case of an error.
+	"""
+	declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+	funcdecl = declnode.children()[0][1]
+	if not isinstance(funcdecl, c_ast.FuncDecl):
+		log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
+		return None
+	paramlist = funcdecl.children()[0][1]
+	if not isinstance(paramlist, c_ast.ParamList):
+		log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected ParamList, got " + type(funcdecl).__name__)
+		return None
+	return paramlist
+	
+
 def get_args_max(functions, jamaicaoutputdir):
 	"""
 	Look through the functions in the generated code to determine the largest number of arguments any one has
 	"""
 	maxseen = 0
 	for sig in functions:
-		declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-		funcdecl = declnode.children()[0][1]
-		if not isinstance(funcdecl, c_ast.FuncDecl):
-			log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
-			return None
-		paramlist = funcdecl.children()[0][1]
-		if not isinstance(paramlist, c_ast.ParamList):
-			log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected ParamList, got " + type(funcdecl).__name__)
-			return None
+		paramlist = get_paramlist_of_sig(sig, jamaicaoutputdir)
 		maxseen = max([maxseen, len(paramlist.params)])
 	return maxseen
 
@@ -107,6 +117,42 @@ def write_toplevel_header(functions, jamaicaoutputdir, outputfile):
 	hfile.close()
 
 
+
+def call_code_for_sig(sig, jamaicaoutputdir):
+	"""
+	Given a Java signature, return the code to call the translated C version of it, to be 
+	placed in functions.cpp.
+	Note: This function doesn't check the AST structure. This IS checked in get_paramlist_of_sig 
+	so something will error if the AST is wrong, but this in general assumes a well-formed AST.
+	"""
+	declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+	funcdecl = declnode.children()[0][1]
+	paramlist = funcdecl.children()[0][1]
+	rv = declnode.name + "("
+	
+	for pid in xrange(len(paramlist.params)):
+		#Insert an explicit cast to the target type
+		#Handles single-stage pointers and base types only, no arrays, because
+		#it is believed that this is all that Jamaica builder will output.
+		prm = paramlist.params[pid]
+		pointer = False
+		if isinstance(prm.type, c_ast.PtrDecl):
+			pointer = True
+			pdec = prm.type.type
+		else:
+			pdec = prm.type
+		rv = rv + "("
+		if pointer: rv = rv + "*"
+		rv = rv + pdec.type.names[0] + ") "
+		
+		rv = rv + "__juniper_args[" + str(pid) + "]"
+		if not pid == len(paramlist.params) - 1:
+			rv = rv + ", "
+			
+	rv = rv + ");" 
+	return rv
+
+
 def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	"""
 	Prepare functions.cpp, which contains the dispatch functions that calls the translated methods.
@@ -116,14 +162,15 @@ def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	
 	s = "#include <toplevel.h>\n"
 	s = s + "\n"
-	s = s + "int juniper_call(int call_id) {\n"
+	s = s + "int __juniper_call(int call_id) {\n"
 	s = s + "\tswitch(call_id) {\n"
 	
 	for f in functions:
 		bindings[callid] = f #Note the binding of index to function
 		s = s + "\t\tcase " + str(callid) + ":\n"
-		s = s +"\t\t\treturn CALL " + str(f) + "\n"
+		s = s +"\t\t\treturn " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
 		s = s +"\n"
+		callid = callid + 1
 		
 	s = s + "\t\tdefault:\n"
 	s = s + "\t\t\treturn 0;\n"
