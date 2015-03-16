@@ -191,15 +191,22 @@ def get_java_names_of_C_fns(ast):
 	v.visit(ast)
 	return v.fns
 	
-	
+
+javanames_cache = {}
+
 def c_decl_node_of_java_sig(sig, c_output_base):
 	"""
 	Given a Java signature, get the decl node in the AST of the C function which implements it.
 	Note that this function performs a complete AST traversal of the target file. It is wasteful to 
-	call this to resolve a large number of signatures in the same package.
+	call this to resolve a large number of signatures in the same package so the results are cached.
+	If code is being morphed, javanames_cache should be cleared to force a re-parse.
 	"""
 	filename = c_filename_of_java_method_sig(sig, c_output_base)
-	names = get_java_names_of_C_fns(astcache.get(filename))
+	
+	if not astcache.get(filename) in javanames_cache:
+		javanames_cache[astcache.get(filename)] = get_java_names_of_C_fns(astcache.get(filename))
+	
+	names = javanames_cache[astcache.get(filename)]
 	node = names[sig][1];
 	declnode = node.children()[0][1]
 	if not isinstance(declnode, c_ast.Decl):
