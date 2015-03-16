@@ -1,10 +1,41 @@
+"""
+Contains functions for building a Vivado HLS project that implements a set of Java methods.
+build_from_functions is the main function that should be called to perform the entire process.
+"""
+
 import os, shutil
+import sys
 
 from pycparser import c_ast
 
-from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig
-import juniperrewrites
+from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, \
+	c_filename_of_java_method_sig, rewrite_source_file
 from utils import log
+
+
+def build_from_functions(funcs, jamaicaoutputdir, outputdir, part):
+	"""
+	Build a Vivado HLS project that contains the hardware for a set of Java functions
+	
+	Args:
+		funcs: Iterable of strings of Java signatures that are the methods to include
+		jamaicaoutputdir: Absolute path of the Jamaica builder output directory (that contains the generated C code)
+		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
+		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
+	"""
+	funcs = ["unitTests/Types.types(IFDLjava/lang/Float;Ljava/lang/Double;)D"]
+	files = []
+	for sig in funcs:
+		f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
+		if f == None:
+			log().error("Could not find file for signature " + sig) 
+			sys.exit(-1)
+		if not f in files:
+			files = files + [f]
+	copy_project_files(outputdir, part, files)
+	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
+	write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
+	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
 
 
 def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
@@ -35,7 +66,7 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
 		if f.endswith(".c"): #We only parse C files
-			juniperrewrites.rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
+			rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
 
 	
