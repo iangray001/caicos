@@ -1,6 +1,8 @@
 import os, shutil
 
-from juniperrewrites import c_prototype_of_java_sig
+from pycparser import c_ast
+
+from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig
 import juniperrewrites
 from utils import log
 
@@ -65,6 +67,25 @@ def hls_script(targetsrcdir, fpgapartname):
 	return s
 
 
+def get_args_max(functions, jamaicaoutputdir, astcache):
+	"""
+	Look through the functions in the generated code to determine the largest number of arguments any one has
+	"""
+	maxseen = 0
+	for sig in functions:
+		declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir, astcache)
+		funcdecl = declnode.children()[0][1]
+		if not isinstance(funcdecl, c_ast.FuncDecl):
+			log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
+			return None
+		paramlist = funcdecl.children()[0][1]
+		if not isinstance(paramlist, c_ast.ParamList):
+			log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected ParamList, got " + type(funcdecl).__name__)
+			return None
+		maxseen = max([maxseen, len(paramlist.params)])
+	return maxseen
+
+
 def write_toplevel_header(functions, jamaicaoutputdir, astcache, outputfile):
 	"""
 	Prepare the header for the toplevel .cpp file.
@@ -75,6 +96,8 @@ def write_toplevel_header(functions, jamaicaoutputdir, astcache, outputfile):
 	s = s + "#define TOPLEVEL_H_\n"
 	s = s + "\n"
 	s = s + "#include <jamaica.h>\n"
+	s = s + "\n"
+	s = s + "#define ARGS_MAX " + str(get_args_max(functions, jamaicaoutputdir, astcache))
 	s = s + "\n"
 	for f in functions:
 		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir, astcache) + "\n"
