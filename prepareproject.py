@@ -7,7 +7,7 @@ import juniperrewrites
 from utils import log
 
 
-def copy_project_files(targetdir, fpgapartname, extrasourcefiles, astcache):
+def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
@@ -35,7 +35,7 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles, astcache):
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
 		if f.endswith(".c"): #We only parse C files
-			juniperrewrites.rewrite_source_file(astcache, f, os.path.join(targetdir, "src", os.path.basename(f)))
+			juniperrewrites.rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
 	
 	#The TCL script
 	script = open(os.path.join(targetdir, "script.tcl"), "w")
@@ -67,13 +67,13 @@ def hls_script(targetsrcdir, fpgapartname):
 	return s
 
 
-def get_args_max(functions, jamaicaoutputdir, astcache):
+def get_args_max(functions, jamaicaoutputdir):
 	"""
 	Look through the functions in the generated code to determine the largest number of arguments any one has
 	"""
 	maxseen = 0
 	for sig in functions:
-		declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir, astcache)
+		declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 		funcdecl = declnode.children()[0][1]
 		if not isinstance(funcdecl, c_ast.FuncDecl):
 			log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
@@ -86,7 +86,7 @@ def get_args_max(functions, jamaicaoutputdir, astcache):
 	return maxseen
 
 
-def write_toplevel_header(functions, jamaicaoutputdir, astcache, outputfile):
+def write_toplevel_header(functions, jamaicaoutputdir, outputfile):
 	"""
 	Prepare the header for the toplevel .cpp file.
 	This is a simple header guard, then the prototypes of the functions passed in
@@ -97,10 +97,10 @@ def write_toplevel_header(functions, jamaicaoutputdir, astcache, outputfile):
 	s = s + "\n"
 	s = s + "#include <jamaica.h>\n"
 	s = s + "\n"
-	s = s + "#define ARGS_MAX " + str(get_args_max(functions, jamaicaoutputdir, astcache))
+	s = s + "#define ARGS_MAX " + str(get_args_max(functions, jamaicaoutputdir))
 	s = s + "\n"
 	for f in functions:
-		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir, astcache) + "\n"
+		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir) + "\n"
 	s = s + "\n"
 	s = s + "#endif /* TOPLEVEL_H_ */\n"
 	hfile = open(outputfile, "w")

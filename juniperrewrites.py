@@ -5,6 +5,7 @@ import sys
 from pycparser import c_ast, c_generator
 import pycparser
 
+import astcache
 from utils import CaicosException, log
 import utils
 
@@ -149,7 +150,7 @@ def c_filename_of_java_method_sig(sig, c_output_base):
 
 
 
-def c_name_of_java_method(astcache, sig, c_output_base):
+def c_name_of_java_method(sig, c_output_base):
 	"""
 	Find the name of the C method into which the given method signature was translated.
 	This is only partly deterministic so we need to search the AST.
@@ -191,7 +192,7 @@ def get_java_names_of_C_fns(ast):
 	return v.fns
 	
 	
-def c_decl_node_of_java_sig(sig, c_output_base, astcache):
+def c_decl_node_of_java_sig(sig, c_output_base):
 	"""
 	Given a Java signature, get the decl node in the AST of the C function which implements it.
 	Note that this function performs a complete AST traversal of the target file. It is wasteful to 
@@ -207,15 +208,15 @@ def c_decl_node_of_java_sig(sig, c_output_base, astcache):
 	return declnode
 
 
-def c_prototype_of_java_sig(sig, c_output_base, astcache):
+def c_prototype_of_java_sig(sig, c_output_base):
 	"""
 	Given a Java signature, get the C function which implements it, as a C-style function prototype 
 	suitable for a header file.
 	"""
-	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base, astcache)) + ";"
+	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base)) + ";"
 	
 
-def rewrite_source_file(astcache, inputfile, outputfile):
+def rewrite_source_file(inputfile, outputfile):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
 	"""
