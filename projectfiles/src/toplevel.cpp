@@ -1,50 +1,60 @@
 #include <jamaica.h>
 #include <stdlib.h>
-#include "fpgaporting.h"
 #include "toplevel.h"
+#include <juniperoperations.h>
+
+#define VERSION 20
+
+jamaica_thread __juniper_thread;
+volatile int *__juniper_ram_master;
+int __juniper_args[ARGS_MAX];
 
 
-jamaica_thread t;
-volatile jamaica_data32 *__juniper_ram_master;
 
-#define RAM_BASE_INT (0x80000000/4)
-
-void hls(volatile jamaica_data32 *master, int *slavea, int *slaveb, int *slavec, int *slaved) {
-//void hls(int *master, int *slavea, int *slaveb, int *slavec, int *slaved) {
-#pragma HLS RESOURCE variable=master core=AXI4M
-#pragma HLS RESOURCE core=AXI4LiteS metadata="-bus_bundle slv0" variable=slavea
-#pragma HLS RESOURCE core=AXI4LiteS metadata="-bus_bundle slv0" variable=slaveb
-#pragma HLS RESOURCE core=AXI4LiteS metadata="-bus_bundle slv0" variable=slavec
-#pragma HLS RESOURCE core=AXI4LiteS metadata="-bus_bundle slv0" variable=slaved
-#pragma HLS RESOURCE core=AXI4LiteS metadata="-bus_bundle slv0" variable=return
-#pragma HLS INTERFACE ap_none port=slavea register
-#pragma HLS INTERFACE ap_none port=slaveb register
-#pragma HLS INTERFACE ap_none port=slavec register
-#pragma HLS INTERFACE ap_none port=slaved register
-#pragma HLS INTERFACE ap_bus port=master
+int hls(volatile int *master, int *slavea, int *slaveb, int *slavec, int *slaved) {
+#pragma HLS INTERFACE s_axilite port=slavea bundle=BUS_A register
+#pragma HLS INTERFACE s_axilite port=slaveb bundle=BUS_A register
+#pragma HLS INTERFACE s_axilite port=slavec bundle=BUS_A register
+#pragma HLS INTERFACE s_axilite port=slaved bundle=BUS_A register
+#pragma HLS INTERFACE s_axilite port=return bundle=BUS_A register
+#pragma HLS INTERFACE m_axi port=master
 
 	__juniper_ram_master = master;
-	create_jamaica_thread(&t);
+	create_jamaica_thread(&__juniper_thread);
 
-	*slaved = JAMAICA_BLOCK_GET_DATA32((jamaica_ref) (0x80001000/4),3).i;
+	switch(*slavea) {
+	case OP_VERSION:
+		return VERSION;
 
-	*slavec = 71;
-	//jam_comp_simpleTests_FFT_2_fft1(&t, 
-	//	(jamaica_ref) (0x80001000/4), 
-	//	(jamaica_ref) (0x80002000/4), 
-	//	(jamaica_ref) (0x80003000/4), 
-	//	(jamaica_ref) (0x80004000/4), 
-	//	64, 
-	//	(jamaica_ref) (0x80005000/4));
+	case OP_PEEK:
+		//Read memory location slaveb. Address is an int address (i.e. divide raw address by 4)
+		return master[*slaveb];
 
-	jam_comp_unitTests_Types_0_types1(&t, 
-		10,
-		100.0, 
-		1000.0,
-		(jamaica_ref) (0x80001000/4),
-		(jamaica_ref) (0x80002000/4)
-		);
+	case OP_POKE:
+		//Write slavec to memory[slaveb]
+		master[*slaveb] = *slavec;
+		return 0;
 
-	*slavea = 11;
+	case OP_WRITE_ARG:
+		//Set argument[slaveb] to slavec
+		if(*slaveb >= 0 && *slaveb < ARGS_MAX) {
+			__juniper_args[*slaveb] = *slavec;
+		}
+		return 0;
+
+	case OP_CALL:
+		//Call method ID slaveb
+		int rv = __juniper_call(*slaveb);
+		break;
+	}
+
+	//*slaveb = master[0x80000000/4];
+	//*slavec = JAMAICA_BLOCK_GET_DATA32((jamaica_ref) (0x80001000), 0); //Wrong
+	//*slaved = JAMAICA_BLOCK_GET_DATA32((jamaica_ref) (0x80001000/4), 0); //Correct
+
+	//master[0x80000000/4] = 1234; //Correct
+	//master[0x80000000] = 5678; //Wrong
+
+	return 0;
 }
 

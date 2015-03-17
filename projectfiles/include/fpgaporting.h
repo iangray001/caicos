@@ -7,7 +7,10 @@
 #ifndef FPGAPORTING_H_
 #define FPGAPORTING_H_
 
+//Prototypes of porting functions
 void create_jamaica_thread(jamaica_thread *t);
+int __juniper_call(int call_id);
+
 
 //RAM Access functions
 jamaica_ref juniper_ram_get_r(int addr, int subwordoffset);
@@ -28,6 +31,9 @@ void juniper_ram_set_b(int addr, int subwordoffset, jamaica_int8 b);
 void juniper_ram_set_ub(int addr, int subwordoffset, jamaica_uint8 ub);
 void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f);
 
-extern volatile jamaica_data32 *__juniper_ram_master;
+//Definitions of global structures
+extern volatile int *__juniper_ram_master;
+extern int __juniper_args[];
+extern jamaica_thread __juniper_thread;
 
 #endif /* FPGAPORTING_H_ */

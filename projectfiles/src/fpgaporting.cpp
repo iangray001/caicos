@@ -35,7 +35,11 @@ INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *
 
 
 jamaica_ref juniper_ram_get_r(int addr, int subwordoffset) {return 0;}
-jamaica_int32 juniper_ram_get_i(int addr, int subwordoffset) {return 0;}
+
+jamaica_int32 juniper_ram_get_i(int addr, int subwordoffset) {
+	return __juniper_ram_master[addr];
+}
+
 jamaica_uint32 juniper_ram_get_ui(int addr, int subwordoffset) {return 0;}
 jamaica_int16 juniper_ram_get_s(int addr, int subwordoffset) {return 0;}
 jamaica_uint16 juniper_ram_get_us(int addr, int subwordoffset) {return 0;}
@@ -60,7 +64,7 @@ void jamaicaGC_SetArray16(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {}
 
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i) {
 	//If a contiguous array:
-	return __juniper_ram_master[b + 4 + i].i;
+	return __juniper_ram_master[b + 4 + i];
 	//return b->data[i+4].i;
 }
 
@@ -74,6 +78,11 @@ void jamaicaGC_SetArrayFloat(jamaica_ref b, jamaica_int32 i, jamaica_float v) {}
 jamaica_int32 jamaicaGC_GetArray32Ref(jamaica_ref b, jamaica_int32 i) {return (jamaica_int32) 0;}
 void jamaicaGC_SetArray32Ref(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
 
+
+
+jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs) {
+	return (jamaica_ref) 0;
+}
 
 
 jamaica_bool jamaicaGC_haltFunction(const char *function, const char *filename, unsigned long lineNb, const char *text) {
