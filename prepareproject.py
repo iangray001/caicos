@@ -65,7 +65,16 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
 		if f.endswith(".c"): #We only parse C files
-			rewrite_source_file(f, os.path.join(targetdir, "src", os.path.basename(f)))
+			targetfile = os.path.join(targetdir, "src", os.path.basename(f))
+			"""
+			Jamaica builder outputs C files. It is easier to work in HLS with C++. Consequentially, we need the 
+			C files to declare C linkage (with extern "C" {...}). However, this construct is not supported by
+			pycparser so we must compile without __c_plusplus declared and the linkage is not included, leading to
+			errors. There are 2 options, either manually add the extern "C" declarations back in later, or
+			rename the C source to CPP. 
+			"""
+			targetfile = os.path.splitext(targetfile)[0] + ".cpp"
+			rewrite_source_file(f, targetfile)
 	
 
 	
@@ -171,11 +180,15 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 			pdec = prm.type.type
 		else:
 			pdec = prm.type
-		rv = rv + "("
-		if pointer: rv = rv + "*"
-		rv = rv + pdec.type.names[0] + ") "
-		
-		rv = rv + "__juniper_args[" + str(pid) + "]"
+			
+		if pointer and pdec.type.names[0] == "jamaica_thread":
+			rv = rv + "&__juniper_thread"
+		else:  					
+			rv = rv + "(" + str(pdec.type.names[0])
+			if pointer: rv = rv + "*"
+			rv = rv + ") "
+			rv = rv + "__juniper_args[" + str(pid) + "]"
+			
 		if not pid == len(paramlist.params) - 1:
 			rv = rv + ", "
 			
@@ -190,7 +203,8 @@ def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	bindings = {}
 	callid = 0
 	
-	s = "#include <toplevel.h>\n"
+	s =     "#include <jamaica.h>\n"
+	s = s + "#include <toplevel.h>\n"
 	s = s + "\n"
 	s = s + "int __juniper_call(int call_id) {\n"
 	s = s + "\tswitch(call_id) {\n"

@@ -74,7 +74,6 @@ def parse_jamaica_output(filename):
 			   '-W#warnings', #And this hides that warning
 			   '-DJAMAICA_NATIVE_TIME_GET_HIGH_RESOLUTION_TIMESTAMP', #These are inline asm which seems not supported by pycparser
 			   '-DJAMAICA_NATIVE_THREAD_COMPARE_AND_SWAP',
-			   #r'-I/Users/ian/Documents/pycparser/utils/fake_libc_include', #Override standard libc with pycparser's minimal version
 			   r'-I' + os.path.join(cwd, "stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
 			   r'-I' + os.path.join(cwd, "projectfiles", "include")
 			   ]
