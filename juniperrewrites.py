@@ -132,7 +132,7 @@ def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 	name = "PKG_"
 	for part in parts[:-1]:
 		name = name + part + "_"
-	name = name + "*.c"
+	name = name + "V*__.c"
 
 	return utils.deglob_file(os.path.join(c_output_base, name))
 

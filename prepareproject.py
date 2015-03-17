@@ -13,7 +13,7 @@ from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, \
 from utils import log
 
 
-def build_from_functions(funcs, jamaicaoutputdir, outputdir, part):
+def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
 	"""
 	Build a Vivado HLS project that contains the hardware for a set of Java functions
 	
@@ -21,9 +21,10 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, part):
 		funcs: Iterable of strings of Java signatures that are the methods to include
 		jamaicaoutputdir: Absolute path of the Jamaica builder output directory (that contains the generated C code)
 		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
+		additionalsourcefiles: Iterable of abs paths for other source files that are required.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 	"""
-	files = []
+	files = [] + additionalsourcefiles
 	for sig in funcs:
 		f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
 		if f == None:
