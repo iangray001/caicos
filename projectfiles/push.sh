@@ -19,7 +19,7 @@ else
 	fi
 fi
 
-if [ "clean" = $1 ]; then
+if [ "clean" = "$1" ]; then
 	echo "Cleaning remote directory..."
 	ssh -q $HOSTNAME "rm -rf $HOSTNAMETEMP/$PROJECT"
 fi
