@@ -76,11 +76,13 @@ def rewrite_RAM_structure_dereferences(ast):
 							structmember = c[1][1].name #What was dereferenced ('i', 's', 'c', 'r', etc.)
 							log().info(str(node.coord) + ":")
 							log().info("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
+							rewrite_RAM_structure_dereferences(refch[1][1]) #Deal with ram accesses in the argument
 							functionargs = c_generator.CGenerator().visit(refch[1][1])
 							
 							#If there a higher-level ArrayRef we are interested in we need to get the index
 							if isinstance(node.parent, c_ast.ArrayRef):
 								if len(node.parent.children()) >= 2 and isinstance(node.parent.children()[1][1], c_ast.Constant):
+									rewrite_RAM_structure_dereferences(node.parent.children()[1][1]) #Deal with ram accesses in the argument
 									arrayrefoffset = c_generator.CGenerator().visit(node.parent.children()[1][1])
 									nodetoreplace = node.parent
 								else:
@@ -88,7 +90,7 @@ def rewrite_RAM_structure_dereferences(ast):
 							else:
 								arrayrefoffset = 0
 								nodetoreplace = node
-										
+							
 							#We also need to decide whether to use a GET or SET function
 							operation = "get"
 							if isinstance(nodetoreplace.parent, c_ast.Assignment):
@@ -100,17 +102,16 @@ def rewrite_RAM_structure_dereferences(ast):
 							if operation == "get": 
 								call = RAM_GET_NAME + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ")"
 							else:
-								#TODO: This is not as robust as actually building a proper AST
-								#We just codegen the rvalue, meaning that if it includes further RAM references they will not be correctly
-								#handled.  
-								call = RAM_SET_NAME + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ", " + pycparser.c_generator.CGenerator().visit(rvalue) + ")"
+								rewrite_RAM_structure_dereferences(rvalue) #Deal with ram accesses in the argument
+								call = RAM_SET_NAME + structmember + "(" + \
+										functionargs + ", " + str(arrayrefoffset) + \
+										", " + pycparser.c_generator.CGenerator().visit(rvalue) + ")"
 								nodetoreplace = nodetoreplace.parent
 							
 							log().info("\tReplacement: " + call)
 							replacementnode = c_ast.ID("name")
 							setattr(replacementnode, 'name', call)
 							replace_node(nodetoreplace, replacementnode)
-							
 							
 	v = Visitor()
 	v.visit(ast)
