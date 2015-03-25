@@ -20,15 +20,16 @@ typedef struct jamaica_thread jamaica_thread;
 
 //Define the Jamaica types
 typedef unsigned int jamaica_ref;
-typedef signed int  jamaica_int32; //Was signed long
+typedef signed int jamaica_int32; //Was signed long
 typedef signed short jamaica_int16;
-typedef signed char  jamaica_int8;
-typedef unsigned int  jamaica_uint32; //Was unsigned long
+typedef signed char jamaica_int8;
+typedef unsigned int jamaica_uint32; //Was unsigned long
 typedef unsigned short jamaica_uint16;
-typedef unsigned char  jamaica_uint8;
-typedef float  jamaica_float;
+typedef unsigned char jamaica_uint8;
+typedef float jamaica_float;
 typedef char* jamaica_address;
 typedef signed long long jamaica_int64;
+typedef unsigned long long jamaica_uint64;
 typedef double jamaica_double;
 typedef jamaica_int32 jamaica_bool;
 
@@ -78,9 +79,9 @@ typedef enum
 #define JAMAICA_BLOCK_GET_DATA32_D0(b,ix) (__juniper_ram_master[(b) + (ix)])
 
 #define JAMAICA_BLOCK_GET_I(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).i)
-#define JAMAICA_BLOCK_GET_UI(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).i) //TODO Changed to i
-#define JAMAICA_BLOCK_GET_L(b,ix) (JAMAICA_BLOCK_GET_DATA64(b,ix).i) //TODO Changed to i
-#define JAMAICA_BLOCK_GET_R(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).i) //TODO Changed to i
+#define JAMAICA_BLOCK_GET_UI(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).ui)
+#define JAMAICA_BLOCK_GET_L(b,ix) (JAMAICA_BLOCK_GET_DATA64(b,ix).l)
+#define JAMAICA_BLOCK_GET_R(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).r)
 #define JAMAICA_BLOCK_GET_P(b,off) ((jamaica_address) (JAMAICA_BLOCK_GET_I(b,off)))
 
 #define JAMAICA_REF_TO_PTR(b) (b)
@@ -98,141 +99,10 @@ typedef enum
 
 
 //Arithmetic
-#define JAMAICA_INT32_CONST_MAX JAMAICA_NATIVE_MATH_INT_INT32_CONST_MAX
-#define JAMAICA_INT32_CONST_MIN JAMAICA_NATIVE_MATH_INT_INT32_CONST_MIN
-#define JAMAICA_INT32_CONST_NAN     JAMAICA_NATIVE_MATH_INT_INT32_CONST_NAN
-#define JAMAICA_INT32_CONST_POS_INF JAMAICA_NATIVE_MATH_INT_INT32_CONST_POS_INF
-#define JAMAICA_INT32_CONST_NEG_INF JAMAICA_NATIVE_MATH_INT_INT32_CONST_NEG_INF
-#define JAMAICA_INT64_CONST_0                  JAMAICA_NATIVE_MATH_INT_INT64_CONST_0
-#define JAMAICA_INT64_CONST_1                  JAMAICA_NATIVE_MATH_INT_INT64_CONST_1
-#define JAMAICA_INT64_CONST_MINUS_1            JAMAICA_NATIVE_MATH_INT_INT64_CONST_MINUS_1
-#define JAMAICA_INT64_CONST_1000               JAMAICA_NATIVE_MATH_INT_INT64_CONST_1000
-#define JAMAICA_INT64_CONST_3600               JAMAICA_NATIVE_MATH_INT_INT64_CONST_3600
-#define JAMAICA_INT64_CONST_1000000            JAMAICA_NATIVE_MATH_INT_INT64_CONST_1000000
-#define JAMAICA_INT64_CONST_1000000000         JAMAICA_NATIVE_MATH_INT_INT64_CONST_1000000000
-#define JAMAICA_INT64_CONST_INT32_MAX          JAMAICA_NATIVE_MATH_INT_INT64_CONST_INT32_MAX
-#define JAMAICA_INT64_CONST_INT32_MIN          JAMAICA_NATIVE_MATH_INT_INT64_CONST_INT32_MIN
-#define JAMAICA_INT64_CONST_MAX                JAMAICA_NATIVE_MATH_INT_INT64_CONST_MAX
-#define JAMAICA_INT64_CONST_MIN                JAMAICA_NATIVE_MATH_INT_INT64_CONST_MIN
-#define JAMAICA_INT64_CONST_0x00000000000003E8 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x00000000000003E8
-#define JAMAICA_INT64_CONST_0x00000000000007FF JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x00000000000007FF
-#define JAMAICA_INT64_CONST_0x0000000010000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x0000000010000000
-#define JAMAICA_INT64_CONST_0x0010000000000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x0010000000000000
-#define JAMAICA_INT64_CONST_0x000fFFFFffffFFFF JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x000fFFFFffffFFFF
-#define JAMAICA_INT64_CONST_0x7ff0000000000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x7ff0000000000000
-#define JAMAICA_INT64_CONST_0xfff0000000000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0xfff0000000000000
-#define JAMAICA_INT64_CONST_0x7ff8000000000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x7ff8000000000000
-#define JAMAICA_INT64_CONST_0xc3e0000000000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0xc3e0000000000000
-#define JAMAICA_INT64_CONST_0xffffFFFFffffFFFF JAMAICA_NATIVE_MATH_INT_INT64_CONST_0xffffFFFFffffFFFF
-#define JAMAICA_INT64_CONST_0xffffFFFF00000000 JAMAICA_NATIVE_MATH_INT_INT64_CONST_0xffffFFFF00000000
-#define JAMAICA_INT64_CONST_0x00000000ffffFFFF JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x00000000ffffFFFF
-#define JAMAICA_UINT64_CONST_0                 JAMAICA_NATIVE_MATH_INT_UINT64_CONST_0
-#define JAMAICA_UINT64_CONST_1                 JAMAICA_NATIVE_MATH_INT_UINT64_CONST_1
-#define JAMAICA_INT64_CONST_NAN                JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x7ff8000000000000
-#define JAMAICA_INT64_CONST_POS_INF            JAMAICA_NATIVE_MATH_INT_INT64_CONST_0x7ff0000000000000
-#define JAMAICA_INT64_CONST_NEG_INF            JAMAICA_NATIVE_MATH_INT_INT64_CONST_0xfff0000000000000
-#define JAMAICA_FLOAT_CONST_NAN     jamaicaMath_float_const_NaN()
-#define JAMAICA_FLOAT_CONST_POS_INF jamaicaMath_float_const_Pos_Inf()
-#define JAMAICA_FLOAT_CONST_NEG_INF jamaicaMath_float_const_Neg_Inf()
-#define JAMAICA_DOUBLE_CONST_NAN     jamaicaMath_double_const_NaN()
-#define JAMAICA_DOUBLE_CONST_POS_INF jamaicaMath_double_const_Pos_Inf()
-#define JAMAICA_DOUBLE_CONST_NEG_INF jamaicaMath_double_const_Neg_Inf()
-extern const jamaica_int32 jamaicaMath_const0;
-#define JAMAICA_MATH_GCC_BUG_CONST0 0
-#define JAMAICA_ADDS32(v1,v2) (((jamaica_int32)(((jamaica_uint32)(v1))+((jamaica_uint32)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_SUBS32(v1,v2) (((jamaica_int32)(((jamaica_uint32)(v1))-((jamaica_uint32)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_MULS32(v1,v2) (((jamaica_int32)(((jamaica_uint32)(v1))*((jamaica_uint32)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_DIVS32(v1,v2) (((v2) == -1) ? -(v1) : ((v1)/(v2)))
-#define JAMAICA_MODS32(v1,v2) (((v2) == -1) ? 0     : ((v1)%(v2)))
-#define JAMAICA_ADDS64(v1,v2) (((jamaica_int64)(((jamaica_uint64)(v1))+((jamaica_uint64)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_ADDU64(v1,v2) ((v1)+(v2))
-#define JAMAICA_SUBS64(v1,v2) (((jamaica_int64)(((jamaica_uint64)(v1))-((jamaica_uint64)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_SUBU64(v1,v2) ((v1)-(v2))
-#define JAMAICA_MULS64(v1,v2) (((jamaica_int64)(((jamaica_uint64)(v1))*((jamaica_uint64)(v2)))) - JAMAICA_MATH_GCC_BUG_CONST0)
-#define JAMAICA_MULU64(v1,v2) ((v1)*(v2))
-#define JAMAICA_DIVS64(v1,v2) (((v2) == -1) ? -(v1) : ((v1)/(v2)))
-#define JAMAICA_DIVU64(v1,v2) ((v1)/(v2))
-#define JAMAICA_MODS64(v1,v2) (((v2) == -1) ? 0     : ((v1)%(v2)))
-#define JAMAICA_MODU64(v1,v2) ((v1)%(v2))
-#define JAMAICA_ANDS64(v1,v2) ((v1)&(v2))
-#define JAMAICA_ANDU64(v1,v2) ((v1)&(v2))
-#define JAMAICA_ORS64(v1,v2)  ((v1)|(v2))
-#define JAMAICA_ORU64(v1,v2)  ((v1)|(v2))
-#define JAMAICA_XORS64(v1,v2) ((v1)^(v2))
-#define JAMAICA_XORU64(v1,v2) ((v1)^(v2))
-#define JAMAICA_SHIFTL_S64(v,l)  ((v)<<(l))
-#define JAMAICA_SHIFTR_S64(v,l)  ((jamaica_int64)  v)>>(l)
-#define JAMAICA_USHIFTR_S64(v,l) ((jamaica_uint64) v)>>(l)
-#define JAMAICA_NEG_S64(v) (-(v))
-#define JAMAICA_INCU64(v) { v++; }
-#define JAMAICA_DECU64(v) { v--; }
-#define JAMAICA_EQ_S64(v1,v2) ((v1) == (v2))
-#define JAMAICA_NE_S64(v1,v2) ((v1) != (v2))
-#define JAMAICA_LT_S64(v1,v2) ((v1) <  (v2))
-#define JAMAICA_LE_S64(v1,v2) ((v1) <= (v2))
-#define JAMAICA_GT_S64(v1,v2) ((v1) >  (v2))
-#define JAMAICA_GE_S64(v1,v2) ((v1) >= (v2))
-#define JAMAICA_EQ_U64(v1,v2) ((v1) == (v2))
-#define JAMAICA_NE_U64(v1,v2) ((v1) != (v2))
-#define JAMAICA_LT_U64(v1,v2) ((v1) <  (v2))
-#define JAMAICA_LE_U64(v1,v2) ((v1) <= (v2))
-#define JAMAICA_GT_U64(v1,v2) ((v1) >  (v2))
-#define JAMAICA_GE_U64(v1,v2) ((v1) >= (v2))
-#define JAMAICA_INT32_TO_INT64(v)   JAMAICA_NATIVE_MATH_INT_INT32_TO_INT64(v)
-#define JAMAICA_INT64_TO_INT32(v)   JAMAICA_NATIVE_MATH_INT_INT64_TO_INT32(v)
-#define JAMAICA_UINT32_TO_UINT64(v) JAMAICA_NATIVE_MATH_INT_UINT32_TO_UINT64(v)
-#define JAMAICA_UINT64_TO_UINT32(v) JAMAICA_NATIVE_MATH_INT_UINT64_TO_UINT32(v)
-#define JAMAICA_INT64_TO_UINT64(v)  ((jamaica_uint64)(v))
-#define JAMAICA_UINT64_TO_INT64(v)  ((jamaica_int64)(v))
+#include "jamaica_arith.h"
 
-//Wrappers for math.h from native methods
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_LOG(d) (log(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_MUL(f0,f1) ((f0)*(f1))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_DIV(f0,f1) ((f0)/(f1))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_MOD(f0,f1) ((jamaica_float)fmod((jamaica_double)(f0),(jamaica_double)(f1)))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_DIV(d0,d1) ((d0)/(d1))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_MUL(d0,d1) ((d0)*(d1))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_MOD(d0,d1) fmod(d0,d1)
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_SIN(f) (sinf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_COS(f) (cosf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_TAN(f) (tanf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_ASIN(f) (asinf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_ACOS(f) (acosf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_ATAN(f) (atanf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_ATAN2(f0,f1) (atan2f(f0,f1))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_SIN(d) (sin(d))
-#define JAMAICA_NATIVE_MATH_DOUBLE_SINH(d) (sinh(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_COS(d) (cos(d))
-#define JAMAICA_NATIVE_MATH_DOUBLE_COSH(d) (cosh(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_TAN(d) (tan(d))
-#define JAMAICA_NATIVE_MATH_DOUBLE_TANH(d) (tanh(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_ASIN(d) (asin(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_ACOS(d) (acos(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_ATAN(d) (atan(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_ATAN2(d0,d1) (atan2(d0,d1))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_ABS(f) (fabsf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_FLOOR(f) (floorf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_CEIL(f) (ceilf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_SQRT(f) (sqrtf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_POW(f0,f1) (powf(f0,f1))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_LOG(f) (logf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_EXP(f) (expf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_FLOAT_RINT(f) (rintf(f))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_ABS(d) (fabs(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_FLOOR(d) (floor(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_CEIL(d) (ceil(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_SQRT(d) (sqrt(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_POW(d0,d1) (pow(d0,d1))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_LOG(d) (log(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_EXP(d) (exp(d))
-#define JAMAICA_NATIVE_MATH_FLOAT_DOUBLE_RINT(d) (rint(d))
-
-//Native casts
-#define JAMAICA_CAST_DOUBLE_TO_INTEGER(d) jamaicaInterpreter_castDoubleToInteger(d)
-#define JAMAICA_CAST_DOUBLE_TO_LONG(d) jamaicaInterpreter_castDoubleToLong(d)
 
 //Arrays
-//TODO Likely want these to be inline (either with the inline keyword in C or an HLS directive)
 jamaica_int8 jamaicaGC_GetArray8(jamaica_ref b, jamaica_int32 i);
 jamaica_int16 jamaicaGC_GetArray16(jamaica_ref b, jamaica_int32 i);
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i);
@@ -247,6 +117,7 @@ jamaica_float jamaicaGC_GetArrayFloat(jamaica_ref b, jamaica_int32 i);
 jamaica_float jamaicaGC_GetArrayFloat_d0(jamaica_ref b, jamaica_int32 i);
 jamaica_int32 jamaicaGC_GetArray32Ref(jamaica_ref b, jamaica_int32 i);
 jamaica_int32 jamaicaGC_GetArray32Ref_d0(jamaica_ref b, jamaica_int32 i);
+jamaica_ref jamaicaGC_GetRefArray(jamaica_ref b, jamaica_int32 i);
 
 void jamaicaGC_SetArray8(jamaica_ref b, jamaica_int32 i, jamaica_int8 v);
 void jamaicaGC_SetArray8_d0(jamaica_ref b, jamaica_int32 i, jamaica_int8 v);
@@ -262,12 +133,11 @@ void jamaicaGC_SetArrayFloat(jamaica_ref b, jamaica_int32 i, jamaica_float v);
 void jamaicaGC_SetArrayFloat_d0(jamaica_ref b, jamaica_int32 i, jamaica_float v);
 void jamaicaGC_SetArray32Ref(jamaica_ref b, jamaica_int32 i, jamaica_int32 v);
 void jamaicaGC_SetArray32Ref_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v);
+void jamaicaGC_SetRefArray(jamaica_thread *ct, jamaica_ref b, jamaica_int32 i, jamaica_ref r);
 
 
-#define JAMAICA_GET_REF_ARRAY_ELEMENTS_ADR(a) (&(JAMAICA_BLOCK_GET_DATA32(a,JAMAICA_ARRAY_ELEMENTS).r   ))
-
+#define JAMAICA_GET_REF_ARRAY_ELEMENTS_ADR(a) (&(JAMAICA_BLOCK_GET_DATA32(a,JAMAICA_ARRAY_ELEMENTS).r))
 #define JAMAICA_GET_PRIMITIVE_ARRAY_ELEMENTS_ADR(a) ((jamaica_address) (&JAMAICA_BLOCK_GET_DATA32(a,JAMAICA_ARRAY_ELEMENTS)))
-
 #define JAMAICA_GET_ARRAY8_ELEMENTS_ADR(a)    ((jamaica_int8 *) JAMAICA_GET_PRIMITIVE_ARRAY_ELEMENTS_ADR(a))
 #define JAMAICA_GET_ARRAY16_ELEMENTS_ADR(a)   ((jamaica_int16*) JAMAICA_GET_PRIMITIVE_ARRAY_ELEMENTS_ADR(a))
 #define JAMAICA_GET_ARRAY32_ELEMENTS_ADR(a)   ((jamaica_int32*) JAMAICA_GET_PRIMITIVE_ARRAY_ELEMENTS_ADR(a))
@@ -292,7 +162,6 @@ void jamaicaGC_SetArray32Ref_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v)
 #define JAMAICA_SET_ARRAY_FLOAT(b,ix, v)                    jamaicaGC_SetArrayFloat(b,ix,v)
 #define JAMAICA_GET_ARRAY_DOUBLE(b,ix, result)              (result = jamaicaGC_GetArrayDouble(b,ix))
 #define JAMAICA_SET_ARRAY_DOUBLE(b,ix, v)                   jamaicaGC_SetArrayDouble(b,ix,v)
-
 #define JAMAICA_GET_ARRAY32REF(b,ix,result)                 (result = jamaicaGC_GetArray32Ref(b,ix))
 #define JAMAICA_SET_ARRAY32REF(b,ix,r)                      jamaicaGC_SetArray32Ref(b,ix,r)
 #define JAMAICA_GET_REF_ARRAY(b,ix,result)                  (result = jamaicaGC_GetRefArray(b,ix))
@@ -311,6 +180,9 @@ void jamaicaGC_SetArray32Ref_d0(jamaica_ref b, jamaica_int32 i, jamaica_int32 v)
 #define JAMAICA_SET_ARRAY_FLOAT_D0(b,ix, v) JAMAICA_SET_ARRAY_FLOAT(b,ix, v)
 #define JAMAICA_GET_ARRAY_DOUBLE_D0(b,ix, result) JAMAICA_GET_ARRAY_DOUBLE(b,ix, result)
 #define JAMAICA_SET_ARRAY_DOUBLE_D0(b,ix, v) JAMAICA_SET_ARRAY_DOUBLE(b,ix, v)
+#define JAMAICA_SET_REF_ARRAY_D0(ct, b, ix, r) JAMAICA_SET_REF_ARRAY (ct, b, ix, r)
+#define JAMAICA_GET_REF_ARRAY_D0(b, ix, result) JAMAICA_GET_REF_ARRAY (b, ix, result)
+
 
 //Other functions
 jamaica_ref jamaicaInterpreter_allocJavaObject(jamaica_thread *ct,jamaica_ref cl);
@@ -363,123 +235,7 @@ INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *
   } while (0)
 
 
-
-
-
-
-
-//TODO Cut this down
-typedef struct {
-	jamaica_ref greyList;
-	jamaica_ref white;
-	/*jamaica_int32 nb;
-	jamaica_int32 i1;
-	void (*doGCIncrements)(jamaica_thread *ct, jamaica_int32 blockCount);
-	jamaica_int32   numIncs;
-	jamaica_int32   gcIncFraction;
-	jamaica_int32   numFreeLowerLimit;
-	jamaica_int32   numFreeLowerLimit2;
-	jamaica_int32   numFreeUpperLimit;
-	jamaica_int32   lowMemoryLimitAlarm;
-	jamaica_int32   lowMemoryLimitCap;
-	jamaica_int32 numGcStepsForCompleteCycle;
-	jamaica_int32 i3;
-	jamaica_bool i3a;
-	jamaica_int32 i4;
-	jamaica_int32 i5;
-	jamaica_int32 rp;
-	jamaica_int32 mnr;
-	jamaica_int32 nr;
-	jamaica_int32 inr;
-	jamaica_int32 reservationThreadsPriority;
-	void *rt;
-	jamaica_uint8 *chunkIndices;
-	jamaica_int32 i6;
-	jamaica_ref black;
-	jamaica_uint32 notScannedBit;
-	jamaica_uint32 shadedBit;
-	jamaica_ref r11;
-	jamaica_ref r11a;
-	jamaica_ref *chunks[0];
-	jamaica_int32   chunkCount;
-	void *lowestChunkAddress, *highestChunkAddress;
-	jamaica_ref memoryAreaFreeBlocks;
-	jamaica_int32 numBlocksForImmortalMemory;
-	jamaica_int32 numBlocksForScopedMemory;
-	jamaica_ref fMA;
-	jamaica_ref memoryAreas[0];
-	jamaica_ref r12;
-	jamaica_uint32 i12;
-	jamaica_int32 (*volatile doGCSteps)(jamaica_thread *ct, jamaica_int32 num);
-	jamaica_int32 (*doMarkSteps)(jamaica_thread *ct, jamaica_int32 num);
-	jamaica_ref     sweepPosBlock;
-	jamaica_ref     sweepLastFreeBlock;
-	jamaica_ref r17a;
-	jamaica_ref r17b;
-	jamaica_ref r17c;
-	jamaica_ref r17d;
-	jamaica_int32 i18;
-	jamaica_ref r19;
-	jamaica_ref r20;
-	jamaica_ref r20a;
-	void *waiting_finalizer_thread;
-	jamaica_ref r16;
-	jamaica_int32 forceTreeArrays;
-	void (*lowMemoryAlarm)(jamaica_thread *ct);
-	jamaica_ref newMutatorTemporaryLocalsArray;
-	jamaica_ref newMutatorLock;
-	jamaica_int32 i24;
-	jamaica_int32 i25;
-	jamaica_int32 i26;
-	void(*printCallContext)(void);*/
-} jamaica_GCEnv;
-
-
-//TODO Cut this down
-typedef struct jamaica_Mutator {
-	jamaica_GCEnv     *gcenv;
-	jamaica_ref *cl;
-	jamaica_int32 cli;
-//	jamaica_ref r2;
-//	jamaica_ref r3;
-//	jamaica_ref r4;
-//	jamaica_uint32 i5;
-//	jamaica_ref ma;
-//	jamaica_int32 mma;
-//	jamaica_int32 mi;
-//	jamaica_int32 mr;
-//	jamaica_int32 ama;
-//	jamaica_int32 ai;
-//	jamaica_bool runFullGCOnNextAlloc;
-//	jamaica_int32 needFreeRangeForNewMutator;
-//	jamaica_ref freeRangeForNewMutator;
-//	jamaica_int32 remainingBlocksToAllocate;
-} jamaica_Mutator;
-
-//TODO Cut this down
-struct jamaica_thread {
-//	const void  *jniNativeInterface;
-	jamaica_Mutator m;
-//	struct jamaica_VM *vm;
-//	jamaica_ref calledMethod;
-//	jamaica_cpu *cpu;
-//	jamaica_cpu *preferredCpu;
-//	jamaica_ref cT;
-//	jamaica_int32 id;
-//	jamaica_int32 *s;
-//	const void *cStackStart;
-//	jamaica_int32 min_remaining_c_stack;
-//	jamaica_int32 f;
-//	const void *cStackLimit;
-//	jamaica_int32 cStackSize;
-	jamaica_int32 javaStackSize;
-	volatile jamaica_bool plainAlloc;
-	volatile jamaica_int32 state;
-//	volatile jamaica_bool noDetach;
-//	jamaica_int64 unsyncTime;
-};
-
-
+#include "jamaica_structures.h"
 #include <fpgaporting.h>
 
 

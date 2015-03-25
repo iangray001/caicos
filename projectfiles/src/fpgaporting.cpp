@@ -1,8 +1,15 @@
 /*
  * fpgaporting.c
  *
- *  Created on: 16 Jul 2014
- *      Author: ian
+ * Contains the implementations of JamaicaVM functions that are required by the FPGA porting layer.
+ * Normally these would be implemented by libjamaica, but we cannot use that.
+ *
+ * Primarily contains:
+ *		Direct memory access through the juniper_ram_[get|set]_<type> functions
+ * 			Calls to these functions are injected by caicos when it sees accesses to memory in the generated C code.
+ * 		Array accesses through jamaicaGC_[Get|Set]Array<type>
+ * 			These are already in the C code, and implement contiguous and tree array fetches
+ * 		Various functions that are nulled that we do not need in the porting layer (such as exceptions)
  */
 
 #include <jamaica.h>
@@ -18,29 +25,41 @@
  * We need to pass a jamaica_thread instance around because the generated code uses it.
  * We do not, however, actually need to populate most of it with real information.
  */
-void create_jamaica_thread(jamaica_thread *t) {
-	t->javaStackSize = 1000000; //TODO Set to something sensible
-	t->state = JAMAICA_THREAD_STATE_RUNNING; //FPGA threads are always running
-	//t->m.cl = 0; //TODO the locals list
-	//t->m.cli = 0; //TODO locals list count
-	//t->m.gcenv = &nullGcEnv;
+void create_jamaica_thread() {
+#pragma HLS INLINE
+	__juniper_thread.javaStackSize = 1000000;
+	__juniper_thread.state = JAMAICA_THREAD_STATE_RUNNING; //FPGA threads are always running
+	//__juniper_thread.m.cl = 0; //TODO the locals list
+	//__juniper_thread.m.cli = 0; //TODO locals list count
+	//__juniper_thread.m.gcenv = &nullGcEnv;
 }
 
 
 
-
-INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
+//We cannot run out of stack when it is in hardware!
+jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
 	return FALSE;
 }
 
 
-jamaica_ref juniper_ram_get_r(int addr, int subwordoffset) {return 0;}
-
-jamaica_int32 juniper_ram_get_i(int addr, int subwordoffset) {
-	return __juniper_ram_master[addr];
+jamaica_ref juniper_ram_get_r(int addr, int subwordoffset) {
+//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
+//	return __juniper_ram_master[addr];
+	return 0;
 }
 
-jamaica_uint32 juniper_ram_get_ui(int addr, int subwordoffset) {return 0;}
+jamaica_int32 juniper_ram_get_i(int addr, int subwordoffset) {
+//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
+//	return __juniper_ram_master[addr];
+	return 0;
+}
+
+jamaica_uint32 juniper_ram_get_ui(int addr, int subwordoffset) {
+//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
+//	return __juniper_ram_master[addr];
+	return 0;
+}
+
 jamaica_int16 juniper_ram_get_s(int addr, int subwordoffset) {return 0;}
 jamaica_uint16 juniper_ram_get_us(int addr, int subwordoffset) {return 0;}
 jamaica_int8 juniper_ram_get_b(int addr, int subwordoffset) {return 0;}
@@ -64,7 +83,8 @@ void jamaicaGC_SetArray16(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {}
 
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i) {
 	//If a contiguous array:
-	return __juniper_ram_master[b + 4 + i];
+	//return __juniper_ram_master[b + 4 + i];
+	return 0;
 	//return b->data[i+4].i;
 }
 
@@ -78,6 +98,13 @@ void jamaicaGC_SetArrayFloat(jamaica_ref b, jamaica_int32 i, jamaica_float v) {}
 jamaica_int32 jamaicaGC_GetArray32Ref(jamaica_ref b, jamaica_int32 i) {return (jamaica_int32) 0;}
 void jamaicaGC_SetArray32Ref(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
 
+void jamaicaGC_SetRefArray(jamaica_thread *ct, jamaica_ref b, jamaica_int32 i, jamaica_ref r) {}
+jamaica_ref jamaicaGC_GetRefArray(jamaica_ref b, jamaica_int32 i) {return JAMAICA_NULL;}
+
+jamaica_int32 jamaicaGC_GetArrayLength(jamaica_ref b) {
+	//return __juniper_ram_master[b+JAMAICA_ARRAY_LENGTH_DEPTH] >> JAMAICA_ARRAY_LENGTH_SHIFT;
+	return 0;
+}
 
 
 jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs) {
