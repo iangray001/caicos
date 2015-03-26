@@ -7,6 +7,11 @@
 #ifndef FPGAPORTING_H_
 #define FPGAPORTING_H_
 
+//Synthesis options
+#define INLINE_MEMORY_ACCESS_FUNCTIONS
+#define INLINE_RESOLVE_TREE_ARRAY
+#define INLINE_ARRAY_ACCESS_FUNCTIONS
+
 //Prototypes of porting functions
 int __juniper_call(int call_id);
 void create_jamaica_thread();

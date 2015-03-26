@@ -13,4 +13,7 @@
 #define OP_WRITE_ARG 0x10
 #define OP_CALL 0x20
 
+#define OP_TEST_ARRAY_LEN 0x50
+#define OP_TEST_ARRAY_SUM 0x51
+
 #endif

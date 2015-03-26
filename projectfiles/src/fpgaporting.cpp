@@ -35,6 +35,9 @@ void create_jamaica_thread() {
 }
 
 
+#define LOBYTE(a) ((a) & 0xFF)
+#define SAR(a, b) (((signed) (a))>>(b)) //Assumes a is int type
+
 
 //We cannot run out of stack when it is in hardware!
 jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
@@ -43,58 +46,222 @@ jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
 
 
 jamaica_ref juniper_ram_get_r(int addr, int subwordoffset) {
-//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
-//	return __juniper_ram_master[addr];
-	return 0;
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[addr];
 }
 
 jamaica_int32 juniper_ram_get_i(int addr, int subwordoffset) {
-//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
-//	return __juniper_ram_master[addr];
-	return 0;
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[addr];
 }
 
 jamaica_uint32 juniper_ram_get_ui(int addr, int subwordoffset) {
-//#pragma HLS INTERFACE m_axi port=__juniper_ram_master
-//	return __juniper_ram_master[addr];
-	return 0;
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[addr];
 }
 
-jamaica_int16 juniper_ram_get_s(int addr, int subwordoffset) {return 0;}
-jamaica_uint16 juniper_ram_get_us(int addr, int subwordoffset) {return 0;}
-jamaica_int8 juniper_ram_get_b(int addr, int subwordoffset) {return 0;}
-jamaica_uint8 juniper_ram_get_ub(int addr, int subwordoffset) {return 0;}
-jamaica_float juniper_ram_get_f(int addr, int subwordoffset) {return 0;}
+jamaica_int16 juniper_ram_get_s(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
+	return __juniper_ram_master_short[addr+subwordoffset];
+}
 
-void juniper_ram_set_r(int addr, int subwordoffset, jamaica_ref r) {}
-void juniper_ram_set_i(int addr, int subwordoffset, jamaica_int32 i) {}
-void juniper_ram_set_ui(int addr, int subwordoffset, jamaica_uint32 ui) {}
-void juniper_ram_set_s(int addr, int subwordoffset, jamaica_int16 s) {}
-void juniper_ram_set_us(int addr, int subwordoffset, jamaica_uint16 us) {}
-void juniper_ram_set_b(int addr, int subwordoffset, jamaica_int8 b) {}
-void juniper_ram_set_ub(int addr, int subwordoffset, jamaica_uint8 ub) {}
-void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f) {}
+jamaica_uint16 juniper_ram_get_us(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
+	return __juniper_ram_master_short[addr+subwordoffset];
+}
+
+jamaica_int8 juniper_ram_get_b(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
+	return __juniper_ram_master_char[addr+subwordoffset];
+}
+
+jamaica_uint8 juniper_ram_get_ub(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
+	return __juniper_ram_master_char[addr+subwordoffset];
+}
+
+jamaica_float juniper_ram_get_f(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#ifdef JUNIPER_SUPPORT_FLOATS
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
+	return __juniper_ram_master_float[addr];
+#else
+	return 0;
+#endif
+}
+
+void juniper_ram_set_r(int addr, int subwordoffset, jamaica_ref r) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[addr] = r;
+}
 
 
-jamaica_int8 jamaicaGC_GetArray8(jamaica_ref b, jamaica_int32 i) {return 0;}
-void jamaicaGC_SetArray8(jamaica_ref b, jamaica_int32 i, jamaica_int8 v) {}
-jamaica_int16 jamaicaGC_GetArray16(jamaica_ref b, jamaica_int32 i) {return 0;}
-void jamaicaGC_SetArray16(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {}
+void juniper_ram_set_i(int addr, int subwordoffset, jamaica_int32 i) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[addr] = i;
+}
+
+
+void juniper_ram_set_ui(int addr, int subwordoffset, jamaica_uint32 ui) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[addr] = ui;
+}
+
+void juniper_ram_set_s(int addr, int subwordoffset, jamaica_int16 s) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
+	__juniper_ram_master_short[addr+subwordoffset] = s;
+}
+
+void juniper_ram_set_us(int addr, int subwordoffset, jamaica_uint16 us) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
+	__juniper_ram_master_short[addr+subwordoffset] = us;
+}
+
+void juniper_ram_set_b(int addr, int subwordoffset, jamaica_int8 b) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
+	__juniper_ram_master_char[addr+subwordoffset] = b;
+}
+
+void juniper_ram_set_ub(int addr, int subwordoffset, jamaica_uint8 ub) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
+	__juniper_ram_master_char[addr+subwordoffset] = ub;
+}
+
+void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#ifdef JUNIPER_SUPPORT_FLOATS
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
+	__juniper_ram_master_float[addr] = f;
+#endif
+}
+
+
+/*
+ * Jamaica stores arrays as trees when memory gets fragmented. When accessing an array, it is necessary
+ * to walk down the tree to the correct leaf first.
+ * byteoffset should be 0 if the array is storing 32-bit values, 1 for 16-bit, and 2 for 8-bit.
+ */
+int resolve_tree_array(int ref, int *idx, unsigned char byteoffset) {
+#ifdef INLINE_RESOLVE_TREE_ARRAY
+#pragma HLS INLINE
+#endif
+	int segment, ecx;
+	segment = ref + 4;
+	ecx = (__juniper_ram_master[ref + 3] & 0xF) * 3;
+	while(ecx != 0x0) {
+		segment = __juniper_ram_master[segment + SAR(*idx, LOBYTE(ecx + byteoffset))] / 4;
+		*idx = *idx - (SAR(*idx, LOBYTE(ecx + byteoffset)) << LOBYTE(ecx + byteoffset));
+		ecx = ecx - 0x3;
+	}
+	return segment;
+}
+
+
+jamaica_int8 jamaicaGC_GetArray8(jamaica_ref b, jamaica_int32 i) {
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 2);
+	return __juniper_ram_master_char[segment*4 + i];
+}
+
+void jamaicaGC_SetArray8(jamaica_ref b, jamaica_int32 i, jamaica_int8 v) {
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 2);
+	__juniper_ram_master_char[segment*4 + i] = v;
+}
+
+jamaica_int16 jamaicaGC_GetArray16(jamaica_ref b, jamaica_int32 i) {
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 1);
+	return __juniper_ram_master_short[segment*2 + i];
+}
+
+
+void jamaicaGC_SetArray16(jamaica_ref b, jamaica_int32 i, jamaica_int16 v) {
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 1);
+	__juniper_ram_master_short[segment*2 + i] = v;
+}
 
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i) {
-	//If a contiguous array:
-	//return __juniper_ram_master[b + 4 + i];
-	return 0;
-	//return b->data[i+4].i;
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 0);
+	return __juniper_ram_master[segment + i];
 }
 
-void jamaicaGC_SetArray32(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
+void jamaicaGC_SetArray32(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {
+#ifdef INLINE_ARRAY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int segment = resolve_tree_array(b, &i, 0);
+	__juniper_ram_master[segment + i] = v;
+}
+
+
+
 jamaica_int64 jamaicaGC_GetArray64(jamaica_ref b, jamaica_int32 i) {return 0;}
 void jamaicaGC_SetArray64(jamaica_ref b, jamaica_int32 i, jamaica_int64 v) {}
 jamaica_double jamaicaGC_GetArrayDouble(jamaica_ref b, jamaica_int32 i) {return 0.0;}
 void jamaicaGC_SetArrayDouble(jamaica_ref b, jamaica_int32 i, jamaica_double v) {}
 jamaica_float jamaicaGC_GetArrayFloat(jamaica_ref b, jamaica_int32 i) {return 0.0;}
 void jamaicaGC_SetArrayFloat(jamaica_ref b, jamaica_int32 i, jamaica_float v) {}
+
+
 jamaica_int32 jamaicaGC_GetArray32Ref(jamaica_ref b, jamaica_int32 i) {return (jamaica_int32) 0;}
 void jamaicaGC_SetArray32Ref(jamaica_ref b, jamaica_int32 i, jamaica_int32 v) {}
 
@@ -102,8 +269,7 @@ void jamaicaGC_SetRefArray(jamaica_thread *ct, jamaica_ref b, jamaica_int32 i, j
 jamaica_ref jamaicaGC_GetRefArray(jamaica_ref b, jamaica_int32 i) {return JAMAICA_NULL;}
 
 jamaica_int32 jamaicaGC_GetArrayLength(jamaica_ref b) {
-	//return __juniper_ram_master[b+JAMAICA_ARRAY_LENGTH_DEPTH] >> JAMAICA_ARRAY_LENGTH_SHIFT;
-	return 0;
+	return __juniper_ram_master[b+JAMAICA_ARRAY_LENGTH_DEPTH] >> JAMAICA_ARRAY_LENGTH_SHIFT;
 }
 
 

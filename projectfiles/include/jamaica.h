@@ -103,6 +103,8 @@ typedef enum
 
 
 //Arrays
+jamaica_int32 jamaicaGC_GetArrayLength(jamaica_ref b);
+
 jamaica_int8 jamaicaGC_GetArray8(jamaica_ref b, jamaica_int32 i);
 jamaica_int16 jamaicaGC_GetArray16(jamaica_ref b, jamaica_int32 i);
 jamaica_int32 jamaicaGC_GetArray32(jamaica_ref b, jamaica_int32 i);

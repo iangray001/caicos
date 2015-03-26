@@ -3,7 +3,7 @@
 #include "toplevel.h"
 #include <juniperoperations.h>
 
-#define VERSION 21
+#define VERSION 22
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -18,22 +18,22 @@ volatile float *__juniper_ram_master_float;
 
 int hls(int *slavea, int *slaveb, int *slavec, int *slaved) {
 
-/*
- * Bundle the different memory interfaces together into the same AXI Master interface
- * This uses slave offset mode, which allows each interface to be separately offset.
- * This is not what we want, but HLS only supports AXI master bundling if offsetting
- * is also used.
- */
+	/*
+	 * Bundle the different memory interfaces together into the same AXI Master interface
+	 * This uses slave offset mode, which allows each interface to be separately offset.
+	 * This is not what we want, but HLS only supports AXI master bundling if offsetting
+	 * is also used.
+	 */
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
 #ifdef JUNIPER_SUPPORT_FLOATS
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
 #endif
-/*
- * Place all control logic (and the offsets for the memory interfaces) on an AXI slave
- * interface.
- */
+	/*
+	 * Place all control logic (and the offsets for the memory interfaces) on an AXI slave
+	 * interface.
+	 */
 #pragma HLS INTERFACE s_axilite port=slavea bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=slaveb bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=slavec bundle=AXILiteS register
@@ -88,8 +88,20 @@ int hls(int *slavea, int *slaveb, int *slavec, int *slaved) {
 
 	//Call method ID slaveb
 	case OP_CALL:
-		int rv = __juniper_call(*slaveb);
-		break;
+		return __juniper_call(*slaveb);
+
+	//Test functions
+	case OP_TEST_ARRAY_LEN:
+		return JAMAICA_GET_ARRAY_LENGTH(*slavea);
+
+	case OP_TEST_ARRAY_SUM: {
+			int len = JAMAICA_GET_ARRAY_LENGTH(*slavea);
+			int total = 0;
+			for(int i = 0; i < len; i++) {
+				total += jamaicaGC_GetArray32(*slavea, i);
+			}
+			return total;
+		}
 	}
 
 	return 0;
