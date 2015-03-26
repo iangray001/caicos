@@ -16,7 +16,7 @@ volatile short *__juniper_ram_master_short;
 volatile float *__juniper_ram_master_float;
 #endif
 
-int hls(int *slavea, int *slaveb, int *slavec, int *slaved) {
+int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 
 	/*
 	 * Bundle the different memory interfaces together into the same AXI Master interface
@@ -34,16 +34,16 @@ int hls(int *slavea, int *slaveb, int *slavec, int *slaved) {
 	 * Place all control logic (and the offsets for the memory interfaces) on an AXI slave
 	 * interface.
 	 */
-#pragma HLS INTERFACE s_axilite port=slavea bundle=AXILiteS register
-#pragma HLS INTERFACE s_axilite port=slaveb bundle=AXILiteS register
-#pragma HLS INTERFACE s_axilite port=slavec bundle=AXILiteS register
-#pragma HLS INTERFACE s_axilite port=slaved bundle=AXILiteS register
+#pragma HLS INTERFACE s_axilite port=opid bundle=AXILiteS register
+#pragma HLS INTERFACE s_axilite port=arg1 bundle=AXILiteS register
+#pragma HLS INTERFACE s_axilite port=arg2 bundle=AXILiteS register
+#pragma HLS INTERFACE s_axilite port=arg3 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=return bundle=AXILiteS register
 
 	//Set up dummy __juniper_thread struct
 	create_jamaica_thread();
 
-	switch(*slavea) {
+	switch(*opid) {
 	case OP_VERSION: return VERSION;
 
 	/*
@@ -56,49 +56,49 @@ int hls(int *slavea, int *slaveb, int *slavec, int *slaved) {
 	 * val = JAMAICA_BLOCK_GET_DATA32((jamaica_ref) (0x80001000/4), 0);
 	 * because jamaica_refs are integer-indexed pointers.
 	 */
-	case OP_PEEK: return __juniper_ram_master[*slaveb];
-	case OP_PEEK_16: return __juniper_ram_master_short[*slaveb];
-	case OP_PEEK_8: return __juniper_ram_master_char[*slaveb];
+	case OP_PEEK: return __juniper_ram_master[*arg1];
+	case OP_PEEK_16: return __juniper_ram_master_short[*arg1];
+	case OP_PEEK_8: return __juniper_ram_master_char[*arg1];
 #ifdef JUNIPER_SUPPORT_FLOATS
-	case OP_PEEK_F: return __juniper_ram_master_float[*slaveb];
+	case OP_PEEK_F: return __juniper_ram_master_float[*arg1];
 #endif
 
-	//Write slavec to memory[slaveb]
+	//Write arg2 to memory[arg1]
 	case OP_POKE:
-		__juniper_ram_master[*slaveb] = *slavec;
+		__juniper_ram_master[*arg1] = *arg2;
 		return 0;
 	case OP_POKE_16:
-		__juniper_ram_master_short[*slaveb] = *slavec;
+		__juniper_ram_master_short[*arg1] = *arg2;
 		return 0;
 	case OP_POKE_8:
-		__juniper_ram_master_char[*slaveb] = *slavec;
+		__juniper_ram_master_char[*arg1] = *arg2;
 		return 0;
 #ifdef JUNIPER_SUPPORT_FLOATS
 	case OP_POKE_F:
-		__juniper_ram_master_float[*slaveb] = *slavec;
+		__juniper_ram_master_float[*arg1] = *arg2;
 		return 0;
 #endif
 
-	//Set argument[slaveb] to slavec
+	//Set argument[arg1] to arg2
 	case OP_WRITE_ARG:
-		if(*slaveb >= 0 && *slaveb < ARGS_MAX) {
-			__juniper_args[*slaveb] = *slavec;
+		if(*arg1 >= 0 && *arg1 < ARGS_MAX) {
+			__juniper_args[*arg1] = *arg2;
 		}
 		return 0;
 
-	//Call method ID slaveb
+	//Call method ID arg1
 	case OP_CALL:
-		return __juniper_call(*slaveb);
+		return __juniper_call(*arg1);
 
 	//Test functions
 	case OP_TEST_ARRAY_LEN:
-		return JAMAICA_GET_ARRAY_LENGTH(*slavea);
+		return JAMAICA_GET_ARRAY_LENGTH(*arg1);
 
 	case OP_TEST_ARRAY_SUM: {
-			int len = JAMAICA_GET_ARRAY_LENGTH(*slavea);
+			int len = JAMAICA_GET_ARRAY_LENGTH(*arg1);
 			int total = 0;
 			for(int i = 0; i < len; i++) {
-				total += jamaicaGC_GetArray32(*slavea, i);
+				total += jamaicaGC_GetArray32(*arg1, i);
 			}
 			return total;
 		}
