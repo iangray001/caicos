@@ -21,7 +21,7 @@ def get(filename):
 	if filename in cache:
 		return cache[filename]
 	else:
-		log().info("ASTCache parsing " + filename)
+		log().info("Parsing " + filename)
 		ast = utils.parse_jamaica_output(filename)
 		cache[filename] = ast
 		return ast

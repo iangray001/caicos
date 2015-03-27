@@ -38,7 +38,7 @@ def replace_node(orignode, newnode):
 				try:
 					arrayidx = int(arrayidx)
 				except:
-					print str(arrayidx) + " is not a valid array index"
+					raise CaicosError(str(arrayidx) + " is not a valid array index in replace_node")
 				
 				getattr(orignode.parent, arrayname)[arrayidx] = newnode
 			else:
@@ -74,8 +74,8 @@ def rewrite_RAM_structure_dereferences(ast):
 							
 							#Appropriate node found.
 							structmember = c[1][1].name #What was dereferenced ('i', 's', 'c', 'r', etc.)
-							log().info(str(node.coord) + ":")
-							log().info("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
+							log().debug(str(node.coord) + ":")
+							log().debug("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
 							rewrite_RAM_structure_dereferences(refch[1][1]) #Deal with ram accesses in the argument
 							functionargs = c_generator.CGenerator().visit(refch[1][1])
 							
@@ -86,7 +86,7 @@ def rewrite_RAM_structure_dereferences(ast):
 									arrayrefoffset = c_generator.CGenerator().visit(node.parent.children()[1][1])
 									nodetoreplace = node.parent
 								else:
-									log().error("Unsupported ArrayRef format detected")
+									raise CaicosError("Unsupported ArrayRef format detected")
 							else:
 								arrayrefoffset = 0
 								nodetoreplace = node
@@ -108,7 +108,7 @@ def rewrite_RAM_structure_dereferences(ast):
 										", " + pycparser.c_generator.CGenerator().visit(rvalue) + ")"
 								nodetoreplace = nodetoreplace.parent
 							
-							log().info("\tReplacement: " + call)
+							log().debug("\tReplacement: " + call)
 							replacementnode = c_ast.ID("name")
 							setattr(replacementnode, 'name', call)
 							replace_node(nodetoreplace, replacementnode)
