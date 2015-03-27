@@ -6,7 +6,7 @@ from pycparser import c_ast, c_generator
 import pycparser
 
 import astcache
-from utils import CaicosException, log
+from utils import CaicosError, log
 import utils
 
 
@@ -128,7 +128,7 @@ def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 	if not os.path.exists(c_output_base): return None
 
 	if len(parts) < 2:
-		raise CaicosException("Class name " + str(classname) + " appears to reference an unpackaged class, which is not supported by JamaicaBuilder or modern Java.")
+		raise CaicosError("Class name " + str(classname) + " appears to reference an unpackaged class, which is not supported by JamaicaBuilder or modern Java.")
 	
 	name = "PKG_"
 	for part in parts[:-1]:
@@ -208,11 +208,12 @@ def c_decl_node_of_java_sig(sig, c_output_base):
 		javanames_cache[astcache.get(filename)] = get_java_names_of_C_fns(astcache.get(filename))
 	
 	names = javanames_cache[astcache.get(filename)]
+	if not sig in names:
+		raise CaicosError("There is no method with the signature " + str(sig) + " + in file " + str(filename))
 	node = names[sig][1];
 	declnode = node.children()[0][1]
 	if not isinstance(declnode, c_ast.Decl):
-		log().error("Unexpected function declaration format in file " + str(filename) + " for signature " + str(sig))
-		return None
+		raise CaicosError("Unexpected function declaration format in file " + str(filename) + " for signature " + str(sig))
 	return declnode
 
 

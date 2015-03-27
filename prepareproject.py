@@ -10,7 +10,8 @@ from pycparser import c_ast
 
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, \
 	c_filename_of_java_method_sig, rewrite_source_file
-from utils import log
+from utils import log, CaicosError
+import juniperrewrites
 
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
@@ -24,18 +25,21 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		additionalsourcefiles: Iterable of abs paths for other source files that are required.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 	"""
-	files = [] + additionalsourcefiles
-	for sig in funcs:
-		f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
-		if f == None:
-			log().error("Could not find file for signature " + sig) 
-			sys.exit(-1)
-		if not f in files:
-			files = files + [f]
-	copy_project_files(outputdir, part, files)
-	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
-	write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
-	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
+	try:
+		files = [] + additionalsourcefiles
+		for sig in funcs:
+			f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
+			if f == None:
+				log().error("Could not find file for signature " + sig) 
+				sys.exit(-1)
+			if not f in files:
+				files = files + [f]
+		copy_project_files(outputdir, part, files)
+		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
+		write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
+		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
+	except CaicosError, e:
+		log().error("A critical error was encountered:\n\t" + str(e))
 
 
 def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
@@ -115,12 +119,10 @@ def get_paramlist_of_sig(sig, jamaicaoutputdir):
 	declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 	funcdecl = declnode.children()[0][1]
 	if not isinstance(funcdecl, c_ast.FuncDecl):
-		log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
-		return None
+		raise juniperrewrites.CaicosError("Unexpected function declaration format for signature " + str(sig) + ". Expected FuncDecl, got " + type(funcdecl).__name__)
 	paramlist = funcdecl.children()[0][1]
 	if not isinstance(paramlist, c_ast.ParamList):
-		log().error("Unexpected function declaration format for signature " + str(sig) + ". Expected ParamList, got " + type(funcdecl).__name__)
-		return None
+		raise juniperrewrites.CaicosError("Unexpected function declaration format for signature " + str(sig) + ". Expected ParamList, got " + type(funcdecl).__name__)
 	return paramlist
 	
 

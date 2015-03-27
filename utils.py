@@ -8,8 +8,10 @@ import pycparser
 theLogger = None
 
 
-
-class CaicosException(Exception):
+class CaicosError(Exception):
+	"""
+	Indicates that an unrecoverable error was observed during processing.
+	"""
 	pass
 
 
