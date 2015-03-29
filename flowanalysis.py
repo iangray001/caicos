@@ -2,7 +2,6 @@
 Created on 29 Mar 2015
 @author: ian
 '''
-import copy
 import os
 
 from pycparser import c_ast
@@ -25,122 +24,75 @@ def functions_defined_in_ast(ast):
 	return f.rv
 
 
-class BuildCallgraph():
-	"""
-	Starts at a given AST node and walks the AST finding all instances where a
-	FuncCall node is inside a FuncDef node. Creates a graph showing all the functions called from 
-	all functions that are defined inside the start node. 
 	
-	After construction, the scan is executed. This will relate FuncDef objects to FuncCall objects, 
-	not functions to functions. To resolve this, call resolve_calls.
+class ReachableFunctions():
 	"""
-	def __init__(self, startnode):
-		self.graph = {}
-		self.fns_in_current_node = []
-		self.startnode = startnode
-		self.scan_ast(('', self.startnode), None)
+	Starting at a given FuncDef node, recursively walks down the AST finding FuncCall nodes. For each node, attempts to
+	resolve that call into its corresponding FuncDef node. It does this by parsing all the C files in the provided
+	source folder, meaning that this could be very slow.
+	
+	This relies on the simple binding rules of C that all functions share the same namespace (no overloading). 
+	Whilst this is unlikely to work on all real code due to GCC extensions and the new C std supporting limited overloading, 
+	this will work on the output of Jamaica Builder which does not use any of this. 
+	"""
+	def __init__(self, startfndef, srcdir):
+		self.srcdir = srcdir
+		self.resolutioncache = {}
+		self.reachable_functions = set()
+		self.func_defs_seen = []
 		
-	def scan_ast(self, currentnode, caller):
-		currentcaller = caller
-		if isinstance(currentnode[1], c_ast.FuncDef):
-			currentcaller = currentnode
-			self.fns_in_current_node.append(currentnode[1])
-		elif isinstance(currentnode[1], c_ast.FuncCall):
-			if not currentcaller[1] in self.graph:
-				self.graph[currentcaller[1]] = []
-			self.graph[currentcaller[1]].append(currentnode[1])
-
-		for c in currentnode[1].children():
-			self.scan_ast(c, currentcaller)
-
-	def printgraph(self):
-		"""
-		Pretty print the output of the call graph
-		"""
-		for f in self.graph:
-			print f.decl.name + " (Defined: " + str(f.coord) + ")"
-			for c in self.graph[f]:
-				if isinstance(c, c_ast.FuncCall):
-					print "\t" + str(c.name.name) + " (Call point: " + str(c.coord) + ")"
-				elif isinstance(c, c_ast.FuncDef):
-					print "\t" + str(c.decl.name) + " (Defined: " + str(c.coord) + ")"
-				else:
-					print "\t" + str(c) + " (Location: " + str(c.coord) + ")"
+		self.find_reachable_functions(startfndef)
 		
-	def resolve_calls(self, jamaicaoutputdir):
+	
+	def resolve_call(self, call):
 		"""
-		When the call graph is built, it links FuncDef to FuncCall. This turns FuncCall into FuncDef
-		by leveraging the simplistic rules of C, that all functions share the same namespace and types
-		are not required for disambiguation. This is not sufficient for general purpose code, but will
-		be fine with the output of Jamaica builder, which is the intended use.
-		
-		This can cause a lot of parsing and will be slow, as it is essentially a dumb, slow, linker 
-		that is given no clue about where to look.
+		Given a FuncCall node, return the corresponding FuncDef node.
 		"""
-		resolved = {}
-		
-		def parse_files(callee):
+		def parse_files(calltofind):
 			"""
 			Parse all the .c files in the output directory looking for a suitable function definition.
 			Relies on ASTCache to avoid reparsing the same files again and again. 
 			"""
-			for srcfile in os.listdir(jamaicaoutputdir):
+			for srcfile in os.listdir(self.srcdir):
 				if srcfile.endswith(".c") and not srcfile.endswith("Main__.c"):
-					ast = astcache.get(os.path.join(jamaicaoutputdir, srcfile))
+					ast = astcache.get(os.path.join(self.srcdir, srcfile))
 					fns = functions_defined_in_ast(ast)
 					for fn in fns:
-						if fn.decl.name == callee.name.name:
+						if fn.decl.name == calltofind.name.name:
 							return fn
 			return None
 
-		for caller in self.graph:
-			listtoresolve = copy.copy(self.graph[caller]) #We will modify this list as we iterate so shallow copy it first
-			for callee in listtoresolve:
-				if isinstance(callee, c_ast.FuncCall): 
-					if not callee in resolved:
-						#Check the current file first
-						found = None
-						for fn in self.fns_in_current_node:
-							if fn.decl.name == callee.name.name:
-								resolved[callee] = fn
-								found = fn
-								break			
-						if found == None:
-							f = parse_files(callee)
-							if f == None:
-								raise CaicosError("Cannot find the definition of function: " + str(callee.name.name) + ". Called by " + str(caller.decl.name))
-							resolved[callee] = f
-					self.graph[caller].remove(callee)
-					self.graph[caller].append(resolved[callee])
+		#TODO: Check the current file first as an optimisation?
+		f = parse_files(call)
+		if f == None:
+			raise CaicosError("Cannot find the definition of function: " + str(call.name.name))
+		return f
 	
-	def reachable_functions(self, startfunc):
-		"""
-		Given a starting function (a FuncDef AST node), find all the functions reachable from it.
-		Returns a set containing, at least, the starting function.
-		"""
-		def reachable_functions_recurse(fn, rv):
-			if fn in rv: return rv
-			rv.add(fn)
-			if fn in self.graph:
-				for callee in self.graph[fn]:
-					rv.union(reachable_functions_recurse(callee, rv))
-			return rv
-		
-		if not isinstance(startfunc, c_ast.FuncDef): return None
-		if not startfunc in self.graph: return set([startfunc])
-		return reachable_functions_recurse(startfunc, set())
-	
-	
+	def find_reachable_functions(self, fndef):
+		#Prevent loops
+		if fndef in self.func_defs_seen:
+			return
+		self.func_defs_seen.append(fndef)
+			
+		#Find all calls in the function definition
+		callsfound = []
+		def search_for_fcall(node):
+			if isinstance(node, c_ast.FuncCall):
+				callsfound.append(node)
+			for c in node.children():
+				search_for_fcall(c[1])
+		search_for_fcall(fndef)
+
+		#Resolve the calls into function definitions
+		for call in callsfound:
+			if not call in self.resolutioncache: 
+				self.resolutioncache[call] = self.resolve_call(call)
+			self.reachable_functions.add(self.resolutioncache[call])
+			self.find_reachable_functions(self.resolutioncache[call])
 
 	
-def test_reachable_functions(ast):
-	bcg = BuildCallgraph(ast)
-	bcg.printgraph()
-	print
-	bcg.resolve_calls("/Users/ian/Dropbox/Java/juniperworkspace2/caicos/tests")
-	bcg.printgraph()
-	print
 	
+def test_reachable_functions(ast):
 	class FnVis(c_ast.NodeVisitor):
 		def visit_FuncDef(self, node):
 			if node.decl.name == "main":
@@ -148,11 +100,11 @@ def test_reachable_functions(ast):
 	fv = FnVis()
 	fv.visit(ast)
 	
-	
-	rfs = bcg.reachable_functions(fv.found)
+	rv = ReachableFunctions(fv.found, "/Users/ian/Dropbox/Java/juniperworkspace2/caicos/tests")
+
 	print "Reachable functions:"
 	files = set()
-	for fn in rfs: 
+	for fn in rv.reachable_functions: 
 		print "\t" + str(fn.decl.name) + " - " + str(fn.decl.coord.file)
 		files.add(fn.decl.coord.file)
 	print "Files: " + str(files)
