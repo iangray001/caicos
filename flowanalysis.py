@@ -40,8 +40,10 @@ class ReachableFunctions():
 		self.resolutioncache = {}
 		self.reachable_functions = set()
 		self.func_defs_seen = []
+		self.files = set()
 		
 		self.find_reachable_functions(startfndef)
+		self.get_files()
 		
 	
 	def resolve_call(self, call):
@@ -90,6 +92,13 @@ class ReachableFunctions():
 			self.reachable_functions.add(self.resolutioncache[call])
 			self.find_reachable_functions(self.resolutioncache[call])
 
+
+	def get_files(self):
+		"""
+		Work out the set of files that contains all the reachable source code.
+		"""
+		for fn in self.reachable_functions: 
+			self.files.add(fn.decl.coord.file)
 	
 	
 def test_reachable_functions(ast):
@@ -103,8 +112,6 @@ def test_reachable_functions(ast):
 	rv = ReachableFunctions(fv.found, "/Users/ian/Dropbox/Java/juniperworkspace2/caicos/tests")
 
 	print "Reachable functions:"
-	files = set()
 	for fn in rv.reachable_functions: 
 		print "\t" + str(fn.decl.name) + " - " + str(fn.decl.coord.file)
-		files.add(fn.decl.coord.file)
-	print "Files: " + str(files)
+	print "Files: " + str(rv.files)
