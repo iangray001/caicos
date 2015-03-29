@@ -15,17 +15,6 @@ RAM_GET_NAME = 'juniper_ram_get_'
 RAM_SET_NAME = 'juniper_ram_set_'
 
 
-def add_parent_links(ast):
-	"""
-	Iterate over an AST annotating every node with a link to its parent node.
-	"""
-	def recurse(node, parent):
-		node.parent = parent
-		for _, c in node.children():
-			recurse(c, node)
-	recurse(ast, None)
-
-
 def replace_node(orignode, newnode):
 	"""
 	Replace the node orignode with the node newnode
@@ -230,7 +219,6 @@ def rewrite_source_file(inputfile, outputfile):
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
 	"""
 	ast = astcache.get(inputfile)
-	add_parent_links(ast)
 	rewrite_RAM_structure_dereferences(ast)
 	utils.write_ast_to_file(ast, outputfile)
 

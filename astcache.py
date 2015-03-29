@@ -23,6 +23,7 @@ def get(filename):
 	else:
 		log().info("Parsing " + filename)
 		ast = utils.parse_jamaica_output(filename)
+		add_parent_links(ast)
 		cache[filename] = ast
 		return ast
 		
@@ -34,6 +35,16 @@ def clear():
 	cache.clear()
 
 	
+def add_parent_links(ast):
+	"""
+	Iterate over an AST annotating every node with a link to its parent node.
+	"""
+	def recurse(node, parent):
+		node.parent = parent
+		for _, c in node.children():
+			recurse(c, node)
+	recurse(ast, None)
+
 
 
 	
