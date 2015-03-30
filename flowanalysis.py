@@ -2,12 +2,11 @@
 Created on 29 Mar 2015
 @author: ian
 '''
-import os
 
 from pycparser import c_ast
 
 import astcache
-from utils import log, CaicosError
+from utils import log
 
 """
 Some function calls can be ignored when attempting to resolve FuncCalls to FuncDefs because
@@ -15,7 +14,7 @@ we will not ever find their implementation. i.e. They are in the standard librar
 """
 calls_to_ignore = ["printf"]
 
-
+resolutioncache = {}
 
 
 def functions_defined_in_ast(ast):
@@ -42,10 +41,12 @@ class ReachableFunctions():
 	This relies on the simple binding rules of C that all functions share the same namespace (no overloading). 
 	Whilst this is unlikely to work on all real code due to GCC extensions and the new C std supporting limited overloading, 
 	this will work on the output of Jamaica Builder which does not use any of this. 
+	
+	Note that this class uses a global resolution cache, so that resolutions can be reused through the project preparation 
+	process. 
 	"""
 	def __init__(self, startfndef, filestosearch):
 		self.filestosearch = filestosearch
-		self.resolutioncache = {}
 		self.reachable_functions = set()
 		self.func_defs_seen = []
 		self.files = set()
@@ -62,7 +63,7 @@ class ReachableFunctions():
 			"""
 			Parse all the .c files provided looking for a suitable function definition.
 			Relies on ASTCache to avoid reparsing the same files again and again. 
-			"""		
+			"""
 			log().info("Resolving call to: " + call.name.name)
 			
 			for srcfile in self.filestosearch:
@@ -73,10 +74,10 @@ class ReachableFunctions():
 						return fn
 			return None
 
-		#TODO: Check the current file first as an optimisation?
 		f = parse_files(call)
 		if f == None:
-			raise CaicosError("Cannot find the definition of function: " + str(call.name.name))
+			log().warning("Cannot find the definition of function: " + str(call.name.name))
+			return None
 		return f
 	
 	def find_reachable_functions(self, fndef):
@@ -96,11 +97,13 @@ class ReachableFunctions():
 
 		#Resolve the calls into function definitions
 		for call in callsfound:
-			if not call.name.name in calls_to_ignore:			
-				if not call in self.resolutioncache: 
-					self.resolutioncache[call] = self.resolve_call(call)
-				self.reachable_functions.add(self.resolutioncache[call])
-				self.find_reachable_functions(self.resolutioncache[call])
+			callname = str(call.name.name)
+			if not callname in calls_to_ignore:			
+				if not callname in resolutioncache:
+					resolutioncache[callname] = self.resolve_call(call)
+				if resolutioncache[callname] != None:
+					self.reachable_functions.add(resolutioncache[callname])
+					self.find_reachable_functions(resolutioncache[callname])
 
 
 	def get_files(self):
