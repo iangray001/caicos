@@ -16,7 +16,7 @@ import juniperrewrites
 from utils import log, CaicosError, deglob_file
 
 
-def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
+def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, overridesourcefiles = None):
 	"""
 	Build a Vivado HLS project that contains the hardware for a set of Java functions
 	
@@ -26,37 +26,43 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
 		additionalsourcefiles: Iterable of abs paths for other source files that are required.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
+		overridesourcefiles: A list of absolute file paths. If provided then flow analysis is not performed and 
+			only these files (plus additionalsourcefiles) will be included in the output project.
 	"""
 	try:
-		for sig in funcs:
-			funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-
-			#The order of provided files will hugely affect the execution time
-			#List to preserve ordering. Could switch to an ordered set 
-			filestosearch = []
-			
-			#First, put the originating file as this is the most likely source
-			filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
-			
-			#Then the FPGA porting layer
-			cwd = os.path.dirname(os.path.realpath(__file__))	
-			filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
-			
-			#Then the java.lang package
-			filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
-			
-			#Then the other output C files and additionalsourcefiles
-			for f in os.listdir(jamaicaoutputdir):
-				ffullpath = os.path.join(jamaicaoutputdir, f)
-				if ffullpath.endswith(".c") and (not ffullpath.endswith("Main__.c")) and not ffullpath in filestosearch: 
-					filestosearch.append(ffullpath)
+		if overridesourcefiles == None:
+			for sig in funcs:
+				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+	
+				#The order of provided files will hugely affect the execution time
+				#List to preserve ordering. Could switch to an ordered set 
+				filestosearch = []
 				
-			for f in additionalsourcefiles: 
-				if not f in filestosearch: filestosearch.append(f)
+				#First, put the originating file as this is the most likely source
+				filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
+				
+				#Then the FPGA porting layer
+				cwd = os.path.dirname(os.path.realpath(__file__))	
+				filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+				
+				#Then the java.lang package
+				filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
+				
+				#Then the other output C files and additionalsourcefiles
+				for f in os.listdir(jamaicaoutputdir):
+					ffullpath = os.path.join(jamaicaoutputdir, f)
+					if ffullpath.endswith(".c") and (not ffullpath.endswith("Main__.c")) and not ffullpath in filestosearch: 
+						filestosearch.append(ffullpath)
+					
+				for f in additionalsourcefiles: 
+					if not f in filestosearch: filestosearch.append(f)
+	
+				rf = ReachableFunctions(funcdecl.parent, filestosearch)
+				filestobuild = rf.files
+		else:
+			filestobuild = overridesourcefiles + additionalsourcefiles
 
-			rf = ReachableFunctions(funcdecl.parent, filestosearch)
-			
-		copy_project_files(outputdir, part, rf.files)
+		copy_project_files(outputdir, part, filestobuild)
 		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 		write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
 		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
