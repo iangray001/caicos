@@ -24,6 +24,7 @@ def log():
 		formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
 		ch.setFormatter(formatter)
 		theLogger.addHandler(ch)
+		theLogger.setLevel(logging.INFO)
 	return theLogger
 
 
