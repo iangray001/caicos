@@ -8,10 +8,12 @@ import sys
 
 from pycparser import c_ast
 
+from flowanalysis import ReachableFunctions
+import flowanalysis
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, \
 	c_filename_of_java_method_sig, rewrite_source_file
-from utils import log, CaicosError
 import juniperrewrites
+from utils import log, CaicosError, deglob_file
 
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
@@ -26,15 +28,35 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 	"""
 	try:
-		files = [] + additionalsourcefiles
 		for sig in funcs:
-			f = c_filename_of_java_method_sig(sig, jamaicaoutputdir)
-			if f == None:
-				log().error("Could not find file for signature " + sig) 
-				sys.exit(-1)
-			if not f in files:
-				files = files + [f]
-		copy_project_files(outputdir, part, files)
+			funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+
+			#The order of provided files will hugely affect the execution time
+			#List to preserve ordering. Could switch to an ordered set 
+			filestosearch = []
+			
+			#First, put the originating file as this is the most likely source
+			filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
+			
+			#Then the FPGA porting layer
+			cwd = os.path.dirname(os.path.realpath(__file__))	
+			filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+			
+			#Then the java.lang package
+			filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
+			
+			#Then the other output C files and additionalsourcefiles
+			for f in os.listdir(jamaicaoutputdir):
+				ffullpath = os.path.join(jamaicaoutputdir, f)
+				if ffullpath.endswith(".c") and (not ffullpath.endswith("Main__.c")) and not ffullpath in filestosearch: 
+					filestosearch.append(ffullpath)
+				
+			for f in additionalsourcefiles: 
+				if not f in filestosearch: filestosearch.append(f)
+
+			rf = ReachableFunctions(funcdecl.parent, filestosearch)
+			
+		copy_project_files(outputdir, part, rf.files)
 		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 		write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
 		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
