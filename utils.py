@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import sys
 
 import pycparser
 
@@ -19,7 +20,7 @@ def log():
 	global theLogger
 	if theLogger == None:
 		theLogger = logging.getLogger("Caicos")
-		ch = logging.StreamHandler()
+		ch = logging.StreamHandler(sys.stdout)
 		ch.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
 		ch.setFormatter(formatter)
