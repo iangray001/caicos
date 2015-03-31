@@ -2,16 +2,20 @@
 Created on 29 Mar 2015
 @author: ian
 '''
-
-from pycparser import c_ast
-
-import astcache
-from utils import log
-
 """
 Some function calls can be ignored when attempting to resolve FuncCalls to FuncDefs because
 we will not ever find their implementation. i.e. They are in the standard library.
 """
+
+import os
+
+from pycparser import c_ast
+import pycparser
+
+import astcache
+from utils import log
+
+
 calls_to_ignore = ["printf"]
 
 resolutioncache = {}
@@ -97,13 +101,16 @@ class ReachableFunctions():
 
 		#Resolve the calls into function definitions
 		for call in callsfound:
-			callname = str(call.name.name)
-			if not callname in calls_to_ignore:			
-				if not callname in resolutioncache:
-					resolutioncache[callname] = self.resolve_call(call)
-				if resolutioncache[callname] != None:
-					self.reachable_functions.add(resolutioncache[callname])
-					self.find_reachable_functions(resolutioncache[callname])
+			if isinstance(call.name, c_ast.Cast):
+				log().warning("A cast to a function type detected at " + os.path.basename(call.coord.file) + ":" + str(call.coord.line) + ". Flow analysis may not be complete.")
+			else:
+				callname = str(call.name.name)
+				if not callname in calls_to_ignore:			
+					if not callname in resolutioncache:
+						resolutioncache[callname] = self.resolve_call(call)
+					if resolutioncache[callname] != None:
+						self.reachable_functions.add(resolutioncache[callname])
+						self.find_reachable_functions(resolutioncache[callname])
 
 
 	def get_files(self):
