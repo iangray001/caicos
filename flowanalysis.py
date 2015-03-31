@@ -10,13 +10,38 @@ we will not ever find their implementation. i.e. They are in the standard librar
 import os
 
 from pycparser import c_ast
-import pycparser
-
 import astcache
 from utils import log
 
 
-calls_to_ignore = ["printf"]
+calls_to_ignore = ["printf", "sprintf",
+
+#Many Math.h functions are provided by HLS
+	"sin", "cos", "tan", "asin", "acos", "atan", "atan2", 
+	"sinh", "cosh", "tanh", 
+	"sinf", "cosf", "tanf", "asinf", "acosf", "atanf", "atan2f", 
+	"fabsf", "floorf", "ceilf", "sqrtf", "powf", "logf", "expf", "rintf", 
+	"fabs", "floor", "ceil", "sqrt", "pow", "log", "exp", "rint",
+	
+#No need to resolve in the porting layer as we will be including that anyway
+	"jamaicaThreads_checkCStackOverflow",
+	"jamaicaGC_PlainAllocHeadBlock",
+	"jamaicaInterpreter_allocSimpleArray",
+	"jamaicaInterpreter_allocJavaObject",
+	"jamaicaGC_GetArray32", "jamaicaGC_SetArray32", 
+	"jamaicaGC_GetArray16", "jamaicaGC_SetArray16", 
+	"jamaicaGC_GetArray8", "jamaicaGC_SetArray8", 
+	"jamaicaGC_GetRefArray", "jamaicaGC_SetRefArray",
+	"resolve_tree_array",
+	"jamaica_throwNullPtrExc", "jamaica_throwIncompClassChangeErr", "jamaica_throwAbstrMethodErr",
+	"jamaica_throwClassCastExc", "jamaica_throwArrIdxOutOfBndsExc", "jamaica_throwArrIdxOutOfBndsExcMsg",
+	"jamaica_throwOutOfMemErr", "jamaica_throwNegArrSzExc", "jamaica_throwArithmExc",
+	"jamaica_throwIllMonitorStateExc", "jamaica_throwArrStoreExc", "jamaica_throwNoClassDefFndErr"
+	"jamaica_throwInterruptedExc", "jamaica_throwInternalErr", "jamaica_throwInternalErrMsg"
+	"jamaica_throwInternalErrcmsg", "jamaica_throwIllArgExccmsg", "jamaica_throwStringIdxOutOfBndsExc"
+	"jamaica_throwIllAssgmtErr", "jamaica_throwStackOvrflwErr",
+]
+
 
 resolutioncache = {}
 
