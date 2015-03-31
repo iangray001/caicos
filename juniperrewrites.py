@@ -198,7 +198,7 @@ def c_decl_node_of_java_sig(sig, c_output_base):
 	
 	names = javanames_cache[astcache.get(filename)]
 	if not sig in names:
-		raise CaicosError("There is no method with the signature " + str(sig) + " + in file " + str(filename))
+		raise CaicosError("There is no method with the signature " + str(sig) + " in file " + str(filename))
 	node = names[sig][1];
 	declnode = node.children()[0][1]
 	if not isinstance(declnode, c_ast.Decl):
