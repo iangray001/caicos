@@ -30,7 +30,11 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 			only these files (plus additionalsourcefiles) will be included in the output project.
 	"""
 	try:
-		if overridesourcefiles == None:
+		filestobuild = []
+		cwd = os.path.dirname(os.path.realpath(__file__))	
+		filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+		
+		if overridesourcefiles == None:			
 			for sig in funcs:
 				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 	
@@ -42,7 +46,6 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 				filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
 				
 				#Then the FPGA porting layer
-				cwd = os.path.dirname(os.path.realpath(__file__))	
 				filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
 				
 				#Then the java.lang package
@@ -58,9 +61,12 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 					if not f in filestosearch: filestosearch.append(f)
 	
 				rf = ReachableFunctions(funcdecl.parent, filestosearch)
-				filestobuild = rf.files
+		
+				for f in rf.files:
+					if not f in filestobuild: filestobuild.append(f)
 		else:
-			filestobuild = overridesourcefiles + additionalsourcefiles
+			filestobuild.append(overridesourcefiles)
+			filestobuild.append(additionalsourcefiles)
 
 		copy_project_files(outputdir, part, filestobuild)
 		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
