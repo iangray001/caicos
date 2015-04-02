@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include "toplevel.h"
 #include <juniperoperations.h>
+#include <fpgaporting.h>
 
-#define VERSION 22
+#define VERSION 25
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -12,9 +13,6 @@ int __juniper_args[ARGS_MAX];
 volatile int *__juniper_ram_master;
 volatile char *__juniper_ram_master_char;
 volatile short *__juniper_ram_master_short;
-#ifdef JUNIPER_SUPPORT_FLOATS
-volatile float *__juniper_ram_master_float;
-#endif
 
 int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 
@@ -27,9 +25,7 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master_char bundle=MAXI offset=slave
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master_short bundle=MAXI offset=slave
-#ifdef JUNIPER_SUPPORT_FLOATS
-#pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
-#endif
+
 	/*
 	 * Place all control logic (and the offsets for the memory interfaces) on an AXI slave
 	 * interface.
@@ -56,27 +52,27 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 	 * val = JAMAICA_BLOCK_GET_DATA32((jamaica_ref) (0x80001000/4), 0);
 	 * because jamaica_refs are integer-indexed pointers.
 	 */
-	case OP_PEEK: return __juniper_ram_master[*arg1];
-	case OP_PEEK_16: return __juniper_ram_master_short[*arg1];
 	case OP_PEEK_8: return __juniper_ram_master_char[*arg1];
-#ifdef JUNIPER_SUPPORT_FLOATS
-	case OP_PEEK_F: return __juniper_ram_master_float[*arg1];
-#endif
+	case OP_PEEK_16: return __juniper_ram_master_short[*arg1];
+	case OP_PEEK_32: return __juniper_ram_master[*arg1];
 
 	//Write arg2 to memory[arg1]
-	case OP_POKE:
-		__juniper_ram_master[*arg1] = *arg2;
+	case OP_POKE_8:
+		__juniper_ram_master_char[*arg1] = *arg2;
 		return 0;
 	case OP_POKE_16:
 		__juniper_ram_master_short[*arg1] = *arg2;
 		return 0;
-	case OP_POKE_8:
-		__juniper_ram_master_char[*arg1] = *arg2;
+	case OP_POKE_32:
+		__juniper_ram_master[*arg1] = *arg2;
 		return 0;
 #ifdef JUNIPER_SUPPORT_FLOATS
-	case OP_POKE_F:
-		__juniper_ram_master_float[*arg1] = *arg2;
-		return 0;
+	case OP_POKE_F: {
+		int temp = *arg2;
+		float f = *(float*)&temp;
+		f = f + 0.1f;
+		__juniper_ram_master[*arg1] = *(int *)&f;
+	}
 #endif
 
 	//Set argument[arg1] to arg2

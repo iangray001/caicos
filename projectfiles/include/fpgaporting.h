@@ -11,6 +11,7 @@
 #define INLINE_MEMORY_ACCESS_FUNCTIONS
 #define INLINE_RESOLVE_TREE_ARRAY
 #define INLINE_ARRAY_ACCESS_FUNCTIONS
+#define JUNIPER_SUPPORT_FLOATS
 
 //Prototypes of porting functions
 int __juniper_call(int call_id);

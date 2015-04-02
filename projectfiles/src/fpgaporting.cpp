@@ -106,8 +106,9 @@ jamaica_float juniper_ram_get_f(int addr, int subwordoffset) {
 #pragma HLS INLINE
 #endif
 #ifdef JUNIPER_SUPPORT_FLOATS
-#pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
-	return __juniper_ram_master_float[addr];
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	int temp = __juniper_ram_master[addr];
+	return *(float *)&temp;
 #else
 	return 0;
 #endif
@@ -176,8 +177,8 @@ void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f) {
 #pragma HLS INLINE
 #endif
 #ifdef JUNIPER_SUPPORT_FLOATS
-#pragma HLS INTERFACE m_axi port=__juniper_ram_master_float bundle=MAXI offset=slave
-	__juniper_ram_master_float[addr] = f;
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[addr] = *(int *)&f;
 #endif
 }
 
@@ -273,18 +274,22 @@ jamaica_int32 jamaicaGC_GetArrayLength(jamaica_ref b) {
 }
 
 
+
+
+/**
+ * Currently these functions are nulled because either they will not be called from hardware,
+ * or they are not required to do anything.
+ */
+
 jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs) {
 	return (jamaica_ref) 0;
 }
-
 
 jamaica_bool jamaicaGC_haltFunction(const char *function, const char *filename, unsigned long lineNb, const char *text) {
 	return TRUE;
 }
 
-
 jamaica_ref jamaicaInterpreter_allocJavaObject(jamaica_thread *ct,jamaica_ref cl) {
-	//TODO whut? How is a single jamaica_ref enough information?!
 	return JAMAICA_NULL;
 }
 
@@ -297,9 +302,12 @@ jamaica_ref jamaicaInterpreter_allocMultiArray(jamaica_thread *ct,jamaica_int32 
 }
 
 jamaica_int32 jamaicaInterpreter_initialize_class_helper(jamaica_thread *ct, jamaica_ref clazz, jamaica_int32  startpc) {
-	//TODO What does this do?
 	return 0;
 }
+
+void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj) {}
+void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj) {}
+
 
 jamaica_int32 jamaicaInterpreter_castDoubleToInteger(jamaica_double d) {
 	//TODO Test
