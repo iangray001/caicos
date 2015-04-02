@@ -20,7 +20,7 @@ else
 fi
 
 if [ "clean" = "$1" ]; then
-	echo "Cleaning remote directory..."
+	echo "Cleaning remote directory $HOSTNAMETEMP/$PROJECT..."
 	ssh -q $HOSTNAME "rm -rf $HOSTNAMETEMP/$PROJECT"
 fi
 
