@@ -40,6 +40,7 @@ calls_to_ignore = ["printf", "sprintf",
 	"jamaica_throwInterruptedExc", "jamaica_throwInternalErr", "jamaica_throwInternalErrMsg"
 	"jamaica_throwInternalErrcmsg", "jamaica_throwIllArgExccmsg", "jamaica_throwStringIdxOutOfBndsExc"
 	"jamaica_throwIllAssgmtErr", "jamaica_throwStackOvrflwErr",
+	"jamaicaInterpreter_enterMonitor", "jamaicaInterpreter_exitMonitor",
 ]
 
 
