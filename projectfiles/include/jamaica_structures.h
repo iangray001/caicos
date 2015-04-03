@@ -27,6 +27,9 @@ struct jamaica_VM {
 struct jamaica_thread {
 	jamaica_Mutator m;
 	struct jamaica_VM *vm;
+	jamaica_int32 id;
+	jamaica_int32 f;
+	jamaica_ref cT;
 	jamaica_ref calledMethod;
 	jamaica_int32 javaStackSize;
 	volatile jamaica_bool plainAlloc;
