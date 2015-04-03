@@ -149,6 +149,13 @@ class ReachableFunctions():
 		for fn in self.reachable_functions: 
 			self.files.add(fn.decl.coord.file)
 	
+
+	def __str__(self):
+		s = ""
+		for f in self.reachable_functions:
+			s = s + str(f.decl.name) + ": " + str(f.coord.file) + "\n"
+		return s
+	
 	
 
 def get_files_to_search(sig, jamaicaoutputdir):

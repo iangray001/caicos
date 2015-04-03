@@ -30,6 +30,8 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		cwd = os.path.dirname(os.path.realpath(__file__))	
 		filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
 		
+		all_reachable_functions = []
+		
 		if overridesourcefiles == None:			
 			for sig in funcs:
 				filestosearch = get_files_to_search(sig, jamaicaoutputdir)
@@ -40,14 +42,24 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	
 				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 				rf = ReachableFunctions(funcdecl.parent, filestosearch)
+				
+				#Don't forget to include the starting point
+				all_reachable_functions.append(funcdecl.parent)
 		
 				for f in rf.files:
 					if not f in filestobuild: filestobuild.append(f)
+				for f in rf.reachable_functions:
+					if not f in all_reachable_functions: all_reachable_functions.append(f)
+				
+			log().info("All reachable functions:")
+			for f in all_reachable_functions:
+				log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
+			copy_project_files(outputdir, part, filestobuild, all_reachable_functions)
 		else:
 			filestobuild.append(overridesourcefiles)
 			filestobuild.append(additionalsourcefiles)
-
-		copy_project_files(outputdir, part, filestobuild)
+			copy_project_files(outputdir, part, filestobuild)
+			
 		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 		write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
 		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
@@ -55,11 +67,15 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		log().error("A critical error was encountered:\n\t" + str(e))
 
 
-def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
+def copy_project_files(targetdir, fpgapartname, extrasourcefiles, reachable_functions = None):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
 	extrasourcefiles is an array of absolute file paths and will be added to the HLS tcl script as source files
+	
+	If reachable_functions != None, then when jamaica builder output files are scanned they will have
+	unreachable functions trimmed from them. If reachable_functions is None, then the entire file will be
+	copied. 
 	"""
 	def mkdir(d): 
 		if not os.path.exists(d): os.makedirs(d);
@@ -92,7 +108,7 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles):
 			rename the C source to CPP. 
 			"""
 			targetfile = os.path.splitext(targetfile)[0] + ".cpp"
-			rewrite_source_file(f, targetfile)
+			rewrite_source_file(f, targetfile, reachable_functions)
 	
 
 	

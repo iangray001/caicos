@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 
 from pycparser import c_ast, c_generator
 import pycparser
@@ -9,11 +8,11 @@ import astcache
 from utils import CaicosError, log
 import utils
 
-
 RAM_NAME = '__juniper_ram_master'
 RAM_GET_NAME = 'juniper_ram_get_'
 RAM_SET_NAME = 'juniper_ram_set_'
 
+logreplacements = False
 
 def replace_node(orignode, newnode):
 	"""
@@ -63,8 +62,9 @@ def rewrite_RAM_structure_dereferences(ast):
 							
 							#Appropriate node found.
 							structmember = c[1][1].name #What was dereferenced ('i', 's', 'c', 'r', etc.)
-							log().debug(str(node.coord) + ":")
-							log().debug("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
+							if logreplacements: 
+								log().debug(str(node.coord) + ":")
+								log().debug("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
 							rewrite_RAM_structure_dereferences(refch[1][1]) #Deal with ram accesses in the argument
 							functionargs = c_generator.CGenerator().visit(refch[1][1])
 							
@@ -97,7 +97,7 @@ def rewrite_RAM_structure_dereferences(ast):
 										", " + pycparser.c_generator.CGenerator().visit(rvalue) + ")"
 								nodetoreplace = nodetoreplace.parent
 							
-							log().debug("\tReplacement: " + call)
+							if logreplacements: log().debug("\tReplacement: " + call)
 							replacementnode = c_ast.ID("name")
 							setattr(replacementnode, 'name', call)
 							replace_node(nodetoreplace, replacementnode)
@@ -214,12 +214,30 @@ def c_prototype_of_java_sig(sig, c_output_base):
 	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base)) + ";"
 	
 
-def rewrite_source_file(inputfile, outputfile):
+def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
+	
+	If reachable_functions != None, then unreachable functions will be trimmed.
 	"""
+	def is_funcdef_in_reachable_list(funcdef):
+		for r in reachable_functions:
+			if r.coord.file == inputfile and r.decl.name == funcdef.decl.name:
+				return True
+		return False
+	
 	ast = astcache.get(inputfile)
 	rewrite_RAM_structure_dereferences(ast)
+		
+	if reachable_functions != None:
+		for c in ast.children():
+			if isinstance(c[1], c_ast.FuncDef):
+				if not is_funcdef_in_reachable_list(c[1]):
+					log().debug("Trimming function definition " + str(c[1].decl.name) + " from " + os.path.basename(inputfile))
+					replace_node(c[1], c_ast.ID(""))
+
 	utils.write_ast_to_file(ast, outputfile)
 
 	
+
+		

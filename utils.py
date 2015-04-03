@@ -21,11 +21,10 @@ def log():
 	if theLogger == None:
 		theLogger = logging.getLogger("Caicos")
 		ch = logging.StreamHandler(sys.stdout)
-		ch.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
 		ch.setFormatter(formatter)
 		theLogger.addHandler(ch)
-		theLogger.setLevel(logging.INFO)
+		theLogger.setLevel(logging.WARN) #This is the default log level. Can be changed in scripts if necessary.
 	return theLogger
 
 
