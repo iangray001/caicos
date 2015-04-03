@@ -212,9 +212,11 @@ void jamaicaScheduler_syncPointFull(jamaica_thread *ct);
 jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs);
 void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj);
 void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj);
+jamaica_ref jamaicaInterpreter_getInterfaceMethod(jamaica_thread *ct, jamaica_ref target, jamaica_ref method);
 
 
 //Exceptions
+void jamaica_throw_class(jamaica_thread *ct, jamaica_ref clazz, jamaica_ref msg);
 void jamaica_throwNullPtrExc(jamaica_thread *ct);
 void jamaica_throwIncompClassChangeErr(jamaica_thread *ct);
 void jamaica_throwAbstrMethodErr(jamaica_thread *ct);
@@ -235,7 +237,13 @@ void jamaica_throwIllArgExccmsg(jamaica_thread *ct, const char *msg);
 void jamaica_throwStringIdxOutOfBndsExc(jamaica_thread *ct, jamaica_int32 index, jamaica_int32 lowerBound, jamaica_int32  upperBound);
 void jamaica_throwIllAssgmtErr(jamaica_thread *ct);
 void jamaica_throwStackOvrflwErr(jamaica_thread *ct);
+void jamaicaExceptions_throw(jamaica_thread *ct, jamaica_ref exception);
+void jamaica_clearRefsOnExc(jamaica_thread *ct, jamaica_int32 tp);
+void jamaica_propagate_exception(jamaica_thread *ct);
 
+#define JAMAICA_NATIVE_ON_LONGJUMP(jmp) 0
+#define JAMAICA_NATIVE_LONGJUMP(jmp) do {} while(0)
+#define JAMAICA_LONG_JUMP_BUF_TO_INDEX(ct,longJumpBuffer) ((jamaica_int32) 0)
 
 //Macros to hide unused variable warnings
 #define JAMAICA_VARIABLE_UNUSED(name) do {(void)(name);} while (0)

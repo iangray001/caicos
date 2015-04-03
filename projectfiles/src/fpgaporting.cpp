@@ -338,8 +338,22 @@ jamaica_int32 jamaicaInterpreter_initialize_class_helper(jamaica_thread *ct, jam
 	return 0;
 }
 
-void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj) {}
-void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj) {}
+void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj) {
+
+}
+
+void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj) {
+
+}
+
+/*
+ * This is currently a problem because even if we could do the resolution, HLS cannot call an arbitrary function pointer.
+ */
+jamaica_ref jamaicaInterpreter_getInterfaceMethod(jamaica_thread *ct, jamaica_ref target, jamaica_ref method) {
+	return 0;
+}
+
+
 
 
 jamaica_int32 jamaicaInterpreter_castDoubleToInteger(jamaica_double d) {
@@ -372,6 +386,10 @@ void jamaicaScheduler_syncPointFull(jamaica_thread *ct) {
  */
 //#define CAICOS_EXCEPTIONPRINT(s) printf(s);
 #define CAICOS_EXCEPTIONPRINT(s)
+void jamaica_clearRefsOnExc(jamaica_thread *ct, jamaica_int32 tp) {}
+void jamaica_propagate_exception(jamaica_thread *ct) {}
+void jamaicaExceptions_throw(jamaica_thread *ct, jamaica_ref exception) {CAICOS_EXCEPTIONPRINT("jamaicaExceptions_throw")}
+void jamaica_throw_class(jamaica_thread *ct, jamaica_ref clazz, jamaica_ref msg) {CAICOS_EXCEPTIONPRINT("jamaica_throw_class\n")}
 void jamaica_throwNullPtrExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwNullPtrExc\n")}
 void jamaica_throwIncompClassChangeErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwIncompClassChangeErr\n")}
 void jamaica_throwAbstrMethodErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwAbstrMethodErr\n")}
@@ -393,7 +411,7 @@ void jamaica_throwStringIdxOutOfBndsExc(jamaica_thread *ct, jamaica_int32 index,
 void jamaica_throwIllAssgmtErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwIllAssgmtErr\n")}
 void jamaica_throwStackOvrflwErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwStackOvrflwErr\n")}
 
-void jamaicaExceptions_throw(jamaica_thread *ct, jamaica_ref exception) {CAICOS_EXCEPTIONPRINT("jamaicaExceptions_throw")}
+
 
 /*INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct)
 {
