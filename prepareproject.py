@@ -4,16 +4,12 @@ build_from_functions is the main function that should be called to perform the e
 """
 
 import os, shutil
-import sys
 
 from pycparser import c_ast
-
-from flowanalysis import ReachableFunctions
-import flowanalysis
-from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, \
-	c_filename_of_java_method_sig, rewrite_source_file
+from flowanalysis import ReachableFunctions, get_files_to_search
+from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
-from utils import log, CaicosError, deglob_file
+from utils import log, CaicosError
 
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, overridesourcefiles = None):
@@ -36,30 +32,13 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		
 		if overridesourcefiles == None:			
 			for sig in funcs:
-				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-	
-				#The order of provided files will hugely affect the execution time
-				#List to preserve ordering. Could switch to an ordered set 
-				filestosearch = []
+				filestosearch = get_files_to_search(sig, jamaicaoutputdir)
 				
-				#First, put the originating file as this is the most likely source
-				filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
-				
-				#Then the FPGA porting layer
-				filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
-				
-				#Then the java.lang package
-				filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
-				
-				#Then the other output C files and additionalsourcefiles
-				for f in os.listdir(jamaicaoutputdir):
-					ffullpath = os.path.join(jamaicaoutputdir, f)
-					if ffullpath.endswith(".c") and (not ffullpath.endswith("Main__.c")) and not ffullpath in filestosearch: 
-						filestosearch.append(ffullpath)
-					
 				for f in additionalsourcefiles: 
 					if not f in filestosearch: filestosearch.append(f)
+					if not f in filestobuild: filestobuild.append(f)
 	
+				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 				rf = ReachableFunctions(funcdecl.parent, filestosearch)
 		
 				for f in rf.files:

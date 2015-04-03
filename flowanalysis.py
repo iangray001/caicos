@@ -10,8 +10,10 @@ we will not ever find their implementation. i.e. They are in the standard librar
 import os
 
 from pycparser import c_ast
+
 import astcache
-from utils import log
+from juniperrewrites import c_filename_of_java_method_sig
+from utils import log, deglob_file
 
 
 calls_to_ignore = ["printf", "sprintf",
@@ -147,6 +149,38 @@ class ReachableFunctions():
 		for fn in self.reachable_functions: 
 			self.files.add(fn.decl.coord.file)
 	
+	
+
+def get_files_to_search(sig, jamaicaoutputdir):
+	"""
+	When performing flow analysis, the search order of files will hugely affect the execution time
+	because almost all referenced functions will be in the current file (i.e. Java package), the 
+	FPGA porting layer, or the java.lang package or similar.
+	
+	This function returns a list containing all of the files in the Jamaica output directory and the
+	porting layer. However it orders it based on heuristics to try to ensure that resolutions are faster.
+	"""
+	filestosearch = []
+	
+	#First, put the originating file as this is the most likely source
+	filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
+	
+	#Then the FPGA porting layer
+	cwd = os.path.dirname(os.path.realpath(__file__))	
+	filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+	
+	#Then the java.lang package
+	filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
+	
+	#Then the other output C files
+	for f in os.listdir(jamaicaoutputdir):
+		ffullpath = os.path.join(jamaicaoutputdir, f)
+		if ffullpath.endswith(".c") and (not ffullpath.endswith("Main__.c")) and not ffullpath in filestosearch: 
+			filestosearch.append(ffullpath)
+			
+	return filestosearch
+
+
 	
 def test_reachable_functions(ast):
 	class FnVis(c_ast.NodeVisitor):
