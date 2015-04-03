@@ -74,9 +74,24 @@ typedef enum
 } jamaica_native_error;
 
 
-//Access macros and inlined functions
+/* Memory access macros and inlined functions
+ *
+ * __juniper_ram_master accesses are rewritten by caicos to provide getter and setter
+ * function calls (which may be then inlined by HLS). This macro is called with a
+ * jamaica_ref as b, which is interpreted as an int address.
+ */
 #define JAMAICA_BLOCK_GET_DATA32(b,ix) (__juniper_ram_master[(b) + (ix)])
 #define JAMAICA_BLOCK_GET_DATA32_D0(b,ix) (__juniper_ram_master[(b) + (ix)])
+
+/*
+ * According to the comments, this macro may be used as an LHS or RHS so we
+ * must convert it to getters and setters as with JAMAICA_BLOCK_GET_DATA32
+ * The 64 bit view of memory is a union with l (long long) and d (double)
+ * but also an int[2]. This would be indistinguishable from a normal int access
+ * so we multiply the calculated address by 2 to turn a long long* into an int*
+ * Then, existing memory access routines should just work.
+ */
+#define JAMAICA_BLOCK_GET_DATA64(b, ix) (__juniper_ram_master[((b) + (ix)) * 2])
 
 #define JAMAICA_BLOCK_GET_I(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).i)
 #define JAMAICA_BLOCK_GET_UI(b,ix) (JAMAICA_BLOCK_GET_DATA32(b,ix).ui)
@@ -195,6 +210,8 @@ jamaica_int32 jamaicaInterpreter_castDoubleToInteger(jamaica_double d);
 jamaica_int64 jamaicaInterpreter_castDoubleToLong(jamaica_double d);
 void jamaicaScheduler_syncPointFull(jamaica_thread *ct);
 jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs);
+void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj);
+void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj);
 
 
 //Exceptions

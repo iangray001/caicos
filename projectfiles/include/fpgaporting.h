@@ -26,6 +26,8 @@ jamaica_uint16 juniper_ram_get_us(int addr, int subwordoffset);
 jamaica_int8 juniper_ram_get_b(int addr, int subwordoffset);
 jamaica_uint8 juniper_ram_get_ub(int addr, int subwordoffset);
 jamaica_float juniper_ram_get_f(int addr, int subwordoffset);
+jamaica_int64 juniper_ram_get_l(int addr, int subwordoffset);
+jamaica_double juniper_ram_get_d(int addr, int subwordoffset);
 
 void juniper_ram_set_r(int addr, int subwordoffset, jamaica_ref r);
 void juniper_ram_set_i(int addr, int subwordoffset, jamaica_int32 i);
@@ -35,11 +37,12 @@ void juniper_ram_set_us(int addr, int subwordoffset, jamaica_uint16 us);
 void juniper_ram_set_b(int addr, int subwordoffset, jamaica_int8 b);
 void juniper_ram_set_ub(int addr, int subwordoffset, jamaica_uint8 ub);
 void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f);
+void juniper_ram_set_l(int addr, int subwordoffset, jamaica_int64 val);
+void juniper_ram_set_d(int addr, int subwordoffset, jamaica_double val);
 
 //Definitions of global structures
 extern volatile int *__juniper_ram_master;
 extern volatile char *__juniper_ram_master_char;
-extern volatile float *__juniper_ram_master_float;
 extern volatile short *__juniper_ram_master_short;
 
 extern int __juniper_args[];

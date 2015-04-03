@@ -183,6 +183,39 @@ void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f) {
 }
 
 
+jamaica_int64 juniper_ram_get_l(int addr, int subwordoffset) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int lw = __juniper_ram_master[addr];
+	int hw = __juniper_ram_master[addr+1];
+	return (((long long) hw) << 32) | ((long long) lw);
+}
+
+void juniper_ram_set_l(int addr, int subwordoffset, jamaica_int64 val) {
+#ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
+#pragma HLS INLINE
+#endif
+	int lw = (int) (val & 0xFFFFFFFF);
+	int hw = (int) ((val & 0xFFFFFFFF00000000) >> 32);
+	__juniper_ram_master[addr] = lw;
+	__juniper_ram_master[addr+1] = hw;
+}
+
+jamaica_double juniper_ram_get_d(int addr, int subwordoffset) {
+	int lw = __juniper_ram_master[addr];
+	int hw = __juniper_ram_master[addr+1];
+	long long tmp = (((long long) hw) << 32) | ((long long) lw);
+	return *(double *)&tmp;
+}
+
+void juniper_ram_set_d(int addr, int subwordoffset, jamaica_double val) {
+	long long tmp = *(long long *)&val;
+	__juniper_ram_master[addr] = (int) (tmp & 0xFFFFFFFF);
+	__juniper_ram_master[addr+1] = (int) ((val & 0xFFFFFFFF00000000) >> 32);
+}
+
+
 /*
  * Jamaica stores arrays as trees when memory gets fragmented. When accessing an array, it is necessary
  * to walk down the tree to the correct leaf first.
@@ -323,31 +356,44 @@ void jamaicaScheduler_syncPointFull(jamaica_thread *ct) {
 	//This is removed because we won't need it in hardware
 }
 
-//These are all marked with JAMAICA_FUNCTION_ATTRIBUTE(noreturn) because exceptions are implemented with setjmp/longjmp
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Winvalid-noreturn"
-void jamaica_throwNullPtrExc(jamaica_thread *ct) {printf("jamaica_throwNullPtrExc\n");}
-void jamaica_throwIncompClassChangeErr(jamaica_thread *ct) {printf("jamaica_throwIncompClassChangeErr\n");}
-void jamaica_throwAbstrMethodErr(jamaica_thread *ct) {printf("jamaica_throwAbstrMethodErr\n");}
-void jamaica_throwClassCastExc(jamaica_thread *ct) {printf("jamaica_throwClassCastExc\n");}
-void jamaica_throwArrIdxOutOfBndsExc(jamaica_thread *ct) {printf("jamaica_throwArrIdxOutOfBndsExc\n");}
-void jamaica_throwArrIdxOutOfBndsExcMsg(jamaica_thread *ct, jamaica_ref msg) {printf("jamaica_throwArrIdxOutOfBndsExcMsg\n");}
-void jamaica_throwOutOfMemErr(jamaica_thread *ct) {printf("jamaica_throwOutOfMemErr\n");}
-void jamaica_throwNegArrSzExc(jamaica_thread *ct) {printf("jamaica_throwNegArrSzExc\n");}
-void jamaica_throwArithmExc(jamaica_thread *ct) {printf("jamaica_throwArithmExc\n");}
-void jamaica_throwIllMonitorStateExc(jamaica_thread *ct) {printf("jamaica_throwIllMonitorStateExc\n");}
-void jamaica_throwArrStoreExc(jamaica_thread *ct) {printf("jamaica_throwArrStoreExc\n");}
-void jamaica_throwNoClassDefFndErr(jamaica_thread *ct) {printf("jamaica_throwNoClassDefFndErr\n");}
-void jamaica_throwInterruptedExc(jamaica_thread *ct) {printf("jamaica_throwInterruptedExc\n");}
-void jamaica_throwInternalErr(jamaica_thread *ct) {printf("jamaica_throwInternalErr\n");}
-void jamaica_throwInternalErrMsg(jamaica_thread *ct, jamaica_ref msg) {printf("jamaica_throwInternalErrMsg\n");}
-void jamaica_throwInternalErrcmsg(jamaica_thread *ct, const char *msg) {printf("jamaica_throwInternalErrcmsg\n");}
-void jamaica_throwIllArgExccmsg(jamaica_thread *ct, const char *msg) {printf("jamaica_throwIllArgExccmsg\n");}
-void jamaica_throwStringIdxOutOfBndsExc(jamaica_thread *ct, jamaica_int32 index, jamaica_int32 lowerBound, jamaica_int32  upperBound) {printf("jamaica_throwStringIdxOutOfBndsExc\n");}
-void jamaica_throwIllAssgmtErr(jamaica_thread *ct) {printf("jamaica_throwIllAssgmtErr\n");}
-void jamaica_throwStackOvrflwErr(jamaica_thread *ct) {printf("jamaica_throwStackOvrflwErr\n");}
-//#pragma GCC diagnostic pop
 
+/*
+ * In the original Jamiaca, these are marked with JAMAICA_FUNCTION_ATTRIBUTE(noreturn)
+ * which is a GCC extension because exceptions are implemented with setjmp/longjmp.
+ *
+ * The current version of caicos does not support exceptions in the translated hardware.
+ *
+ * GCC will warn if a function is marked with noreturn, and it can actually return.
+ * It can be told to ignore this by wrapping the functions in:
+ *   #pragma GCC diagnostic push
+ *   #pragma GCC diagnostic ignored "-Winvalid-noreturn"
+ *   ...
+ *   #pragma GCC diagnostic pop
+ */
+//#define CAICOS_EXCEPTIONPRINT(s) printf(s);
+#define CAICOS_EXCEPTIONPRINT(s)
+void jamaica_throwNullPtrExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwNullPtrExc\n")}
+void jamaica_throwIncompClassChangeErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwIncompClassChangeErr\n")}
+void jamaica_throwAbstrMethodErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwAbstrMethodErr\n")}
+void jamaica_throwClassCastExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwClassCastExc\n")}
+void jamaica_throwArrIdxOutOfBndsExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwArrIdxOutOfBndsExc\n")}
+void jamaica_throwArrIdxOutOfBndsExcMsg(jamaica_thread *ct, jamaica_ref msg) {CAICOS_EXCEPTIONPRINT("jamaica_throwArrIdxOutOfBndsExcMsg\n")}
+void jamaica_throwOutOfMemErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwOutOfMemErr\n")}
+void jamaica_throwNegArrSzExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwNegArrSzExc\n")}
+void jamaica_throwArithmExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwArithmExc\n")}
+void jamaica_throwIllMonitorStateExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwIllMonitorStateExc\n")}
+void jamaica_throwArrStoreExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwArrStoreExc\n")}
+void jamaica_throwNoClassDefFndErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwNoClassDefFndErr\n")}
+void jamaica_throwInterruptedExc(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwInterruptedExc\n")}
+void jamaica_throwInternalErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwInternalErr\n")}
+void jamaica_throwInternalErrMsg(jamaica_thread *ct, jamaica_ref msg) {CAICOS_EXCEPTIONPRINT("jamaica_throwInternalErrMsg\n")}
+void jamaica_throwInternalErrcmsg(jamaica_thread *ct, const char *msg) {CAICOS_EXCEPTIONPRINT("jamaica_throwInternalErrcmsg\n")}
+void jamaica_throwIllArgExccmsg(jamaica_thread *ct, const char *msg) {CAICOS_EXCEPTIONPRINT("jamaica_throwIllArgExccmsg\n")}
+void jamaica_throwStringIdxOutOfBndsExc(jamaica_thread *ct, jamaica_int32 index, jamaica_int32 lowerBound, jamaica_int32  upperBound) {CAICOS_EXCEPTIONPRINT("jamaica_throwStringIdxOutOfBndsExc\n")}
+void jamaica_throwIllAssgmtErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwIllAssgmtErr\n")}
+void jamaica_throwStackOvrflwErr(jamaica_thread *ct) {CAICOS_EXCEPTIONPRINT("jamaica_throwStackOvrflwErr\n")}
+
+void jamaicaExceptions_throw(jamaica_thread *ct, jamaica_ref exception) {CAICOS_EXCEPTIONPRINT("jamaicaExceptions_throw")}
 
 /*INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct)
 {
