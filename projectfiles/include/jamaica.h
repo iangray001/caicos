@@ -3,7 +3,6 @@
 
 #include "jamaica_config.h"
 #include <stdlib.h>
-#include <assert.h>
 #include "jamaica_errors_constants.h"
 #include <math.h>
 
