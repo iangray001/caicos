@@ -228,6 +228,7 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 	return rv
 
 
+
 def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	"""
 	Prepare functions.cpp, which contains the dispatch functions that calls the translated methods.
@@ -244,7 +245,20 @@ def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	for f in functions:
 		bindings[callid] = f #Note the binding of index to function
 		s = s + "\t\tcase " + str(callid) + ":\n"
-		s = s +"\t\t\treturn (int) " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+		
+		#The return type affects how we call it
+		#TODO: Currently 64-bit return types are not supported
+		declnode = c_decl_node_of_java_sig(f, jamaicaoutputdir)
+		returntype = str(declnode.type.type.type.names[0])
+		if returntype == "void":
+			s = s +"\t\t\t" + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+			s = s + "\t\t\treturn 0;\n"
+		elif returntype in ['float', 'jamaica_float']:
+			s = s + "\t\t\t" + returntype + " rv;\n"
+			s = s + "\t\t\trv = " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+			s = s + "\t\t\treturn *(int *)&rv;"
+		else:
+			s = s + "\t\t\treturn (int) " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
 		s = s +"\n"
 		callid = callid + 1
 		
