@@ -212,7 +212,7 @@ jamaica_double juniper_ram_get_d(int addr, int subwordoffset) {
 void juniper_ram_set_d(int addr, int subwordoffset, jamaica_double val) {
 	long long tmp = *(long long *)&val;
 	__juniper_ram_master[addr] = (int) (tmp & 0xFFFFFFFF);
-	__juniper_ram_master[addr+1] = (int) ((val & 0xFFFFFFFF00000000) >> 32);
+	__juniper_ram_master[addr+1] = (int) ((tmp & 0xFFFFFFFF00000000) >> 32);
 }
 
 
