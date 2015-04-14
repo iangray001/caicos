@@ -24,6 +24,8 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 		overridesourcefiles: A list of absolute file paths. If provided then flow analysis is not performed and 
 			only these files (plus additionalsourcefiles) will be included in the output project.
+	Returns:
+		A dictionary of {int -> Java sig} of the methods and their associated call ids.
 	"""
 	try:
 		filestobuild = []
@@ -61,8 +63,9 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 			copy_project_files(outputdir, part, filestobuild)
 			
 		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
-		write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
+		bindings = write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
 		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
+		return bindings
 	except CaicosError, e:
 		log().error("A critical error was encountered:\n\t" + str(e))
 
@@ -269,3 +272,5 @@ def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
 	hfile = open(outputfile, "w")
 	hfile.write(s)
 	hfile.close()
+	return bindings
+
