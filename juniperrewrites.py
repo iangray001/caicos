@@ -175,7 +175,9 @@ def get_java_names_of_C_fns(ast):
 					javaname = c[2:-2].strip()
 					self.fns[javaname] = (node.decl.name, node)
 			else:
-				log().error("Unexpected comment format in Jamaica output: " + str(node.decl.coord.file) + " " + str(node.decl.coord.line))
+				#Lots of functions are declared in jamaica.h and we do not want to report warnings about those
+				if not str(node.decl.coord.file).endswith("jamaica.h"):
+					log().error("Unexpected comment format in Jamaica output: " + str(node.decl.coord.file) + " " + str(node.decl.coord.line))
 				
 	v = FuncDefVisitor()
 	v.visit(ast)
