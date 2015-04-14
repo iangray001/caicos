@@ -59,12 +59,15 @@ def deglob_file(globbedname):
 
 
 
-def parse_jamaica_output(filename):
+def parse_jamaica_output(filename, includepath = None):
 	"""
 	Use pycparser to parse a Jamaica output file.
 	Because Jamaica's output is pretty complex, cpp is required, and even still 
 	some features have to be removed because it uses GCC extensions unsupported by pycparser.
 	Returns a pycparser.c_ast or throws ParseError
+	
+	If includepath is None then the project include files are used for parsing. Else, an absolute
+	path to alternate includes can be provided.
 	"""
 	if '*' in filename:
 		filename = deglob_file(filename)
@@ -78,8 +81,10 @@ def parse_jamaica_output(filename):
 			   '-DJAMAICA_NATIVE_TIME_GET_HIGH_RESOLUTION_TIMESTAMP', #These are inline asm which seems not supported by pycparser
 			   '-DJAMAICA_NATIVE_THREAD_COMPARE_AND_SWAP',
 			   r'-I' + os.path.join(cwd, "stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
-			   r'-I' + os.path.join(cwd, "projectfiles", "include")
 			   ]
+	
+	if includepath == None: cppargs.append(r'-I' + os.path.join(cwd, "projectfiles", "include"))
+	else: cppargs.append(r'-I' + str(includepath))
 	
 	return pycparser.parse_file(filename, use_cpp=True, cpp_path="gcc", cpp_args=cppargs)
 

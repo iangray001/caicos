@@ -17,12 +17,12 @@ import utils
 
 cache = {}
 
-def get(filename):
+def get(filename, alternateincludepath = None):
 	if filename in cache:
 		return cache[filename]
 	else:
 		log().info("Parsing " + filename)
-		ast = utils.parse_jamaica_output(filename)
+		ast = utils.parse_jamaica_output(filename, alternateincludepath)
 		add_parent_links(ast)
 		cache[filename] = ast
 		return ast
