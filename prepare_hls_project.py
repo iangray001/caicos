@@ -204,6 +204,7 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 	paramlist = funcdecl.children()[0][1]
 	rv = declnode.name + "("
 	
+	paramnum = 0
 	for pid in xrange(len(paramlist.params)):
 		#Insert an explicit cast to the target type
 		#Handles single-stage pointers and base types only, no arrays, because
@@ -222,7 +223,8 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 			rv = rv + "(" + str(pdec.type.names[0])
 			if pointer: rv = rv + "*"
 			rv = rv + ") "
-			rv = rv + "__juniper_args[" + str(pid) + "]"
+			rv = rv + "__juniper_args[" + str(paramnum) + "]"
+			paramnum = paramnum + 1
 			
 		if not pid == len(paramlist.params) - 1:
 			rv = rv + ", "
