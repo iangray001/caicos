@@ -89,14 +89,17 @@ def parse_jamaica_output(filename, includepath = None):
 	return pycparser.parse_file(filename, use_cpp=True, cpp_path="gcc", cpp_args=cppargs)
 
 
-def write_ast_to_file(ast, filename):
+def write_ast_to_file(ast, filename, prefix = None):
 	"""
 	Run the provided AST through pycparser's C generator and write to filename. Will
 	overwrite if filename exists. Will fail if filename points into a directory which 
 	does not exist.
+	
+	If prefix is not None then it is prepended onto the code before being written.
 	"""
 	generator = pycparser.c_generator.CGenerator()
 	code = generator.visit(ast)
+	if prefix != None: code = prefix + code
 	outf = open(filename, "w+")
 	try:
 		outf.writelines(code)

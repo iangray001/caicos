@@ -63,12 +63,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 						devNo = 0
 						partNo = 0
 						
-						code = r"""#include <jamaica_fpga_interface.h>
-	#include <juniperoperations.h>
-	int *base = malloc(0);
-	int rv;
-	
-"""
+						code = """int *base = malloc(0);\n\tint rv;\n\n"""
 						code = fpga_set_mem_base(code, devNo, partNo, "-((int) base)") + "\n"
 
 						#Set up the arguments for the call
@@ -150,4 +145,4 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 						compnode = c_ast.Compound([textnode])
 						juniperrewrites.replace_node(decl.parent.body, compnode)
 				
-				utils.write_ast_to_file(ast, os.path.join(targetdir, item))
+				utils.write_ast_to_file(ast, os.path.join(targetdir, item), "#include <jamaica_fpga_interface.h>\n#include <juniperoperations.h>\n\n")
