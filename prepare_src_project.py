@@ -20,19 +20,19 @@ from utils import CaicosError
 
 def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
 	def fpga_set_arg(code, devNo, partNo, argNo, val):
-		return code + r"	jamaica_fpga_partition_set_arg(" + str(devNo) + ", " + str(partNo) + ", " + str(argNo) + ", " + str(val) + ");\n"
+		return code + r"	juniper_fpga_partition_set_arg(" + str(devNo) + ", " + str(partNo) + ", " + str(argNo) + ", " + str(val) + ");\n"
 	
 	def fpga_set_mem_base(code, devNo, partNo, val):
-		return code + r"	jamaica_fpga_partition_set_mem_base(" + str(devNo) + ", " + str(partNo) + ", " + str(val) + ");\n"
+		return code + r"	juniper_fpga_partition_set_mem_base(" + str(devNo) + ", " + str(partNo) + ", " + str(val) + ");\n"
 	
 	def fpga_start(code, devNo, partNo):
-		return code + r"	jamaica_fpga_partition_start(" + str(devNo) + ", " + str(partNo) + ");\n"
+		return code + r"	juniper_fpga_partition_start(" + str(devNo) + ", " + str(partNo) + ");\n"
 		
 	def fpga_wait_for_idle(code, devNo, partNo):
-		return code + r"	while(!jamaica_fpga_partition_idle(" + str(devNo) + ", " + str(partNo) + "));\n"
+		return code + r"	while(!juniper_fpga_partition_idle(" + str(devNo) + ", " + str(partNo) + "));\n"
 		
 	def fpga_retval(code, devNo, partNo, rv):
-		return code + r"	jamaica_fpga_partition_get_retval(" + str(devNo) + ", " + str(rv) + ");\n"
+		return code + r"	juniper_fpga_partition_get_retval(" + str(devNo) + ", " + str(rv) + ");\n"
 		
 	def fpga_run(code, devNo, partNo):
 		return code + fpga_start("", devNo, partNo) + fpga_wait_for_idle("", devNo, partNo)
@@ -145,4 +145,4 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 						compnode = c_ast.Compound([textnode])
 						juniperrewrites.replace_node(decl.parent.body, compnode)
 				
-				utils.write_ast_to_file(ast, os.path.join(targetdir, item), "#include <jamaica_fpga_interface.h>\n#include <juniperoperations.h>\n\n")
+				utils.write_ast_to_file(ast, os.path.join(targetdir, item), "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n\n")
