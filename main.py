@@ -34,7 +34,8 @@ Summary of the config options:
 		jamaicatarget - path to the Jamaica target directory to use for the host software  
 	
 	Optional:
-		additionalhardwarefiles - list of paths to additional files to add to the hardware project 
+		additionalhardwarefiles - list of paths to additional files to add to the hardware project
+		cleanoutput - if 'true', the contents of outputdir will be cleaned first  
 """
 config_specification = {
 	'signatures': (True, ""),
@@ -43,6 +44,7 @@ config_specification = {
 	'outputdir': (True, ""),
 	'fpgapart': (True, ""),
 	'jamaicatarget': (True, ""),
+	'cleanoutput': (False, ""),
 	
 	'signature': (False, "signatures"),
 	'additionalhardwarefile': (False, "additionalhardwarefiles"),
@@ -55,6 +57,9 @@ def build_all(config):
 	"""
 	Build a JUNIPER project. Format of the config dictionary is described in the docstring for config_specification.
 	"""
+	if config.get('cleanoutput', "false").lower() == "true":
+		shutil.rmtree(config['outputdir'], ignore_errors=True)
+	
 	cwd = os.path.dirname(os.path.realpath(__file__))
 	mkdir(config['outputdir'])
 	
