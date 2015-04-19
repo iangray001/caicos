@@ -6,10 +6,11 @@ build_from_functions is the main function that should be called to perform the e
 import os, shutil
 
 from pycparser import c_ast
+
 from flowanalysis import ReachableFunctions, get_files_to_search
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
-from utils import log, CaicosError
+from utils import log, CaicosError, mkdir, copy_files
 
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, overridesourcefiles = None):
@@ -38,9 +39,10 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 			for sig in funcs:
 				filestosearch = get_files_to_search(sig, jamaicaoutputdir)
 				
-				for f in additionalsourcefiles: 
-					if not f in filestosearch: filestosearch.append(f)
-					if not f in filestobuild: filestobuild.append(f)
+				if additionalsourcefiles != None:
+					for f in additionalsourcefiles: 
+						if not f in filestosearch: filestosearch.append(f)
+						if not f in filestobuild: filestobuild.append(f)
 	
 				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 				rf = ReachableFunctions(funcdecl.parent, filestosearch)
@@ -80,25 +82,11 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles, reachable_func
 	unreachable functions trimmed from them. If reachable_functions is None, then the entire file will be
 	copied. 
 	"""
-	def mkdir(d): 
-		if not os.path.exists(d): os.makedirs(d);
-		
-	def copy_files(srcdir, targetdir, suffixes):
-		mkdir(targetdir)
-		for f in os.listdir(srcdir):
-			abspath = os.path.join(srcdir, f)
-			if os.path.isfile(abspath):
-				for suff in suffixes:
-					if abspath.endswith(suff):
-						shutil.copyfile(abspath, os.path.join(targetdir, f))
-						break
-
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
 	copy_files(os.path.join(cwd, "projectfiles", "include"), os.path.join(targetdir, "include"), [".h"])
 	copy_files(os.path.join(cwd, "projectfiles", "src"), os.path.join(targetdir, "src"), [".h", ".cpp"])
-	copy_files(os.path.join(cwd, "projectfiles"), targetdir, [".sh"])
-	
+
 	for f in extrasourcefiles:
 		log().info("Adding source file: " + f)
 		if f.endswith(".c"): #We only parse C files

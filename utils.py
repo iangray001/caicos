@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import shutil
 import sys
 
 import pycparser
@@ -105,5 +106,33 @@ def write_ast_to_file(ast, filename, prefix = None):
 		outf.writelines(code)
 	finally:
 		outf.close()
+	
+	
+	
+def mkdir(d):
+	"""
+	If the directory d does not exist, create it
+	"""
+	if not os.path.exists(d): os.makedirs(d)
+	
+	
+
+def copy_files(srcdir, targetdir, suffixes = None):
+	"""
+	Copy the directory of files from srcdir to targetdir.
+	Only copies files that share a suffix with a string from suffixes
+	"""
+	mkdir(targetdir)
+	
+	for f in os.listdir(srcdir):
+		abspath = os.path.join(srcdir, f)
+		if os.path.isfile(abspath):
+			if suffixes != None:
+				for suff in suffixes:
+					if abspath.endswith(suff):
+						shutil.copyfile(abspath, os.path.join(targetdir, f))
+						break
+			else:
+				shutil.copyfile(abspath, os.path.join(targetdir, f))
 	
 	
