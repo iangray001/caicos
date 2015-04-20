@@ -29,6 +29,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
 	copy_files(os.path.join(cwd, "projectfiles", "juniper_fpga_interface"), os.path.join(targetdir, "juniper_fpga_interface"))
+	copy_files(os.path.join(cwd, "projectfiles", "malloc_preload"), os.path.join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, os.path.join(targetdir, "src"), jamaica_targetincludedir)
 
 
