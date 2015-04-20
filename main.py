@@ -6,7 +6,6 @@ and to read and parse configuration files.
 
 Call build_all() to begin.
 """
-
 """
 Describes the required options in the configuration of caicos.
 All valid options must be enumerated in this dictionary. Each option name maps
@@ -20,6 +19,7 @@ takes precedence.
 
 import os
 import shutil
+from string import Template
 
 import prepare_hls_project
 import prepare_src_project
@@ -57,6 +57,7 @@ def build_all(config):
 	cwd = os.path.dirname(os.path.realpath(__file__))
 	mkdir(config['outputdir'])
 	
+	#Build hardware project
 	if config.get('dev_softwareonly', "false").lower() == "true":
 		log().warning("dev_softwareonly is set. Generating software only.")
 		bindings = __getfakebindings(config['signatures'])
@@ -70,18 +71,22 @@ def build_all(config):
 	
 		shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(config['outputdir'], "hardware", "push.sh"))
 		
+	#Build software project
 	prepare_src_project.build_src_project(
 		bindings,
 		config['jamaicabuilderoutputdir'],
 		os.path.join(config['outputdir'], "software"),
 		config['jamaicatarget'])
 
-	shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "juniperbuild.sh"), os.path.join(config['outputdir'], "software", "juniperbuild.sh"))
-	
+	#Output templated software build script
+	contents = open(os.path.join(cwd, "projectfiles", "scripts", "juniperbuild.sh")).read()
+	subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
+	template = Template(contents)
+	fout = open(os.path.join(config['outputdir'], "software", "juniperbuild.sh"), "w")
+	fout.write(template.safe_substitute(subs))
+	fout.close()
 
 
-
-	
 	
 def load_config(filename):
 	"""
