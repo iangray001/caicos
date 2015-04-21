@@ -241,5 +241,36 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 	utils.write_ast_to_file(ast, outputfile)
 
 	
+def get_line_bounds_for_function(declnode):
+	"""
+	Given an instance of a c_ast.DeclNode, return a tuple of the start and end lines (inclusive)
+	of the function definition. 
+	
+	This is not a robust function, and should only be used on the 
+	predictable output format of Jamaica Builder. Whilst the start line is accurate because it comes
+	from a proper parse, the end line is derived by finding the start line of the node's next sibling and
+	subtracting 1. 
+	
+	This will be fooled by preprocessor macros, or unusual C layout, but Jamaica Builder does not use these.
+	
+	If the node has no next sibling, then the end line is returned as None to signify EOF.
+	"""
+	def get_next_sibling(node):
+		children = node.parent.children()
+		for i in xrange(len(children)):
+			if children[i][1] == node:
+				if i+1 < len(children):
+					return children[i+1][1]
+				else:
+					return None	
+				
+	startline = declnode.parent.coord.line
+	sib = get_next_sibling(declnode.parent)
+	if sib == None:
+		endline = None
+	else:
+		endline = sib.coord.line - 1		
+	return (startline, endline)
+
 
 		
