@@ -31,7 +31,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 	copy_files(os.path.join(cwd, "projectfiles", "juniper_fpga_interface"), os.path.join(targetdir, "juniper_fpga_interface"))
 	copy_files(os.path.join(cwd, "projectfiles", "malloc_preload"), os.path.join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, os.path.join(targetdir, "src"), jamaica_targetincludedir)
-
+	shutil.copy(os.path.join(cwd, "projectfiles", "include", "juniperoperations.h"), os.path.join(targetdir, "src"))
 
 
 def refactor_src(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
@@ -70,7 +70,7 @@ def refactor_src(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
 	mkdir(targetdir)
 	for item in os.listdir(jamaicaoutput):
 		filepath = os.path.join(jamaicaoutput, item)
-		if os.path.isfile(filepath) and filepath.endswith(".c"):
+		if os.path.isfile(filepath) and (filepath.endswith(".c") or filepath.endswith(".h")):
 			if not filepath in filestoedit:
 				#Just copy the file, no edits required
 				shutil.copy(filepath, targetdir)
