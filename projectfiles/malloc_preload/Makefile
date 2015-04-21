@@ -8,13 +8,7 @@ TESTLDFLAGS=-m32
 
 OBJS=malloc_preload.o
 
-all: malloc_preload.so test
-
-test: test.o
-	$(LD) $(TESTLDFLAGS) -o $@ $^
-
-test.o: test.c
-	$(CC) $(TESTCFLAGS) -c -o $@ $<
+all: malloc_preload.so
 
 malloc_preload.so: $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
@@ -22,4 +16,4 @@ malloc_preload.so: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -rf malloc_preload.so test test.o $(OBJS) *~
+	rm -rf malloc_preload.so $(OBJS) *~
