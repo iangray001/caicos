@@ -74,13 +74,13 @@ int juniper_fpga_partition_start(int devNo, int partNo)
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_get_mem_base(int devNo, int partNo, uint32_t* base)
+int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* base)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char baseBuf[4];
 	int fd;
 	int rdAmt;
-	uint32_t tmp;
+	unsigned int tmp;
 
 	juniper_fpga_formatpath(devNo, partNo, "accel_mem_base", path, JUNIPER_PATH_BUFSZ);
 	fd = open(path, O_RDONLY);
@@ -103,13 +103,13 @@ int juniper_fpga_partition_get_mem_base(int devNo, int partNo, uint32_t* base)
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_get_retval(int devNo, int partNo, uint32_t* rv)
+int juniper_fpga_partition_get_retval(int devNo, int partNo, unsigned int* rv)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char baseBuf[4];
 	int fd;
 	int rdAmt;
-	uint32_t tmp;
+	unsigned int tmp;
 
 	juniper_fpga_formatpath(devNo, partNo, "accel_retval", path, JUNIPER_PATH_BUFSZ);
 	fd = open(path, O_RDONLY);
@@ -132,7 +132,7 @@ int juniper_fpga_partition_get_retval(int devNo, int partNo, uint32_t* rv)
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_set_mem_base(int devNo, int partNo, uint32_t base)
+int juniper_fpga_partition_set_mem_base(int devNo, int partNo, unsigned int base)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char baseBuf[4];
@@ -158,13 +158,13 @@ int juniper_fpga_partition_set_mem_base(int devNo, int partNo, uint32_t base)
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, uint32_t* arg)
+int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, unsigned int* arg)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char argBuf[4];
 	int fd;
 	int rdAmt;
-	uint32_t tmp;
+	unsigned int tmp;
 
 	// Cheat...
 	char fileName[] = "accel_arg0";
@@ -193,7 +193,7 @@ int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, uint32_t* a
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, uint32_t arg)
+int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, unsigned int arg)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char argBuf[4];
