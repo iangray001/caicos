@@ -78,11 +78,11 @@ def build_all(config):
 		os.path.join(config['outputdir'], "software"),
 		config['jamaicatarget'])
 
-	#Output templated software build script
-	contents = open(os.path.join(cwd, "projectfiles", "scripts", "juniperbuild.sh")).read()
+	#Output templated Makefile
+	contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
 	subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
 	template = Template(contents)
-	fout = open(os.path.join(config['outputdir'], "software", "juniperbuild.sh"), "w")
+	fout = open(os.path.join(config['outputdir'], "software", "Makefile"), "w")
 	fout.write(template.safe_substitute(subs))
 	fout.close()
 
