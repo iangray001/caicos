@@ -9,15 +9,12 @@ import os
 import shutil
 
 from pycparser import c_ast
-import pycparser
 
 import astcache
 from juniperrewrites import c_filename_of_java_method_sig, \
-	c_decl_node_of_java_sig
-import juniperrewrites
+	c_decl_node_of_java_sig, get_line_bounds_for_function
 from prepare_hls_project import get_paramlist_of_sig
 from utils import CaicosError, mkdir, copy_files
-import utils
 
 
 def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
@@ -31,6 +28,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 	copy_files(os.path.join(cwd, "projectfiles", "juniper_fpga_interface"), os.path.join(targetdir, "juniper_fpga_interface"))
 	copy_files(os.path.join(cwd, "projectfiles", "malloc_preload"), os.path.join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, os.path.join(targetdir, "src"), jamaica_targetincludedir)
+	shutil.copy(os.path.join(jamaicaoutput, "Main__nc.o"), os.path.join(targetdir, "src"))
 	shutil.copy(os.path.join(cwd, "projectfiles", "include", "juniperoperations.h"), os.path.join(targetdir, "src"))
 
 
@@ -41,25 +39,6 @@ def refactor_src(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
 	
 	Outputs files to targetdir
 	"""
-	
-	def fpga_set_arg(code, devNo, partNo, argNo, val):
-		return code + r"	juniper_fpga_partition_set_arg(" + str(devNo) + ", " + str(partNo) + ", " + str(argNo) + ", " + str(val) + ");\n"
-	
-	def fpga_set_mem_base(code, devNo, partNo, val):
-		return code + r"	juniper_fpga_partition_set_mem_base(" + str(devNo) + ", " + str(partNo) + ", " + str(val) + ");\n"
-	
-	def fpga_start(code, devNo, partNo):
-		return code + r"	juniper_fpga_partition_start(" + str(devNo) + ", " + str(partNo) + ");\n"
-		
-	def fpga_wait_for_idle(code, devNo, partNo):
-		return code + r"	while(!juniper_fpga_partition_idle(" + str(devNo) + ", " + str(partNo) + "));\n"
-		
-	def fpga_retval(code, devNo, partNo, rv):
-		return code + r"	juniper_fpga_partition_get_retval(" + str(devNo) + ", " + str(rv) + ");\n"
-		
-	def fpga_run(code, devNo, partNo):
-		return code + fpga_start("", devNo, partNo) + fpga_wait_for_idle("", devNo, partNo)
-
 	
 	#Which are the C files we will need to rewrite?
 	filestoedit = set()
@@ -77,95 +56,147 @@ def refactor_src(bindings, jamaicaoutput, targetdir, jamaica_targetincludedir):
 			else:
 				#Any previous edits to the AST need to be disregarded
 				astcache.invalidate_ast_for(filepath)
-				ast = astcache.get(filepath, jamaica_targetincludedir)
-				
+
+				#Which sigs are in this file?
+				toreplace = []
 				for callid, sig in bindings.iteritems():
 					if c_filename_of_java_method_sig(sig, jamaicaoutput) == filepath:
 						decl = c_decl_node_of_java_sig(sig, jamaicaoutput)
-						
-						devNo = 0
-						partNo = 0
-						
-						code = """int *base = malloc(0);\n\tint rv;\n\n"""
-						code = fpga_set_mem_base(code, devNo, partNo, "-((int) base)") + "\n"
+						bounds = get_line_bounds_for_function(decl)
+						toreplace.append((bounds, callid, sig, decl))
 
-						#Set up the arguments for the call
-						params = get_paramlist_of_sig(sig, jamaicaoutput)
-						firstarg = True
-						for pnum in xrange(len(params.params)):
-							paramname = params.params[pnum].name
-							typename = ""
-							current = params.params[pnum].type
-							while isinstance(current, c_ast.PtrDecl):
-								typename = typename + "*"
-								current = current.type
+				toreplace.sort()
 
-							if not isinstance(current, c_ast.TypeDecl):
-								raise CaicosError("Unhandled parameter type in function " + str(sig) + " for parameter " + str(paramname))
-								
-							typename = typename + current.type.names[0]
-							
-							if typename == "*jamaica_thread" and paramname == "ct":
-								#All functions start with a reference to the current thread and can be ignored by the FPGA
-								pass
-							else:
-								if firstarg: 
-									code = fpga_set_arg(code, devNo, partNo, 0, "OP_WRITE_ARG")
-									firstarg = False
-								code = fpga_set_arg(code, devNo, partNo, 1, pnum)
-								
-								if typename in ["jamaica_int8", "jamaica_int16", "jamaica_int32", "jamaica_uint8", "jamaica_uint16", "jamaica_uint32", "jamaica_bool"]:
-									code = fpga_set_arg(code, devNo, partNo, 2, paramname)
-								elif typename == "jamaica_ref":
-									code = fpga_set_arg(code, devNo, partNo, 2, paramname + " / 4")
-								elif typename == "jamaica_float":
-									code = fpga_set_arg(code, devNo, partNo, 2, "*((int *) &" + paramname + ")")
-								elif typename == "jamaica_address":
-									code = fpga_set_arg(code, devNo, partNo, 2, paramname)
-								elif typename in ["jamaica_int64", "jamaica_uint64"]:
-									#TODO
-									pass
-									#code = fpga_set_arg(code, devNo, partNo, 2, paramname)
-								elif typename == "jamaica_double":
-									#TODO
-									pass
-									#code = fpga_set_arg(code, devNo, partNo, 2, paramname)
-								else:
-									raise CaicosError("Unknown type " + str(typename) + " in function " + str(sig))
+				filecontents = open(filepath).readlines()
+				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n\n"
+				lineno = 1
+
+				for bounds, callid, sig, decl in toreplace:
+					while(lineno <= bounds[0]):
+						output = output + filecontents[lineno-1]
+						lineno = lineno + 1
+					
+					output = output + "\t//~~~~~~~~~~~~~~~~" + str(sig) + "  " + str(bounds) + "~~~~~~~~~~~~~~~~~~~~~\n"
+					output = output + "\t" + str(generate_replacement_code(sig, decl, callid, jamaicaoutput, 0, 0))
+					
+					if bounds[1] == None:
+						output = output + "}\n\n#else\n#error 'jamaica.h' not found!\n#endif\n\n#ifdef __cplusplus\n}\n#endif\n"
+					else:
+						output = output + "}\n"
+						lineno = bounds[1] + 1
+					
+				outf = open(os.path.join(targetdir, item), "w")
+				outf.write(output)
+				outf.close()
+
+
+def generate_replacement_code(sig, decl, callid, jamaicaoutput, devNo, partNo):	
+	def fpga_set_arg(code, devNo, partNo, argNo, val):
+		return code + r"	juniper_fpga_partition_set_arg(" + str(devNo) + ", " + str(partNo) + ", " + str(argNo) + ", " + str(val) + ");\n"
 	
-								code = fpga_run(code, devNo, partNo) + "\n"
-								
-						code = fpga_set_arg(code, devNo, partNo, 0, "OP_CALL")
-						code = fpga_set_arg(code, devNo, partNo, 1, callid)
-						code = fpga_run(code, devNo, partNo) + "\n"
-						
-						#Do we need a return value?
-						rettype = decl.type.type.type.names[0] 
-						if rettype == "void":
-							code = code + "	return;\n";
-						elif rettype in ["jamaica_int8", "jamaica_int16", "jamaica_int32", 
-										"jamaica_uint8", "jamaica_uint16", "jamaica_uint32", 
-										"jamaica_bool"
-										"jamaica_ref", "jamaica_address"
-										]:
-							code = fpga_retval(code, devNo, partNo, "&rv")
-							code = code + "	return rv;\n"
-						elif rettype == "jamaica_float":
-							code = fpga_retval(code, devNo, partNo, "&rv")
-							code = code + "	return *((float *)(&rv));\n"
-						elif rettype in ["jamaica_int64", "jamaica_uint64"]:
-							#TODO
-							code = code + "	return 0;\n"
-						elif rettype == "jamaica_double":
-							#TODO
-							code = code + "	return 0;\n"
-						else:
-							raise CaicosError("Unknown return type " + str(typename) + " in function " + str(sig))
-						
-						#Wrap up the text in an ID node, then replace the function's body 
-						textnode = c_ast.ID("name")
-						setattr(textnode, 'name', code)
-						compnode = c_ast.Compound([textnode])
-						juniperrewrites.replace_node(decl.parent.body, compnode)
-				
-				utils.write_ast_to_file(ast, os.path.join(targetdir, item), "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n\n")
+	def fpga_set_mem_base(code, devNo, partNo, val):
+		return code + r"	juniper_fpga_partition_set_mem_base(" + str(devNo) + ", " + str(partNo) + ", " + str(val) + ");\n"
+	
+	def fpga_start(code, devNo, partNo):
+		return code + r"	juniper_fpga_partition_start(" + str(devNo) + ", " + str(partNo) + ");\n"
+		
+	def fpga_wait_for_idle(code, devNo, partNo):
+		return code + r"	while(!juniper_fpga_partition_idle(" + str(devNo) + ", " + str(partNo) + "));\n"
+		
+	def fpga_retval(code, devNo, partNo, rv):
+		return code + r"	juniper_fpga_partition_get_retval(" + str(devNo) + ", " + str(devNo) + ", " + str(rv) + ");\n"
+		
+	def fpga_run(code, devNo, partNo):
+		return code + fpga_start("", devNo, partNo) + fpga_wait_for_idle("", devNo, partNo)
+
+	code = """int *base = malloc(0);\n\tint rv;\n\n"""
+	code = fpga_set_mem_base(code, devNo, partNo, "-((int) base)") + "\n"
+
+	#Set up the arguments for the call
+	params = get_paramlist_of_sig(sig, jamaicaoutput)
+	firstarg = True
+	for pnum in xrange(len(params.params)):
+		paramname = params.params[pnum].name
+		typename = ""
+		current = params.params[pnum].type
+		while isinstance(current, c_ast.PtrDecl):
+			typename = typename + "*"
+			current = current.type
+
+		if not isinstance(current, c_ast.TypeDecl):
+			raise CaicosError("Unhandled parameter type in function " + str(sig) + " for parameter " + str(paramname))
+			
+		typename = typename + current.type.names[0]
+		
+		if typename == "*jamaica_thread" and paramname == "ct":
+			#All functions start with a reference to the current thread and can be ignored by the FPGA
+			pass
+		else:
+			if firstarg: 
+				code = fpga_set_arg(code, devNo, partNo, 0, "OP_WRITE_ARG")
+				firstarg = False
+			code = fpga_set_arg(code, devNo, partNo, 1, pnum)
+			
+			if typename in ["jamaica_int8", "jamaica_int16", "jamaica_int32", "jamaica_uint8", "jamaica_uint16", "jamaica_uint32", "jamaica_bool"]:
+				code = fpga_set_arg(code, devNo, partNo, 2, paramname)
+			elif typename == "jamaica_ref":
+				code = fpga_set_arg(code, devNo, partNo, 2, "(int)" + paramname + " / 4")
+			elif typename == "jamaica_float":
+				code = fpga_set_arg(code, devNo, partNo, 2, "*((int *) &" + paramname + ")")
+			elif typename == "jamaica_address":
+				code = fpga_set_arg(code, devNo, partNo, 2, paramname)
+			elif typename in ["jamaica_int64", "jamaica_uint64"]:
+				#TODO
+				pass
+				#code = fpga_set_arg(code, devNo, partNo, 2, paramname)
+			elif typename == "jamaica_double":
+				#TODO
+				pass
+				#code = fpga_set_arg(code, devNo, partNo, 2, paramname)
+			else:
+				raise CaicosError("Unknown type " + str(typename) + " in function " + str(sig))
+
+			code = fpga_run(code, devNo, partNo) + "\n"
+			
+	code = fpga_set_arg(code, devNo, partNo, 0, "OP_CALL")
+	code = fpga_set_arg(code, devNo, partNo, 1, callid)
+	code = fpga_run(code, devNo, partNo) + "\n"
+	
+	#Do we need a return value?
+	rettype = decl.type.type.type.names[0]
+	
+	"""
+  FuncDef: 
+    Decl: funcB2, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: i, [], [], []
+            TypeDecl: i, []
+              IdentifierType: ['int']
+        TypeDecl: funcB2, []
+          IdentifierType: ['short']
+	"""
+	
+	
+	if rettype == "void":
+		code = code + "	return;\n";
+	elif rettype in ["jamaica_int8", "jamaica_int16", "jamaica_int32", 
+					"jamaica_uint8", "jamaica_uint16", "jamaica_uint32", 
+					"jamaica_bool"
+					"jamaica_ref", "jamaica_address"
+					]:
+		code = fpga_retval(code, devNo, partNo, "&rv")
+		code = code + "	return rv;\n"
+	elif rettype == "jamaica_float":
+		code = fpga_retval(code, devNo, partNo, "&rv")
+		code = code + "	return *((float *)(&rv));\n"
+	elif rettype in ["jamaica_int64", "jamaica_uint64"]:
+		#TODO
+		code = code + "	return 0;\n"
+	elif rettype == "jamaica_double":
+		#TODO
+		code = code + "	return 0;\n"
+	else:
+		raise CaicosError("Unknown return type " + str(typename) + " in function " + str(sig))
+	
+	return code
