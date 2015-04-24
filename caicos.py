@@ -20,6 +20,7 @@ takes precedence.
 import os
 import shutil
 from string import Template
+import sys
 
 import prepare_hls_project
 import prepare_src_project
@@ -147,4 +148,16 @@ def __getfakebindings(sigs):
 		callid = callid + 1
 	return b
 
+
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		print "Usage: caicos.py <configfile>"
+		sys.exit(1)
+
+	if os.path.exists(sys.argv[1]) and os.path.isfile(sys.argv[1]):
+		build_all(load_config(sys.argv[1]))
+	else:
+		print "File not found: " + str(sys.argv[1])
+		sys.exit(1)
 

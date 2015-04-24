@@ -7,24 +7,16 @@ This work is internal to the EU Seventh Framework project JUNIPER and should not
 externally distributed until cleared by project review, whereupon it will become GPLv2.
 
 ##Usage
+Caicos is invoked by running the following:
 
-The entry function is `prepareproject.build_from_functions()`. Example use follows:
+	python caicos.py <configfile>
 
-    #Path to the output C code from Jamaica Builder
-    jamaicaoutputdir = "/path/to/c/code/from/jamaicabuilder"
-    
-    #The target directory. This will not be cleared, but files may be overwritten.
-    outputdir = "/path/to/targetdirectory"
-    
-    fpgapartcode = "xc7vx690tffg1761-2"
-    
-    #A list of Java method signatures in the original Java to roll into the created accelerator
-    funcs = [
-    	"unitTests/Types.types(IFDLjava/lang/Float;Ljava/lang/Double;)D",
-    	"dataProcessing/SumPrimitiveArrays.sumArrayInt([I)I"
-    ]
-    
-    #Absolute paths to any additional C files that will be required by HLS can be specified here.
-    additionalsourcefiles = []
-    
-    prepareproject.build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, fpgapartcode)
+The format of the config file is described in caicos.py. An example is shown below:
+
+	outputdir = /Users/me/caicosout
+	jamaicabuilderoutputdir = /Users/me/JamaicaGeneratedCode
+	fpgapart = xc7vx690tffg1761-2
+	jamaicatarget = /Users/me/jamaica/current32/target/linux-x86/include
+	signature = dataProcessing/SumPrimitiveArrays.run()V
+	signature = dataProcessing/SumClass.run()V
+	signature = unitTests/Types.types(IFDLjava/lang/Float;Ljava/lang/Double;)D
