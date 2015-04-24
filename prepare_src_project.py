@@ -23,6 +23,9 @@ def build_src_project(bindings, jamaicaoutput, targetdir, jamaica_targetincluded
 	refactoring the functions that are implemented on the FPGA.
 	Also copies the FPGA interface and build scripts. 
 	"""
+	if not os.path.isfile(os.path.join(jamaicaoutput, "Main__nc.o")):
+		raise CaicosError("Cannot find file " + str(os.path.join(jamaicaoutput, "Main__nc.o")) + ". Ensure that the application has first be been built by Jamaica Builder.")
+	
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
 	copy_files(os.path.join(cwd, "projectfiles", "juniper_fpga_interface"), os.path.join(targetdir, "juniper_fpga_interface"))
