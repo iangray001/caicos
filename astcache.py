@@ -11,21 +11,26 @@ If code is being modified invalidate_ast_for(filename) can be used to
 remove a cached AST and force a reparse.
 """
 
-from utils import log
+from pycparser.plyparser import ParseError
+
+from utils import log, CaicosError
 import utils
 
 
 cache = {}
 
 def get(filename, alternateincludepath = None):
-	if filename in cache:
-		return cache[filename]
-	else:
-		log().info("Parsing " + filename)
-		ast = utils.parse_jamaica_output(filename, alternateincludepath)
-		add_parent_links(ast)
-		cache[filename] = ast
-		return ast
+	try:
+		if filename in cache:
+			return cache[filename]
+		else:
+			log().info("Parsing " + filename)
+			ast = utils.parse_jamaica_output(filename, alternateincludepath)
+			add_parent_links(ast)
+			cache[filename] = ast
+			return ast
+	except ParseError, pe:
+		raise CaicosError("Parse error in file '" + str(filename) + "'.\n\t" + str(pe.message))
 		
 def invalidate_ast_for(filename):
 	if filename in cache:

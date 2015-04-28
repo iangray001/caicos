@@ -28,48 +28,45 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	Returns:
 		A dictionary of {int -> Java sig} of the methods and their associated call ids.
 	"""
-	try:
-		filestobuild = []
-		cwd = os.path.dirname(os.path.realpath(__file__))	
-		filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
-		
-		all_reachable_functions = []
-		
-		if overridesourcefiles == None:			
-			for sig in funcs:
-				filestosearch = get_files_to_search(sig, jamaicaoutputdir)
-				
-				if additionalsourcefiles != None:
-					for f in additionalsourcefiles: 
-						if not f in filestosearch: filestosearch.append(f)
-						if not f in filestobuild: filestobuild.append(f)
+	filestobuild = []
+	cwd = os.path.dirname(os.path.realpath(__file__))	
+	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
 	
-				funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-				rf = ReachableFunctions(funcdecl.parent, filestosearch)
-				
-				#Don't forget to include the starting point
-				all_reachable_functions.append(funcdecl.parent)
-		
-				for f in rf.files:
-					if not f in filestobuild: filestobuild.append(f)
-				for f in rf.reachable_functions:
-					if not f in all_reachable_functions: all_reachable_functions.append(f)
-				
-			log().info("All reachable functions:")
-			for f in all_reachable_functions:
-				log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
-			copy_project_files(outputdir, part, filestobuild, all_reachable_functions)
-		else:
-			filestobuild.append(overridesourcefiles)
-			filestobuild.append(additionalsourcefiles)
-			copy_project_files(outputdir, part, filestobuild)
+	all_reachable_functions = []
+	
+	if overridesourcefiles == None:			
+		for sig in funcs:
+			filestosearch = get_files_to_search(sig, jamaicaoutputdir)
 			
-		write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
-		bindings = write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
-		write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
-		return bindings
-	except CaicosError, e:
-		log().error("A critical error was encountered:\n\t" + str(e))
+			if additionalsourcefiles != None:
+				for f in additionalsourcefiles: 
+					if not f in filestosearch: filestosearch.append(f)
+					if not f in filestobuild: filestobuild.append(f)
+
+			funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+			rf = ReachableFunctions(funcdecl.parent, filestosearch)
+			
+			#Don't forget to include the starting point
+			all_reachable_functions.append(funcdecl.parent)
+	
+			for f in rf.files:
+				if not f in filestobuild: filestobuild.append(f)
+			for f in rf.reachable_functions:
+				if not f in all_reachable_functions: all_reachable_functions.append(f)
+			
+		log().info("All reachable functions:")
+		for f in all_reachable_functions:
+			log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
+		copy_project_files(outputdir, part, filestobuild, all_reachable_functions)
+	else:
+		filestobuild.append(overridesourcefiles)
+		filestobuild.append(additionalsourcefiles)
+		copy_project_files(outputdir, part, filestobuild)
+		
+	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
+	bindings = write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
+	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
+	return bindings
 
 
 def copy_project_files(targetdir, fpgapartname, extrasourcefiles, reachable_functions = None):

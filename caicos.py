@@ -52,40 +52,43 @@ def build_all(config):
 	"""
 	Build a JUNIPER project. Format of the config dictionary is described in the docstring for config_specification.
 	"""
-	if config.get('cleanoutput', "false").lower() == "true":
-		shutil.rmtree(config['outputdir'], ignore_errors=True)
-	
-	cwd = os.path.dirname(os.path.realpath(__file__))
-	mkdir(config['outputdir'])
-	
-	#Build hardware project
-	if config.get('dev_softwareonly', "false").lower() == "true":
-		log().warning("dev_softwareonly is set. Generating software only.")
-		bindings = __getfakebindings(config['signatures'])
-	else:		
-		bindings = prepare_hls_project.build_from_functions(
-			config['signatures'], 
-			config['jamaicabuilderoutputdir'],
-			os.path.join(config['outputdir'], "hardware"), 
-			config.get('additionalhardwarefiles'), 
-			config['fpgapart'])
-	
-		shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(config['outputdir'], "hardware", "push.sh"))
+	try:
+		if config.get('cleanoutput', "false").lower() == "true":
+			shutil.rmtree(config['outputdir'], ignore_errors=True)
 		
-	#Build software project
-	prepare_src_project.build_src_project(
-		bindings,
-		config['jamaicabuilderoutputdir'],
-		os.path.join(config['outputdir'], "software"),
-		config['jamaicatarget'])
-
-	#Output templated Makefile
-	contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
-	subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
-	template = Template(contents)
-	fout = open(os.path.join(config['outputdir'], "software", "Makefile"), "w")
-	fout.write(template.safe_substitute(subs))
-	fout.close()
+		cwd = os.path.dirname(os.path.realpath(__file__))
+		mkdir(config['outputdir'])
+		
+		#Build hardware project
+		if config.get('dev_softwareonly', "false").lower() == "true":
+			log().warning("dev_softwareonly is set. Generating software only.")
+			bindings = __getfakebindings(config['signatures'])
+		else:		
+			bindings = prepare_hls_project.build_from_functions(
+				config['signatures'], 
+				config['jamaicabuilderoutputdir'],
+				os.path.join(config['outputdir'], "hardware"), 
+				config.get('additionalhardwarefiles'), 
+				config['fpgapart'])
+		
+			shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(config['outputdir'], "hardware", "push.sh"))
+			
+		#Build software project
+		prepare_src_project.build_src_project(
+			bindings,
+			config['jamaicabuilderoutputdir'],
+			os.path.join(config['outputdir'], "software"),
+			config['jamaicatarget'])
+	
+		#Output templated Makefile
+		contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
+		subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
+		template = Template(contents)
+		fout = open(os.path.join(config['outputdir'], "software", "Makefile"), "w")
+		fout.write(template.safe_substitute(subs))
+		fout.close()
+	except CaicosError, e:
+		log().error("A critical error was encountered:\n\t" + str(e))
 
 
 	
