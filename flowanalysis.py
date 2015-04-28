@@ -174,7 +174,7 @@ def get_files_to_search(sig, jamaicaoutputdir):
 	
 	#Then the FPGA porting layer
 	cwd = os.path.dirname(os.path.realpath(__file__))	
-	filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+	filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
 	
 	#Then the java.lang package
 	filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))

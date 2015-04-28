@@ -30,7 +30,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	"""
 	filestobuild = []
 	cwd = os.path.dirname(os.path.realpath(__file__))	
-	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.cpp"))
+	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
 	
 	all_reachable_functions = []
 	
@@ -48,6 +48,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 			
 			#Don't forget to include the starting point
 			all_reachable_functions.append(funcdecl.parent)
+			if not funcdecl.parent.coord.file in filestobuild: filestobuild.append(funcdecl.parent.coord.file)
 	
 			for f in rf.files:
 				if not f in filestobuild: filestobuild.append(f)
@@ -57,19 +58,19 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		log().info("All reachable functions:")
 		for f in all_reachable_functions:
 			log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
-		copy_project_files(outputdir, part, filestobuild, all_reachable_functions)
+		copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions)
 	else:
 		filestobuild.append(overridesourcefiles)
 		filestobuild.append(additionalsourcefiles)
-		copy_project_files(outputdir, part, filestobuild)
+		copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild)
 		
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
-	bindings = write_functions_cpp(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.cpp"))
+	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
 	return bindings
 
 
-def copy_project_files(targetdir, fpgapartname, extrasourcefiles, reachable_functions = None):
+def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, extrasourcefiles, reachable_functions = None):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
@@ -82,22 +83,24 @@ def copy_project_files(targetdir, fpgapartname, extrasourcefiles, reachable_func
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
 	copy_files(os.path.join(cwd, "projectfiles", "include"), os.path.join(targetdir, "include"), [".h"])
-	copy_files(os.path.join(cwd, "projectfiles", "src"), os.path.join(targetdir, "src"), [".h", ".cpp"])
+	copy_files(os.path.join(cwd, "projectfiles", "src"), os.path.join(targetdir, "src"), [".h", ".c"])
+	shutil.copy(os.path.join(jamaicaoutputdir, "Main__.h"), os.path.join(targetdir, "include"))
 
 	for f in extrasourcefiles:
-		log().info("Adding source file: " + f)
-		if f.endswith(".c"): #We only parse C files
-			targetfile = os.path.join(targetdir, "src", os.path.basename(f))
-			"""
-			Jamaica builder outputs C files. It is easier to work in HLS with C++. Consequentially, we need the 
-			C files to declare C linkage (with extern "C" {...}). However, this construct is not supported by
-			pycparser so we must compile without __c_plusplus declared and the linkage is not included, leading to
-			errors. There are 2 options, either manually add the extern "C" declarations back in later, or
-			rename the C source to CPP. 
-			"""
-			targetfile = os.path.splitext(targetfile)[0] + ".cpp"
-			rewrite_source_file(f, targetfile, reachable_functions)
-	
+		if not os.path.basename(f) == "fpgaporting.c": #We needed fpgaporting to perform reachability analysis, but don't rewrite it
+			log().info("Adding source file: " + f)
+			if f.endswith(".c"): #We only parse C files
+				targetfile = os.path.join(targetdir, "src", os.path.basename(f))
+				"""
+				Jamaica builder outputs C files. It is easier to work in HLS with C++. Consequentially, we need the 
+				C files to declare C linkage (with extern "C" {...}). However, this construct is not supported by
+				pycparser so we must compile without __c_plusplus declared and the linkage is not included, leading to
+				errors. There are 2 options, either manually add the extern "C" declarations back in later, or
+				rename the C source to CPP. 
+				"""
+				#targetfile = os.path.splitext(targetfile)[0] + ".cpp"
+				rewrite_source_file(f, targetfile, reachable_functions)
+		
 
 	
 def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
@@ -219,15 +222,16 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 
 
 
-def write_functions_cpp(functions, jamaicaoutputdir, outputfile):
+def write_functions_c(functions, jamaicaoutputdir, outputfile):
 	"""
-	Prepare functions.cpp, which contains the dispatch functions that calls the translated methods.
+	Prepare functions.c, which contains the dispatch functions that calls the translated methods.
 	"""
 	bindings = {}
 	callid = 0
 	
 	s =     "#include <jamaica.h>\n"
 	s = s + "#include <toplevel.h>\n"
+	s = s + "#include <Main__.h>\n"
 	s = s + "\n"
 	s = s + "int __juniper_call(int call_id) {\n"
 	s = s + "\tswitch(call_id) {\n"

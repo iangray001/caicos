@@ -3,8 +3,9 @@
 #include "toplevel.h"
 #include <juniperoperations.h>
 #include <fpgaporting.h>
+#include <ap_cint.h>
 
-#define VERSION 25
+#define VERSION 26
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -14,8 +15,12 @@ volatile int *__juniper_ram_master;
 volatile char *__juniper_ram_master_char;
 volatile short *__juniper_ram_master_short;
 
-int hls(int *opid, int *arg1, int *arg2, int *arg3) {
+//The PCIe syscall interface
+volatile uint1 syscall_interrupt;
+PCIE_Syscall syscall_args;
 
+
+int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 	/*
 	 * Bundle the different memory interfaces together into the same AXI Master interface
 	 * This uses slave offset mode, which allows each interface to be separately offset.
@@ -38,6 +43,8 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 
 	//Set up dummy __juniper_thread struct
 	create_jamaica_thread();
+
+	force_synthesis_of_syscall_interface();
 
 	switch(*opid) {
 	case OP_VERSION: return VERSION;

@@ -35,6 +35,39 @@ void create_jamaica_thread() {
 }
 
 
+/*
+ * HLS sometimes optimises the syscall interface away. This forces this to not be the case.
+ * TODO: Check when we can remove this.
+ */
+void force_synthesis_of_syscall_interface() {
+#pragma HLS INLINE
+	//NOTE: A bug in HLS was found which required that this function be HLS INLINEd even though inline is default behaviour
+	syscall_args.cmd = syscall_args.arg1;
+	syscall_args.arg1 = syscall_args.arg2;
+	syscall_args.arg2 = syscall_args.arg3;
+	syscall_args.arg3 = syscall_args.arg4;
+	syscall_args.arg4 = syscall_args.arg5;
+	syscall_args.arg5 = syscall_args.cmd;
+}
+
+
+/*
+ * Perform a PCIe system call, back up to the host VM.
+ */
+unsigned int pcie_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5) {
+	syscall_args.cmd = cmd;
+	syscall_args.arg1 = arg1;
+	syscall_args.arg2 = arg2;
+	syscall_args.arg3 = arg3;
+	syscall_args.arg4 = arg4;
+	syscall_args.arg5 = arg5;
+	syscall_interrupt = 1;
+	syscall_interrupt = 0;
+	while(syscall_args.cmd != 0);
+	return syscall_args.arg1;
+}
+
+
 #define LOBYTE(a) ((a) & 0xFF)
 #define SAR(a, b) (((signed) (a))>>(b)) //Assumes a is int type
 

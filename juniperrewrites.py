@@ -230,15 +230,22 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 	
 	ast = astcache.get(inputfile)
 	rewrite_RAM_structure_dereferences(ast)
-		
-	if reachable_functions != None:
-		for c in ast.children():
-			if isinstance(c[1], c_ast.FuncDef):
-				if not is_funcdef_in_reachable_list(c[1]):
-					log().debug("Trimming function definition " + str(c[1].decl.name) + " from " + os.path.basename(inputfile))
-					replace_node(c[1], c_ast.ID(""))
+	
+	outf = open(outputfile, "w")
+	outf.write('#include "jamaica.h"\n');
+	outf.write('#include "jni.h"\n');
+	outf.write('#include "jbi.h"\n');
+	outf.write('#include "Main__.h"\n');
+	outf.write('\n');
+	
+	generator = pycparser.c_generator.CGenerator()
+	for c in ast.children():
+		if isinstance(c[1], c_ast.FuncDef):
+			if reachable_functions == None or is_funcdef_in_reachable_list(c[1]):
+				outf.write(generator.visit(c[1]))
+				outf.write("\n")
 
-	utils.write_ast_to_file(ast, outputfile)
+	outf.close()
 
 	
 def get_line_bounds_for_function(declnode):
