@@ -10,10 +10,10 @@ from pycparser import c_ast
 from flowanalysis import ReachableFunctions, get_files_to_search
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
-from utils import log, CaicosError, mkdir, copy_files
+from utils import log, mkdir, copy_files
 
 
-def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, overridesourcefiles = None):
+def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
 	"""
 	Build a Vivado HLS project that contains the hardware for a set of Java functions
 	
@@ -23,8 +23,6 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
 		additionalsourcefiles: Iterable of abs paths for other source files that are required.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
-		overridesourcefiles: A list of absolute file paths. If provided then flow analysis is not performed and 
-			only these files (plus additionalsourcefiles) will be included in the output project.
 	Returns:
 		A dictionary of {int -> Java sig} of the methods and their associated call ids.
 	"""
@@ -33,37 +31,32 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
 	
 	all_reachable_functions = []
-	
-	if overridesourcefiles == None:			
-		for sig in funcs:
-			filestosearch = get_files_to_search(sig, jamaicaoutputdir)
-			
-			if additionalsourcefiles != None:
-				for f in additionalsourcefiles: 
-					if not f in filestosearch: filestosearch.append(f)
-					if not f in filestobuild: filestobuild.append(f)
-
-			funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-			rf = ReachableFunctions(funcdecl.parent, filestosearch)
-			
-			#Don't forget to include the starting point
-			all_reachable_functions.append(funcdecl.parent)
-			if not funcdecl.parent.coord.file in filestobuild: filestobuild.append(funcdecl.parent.coord.file)
-	
-			for f in rf.files:
-				if not f in filestobuild: filestobuild.append(f)
-			for f in rf.reachable_functions:
-				if not f in all_reachable_functions: all_reachable_functions.append(f)
-			
-		log().info("All reachable functions:")
-		for f in all_reachable_functions:
-			log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
-		copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions)
-	else:
-		filestobuild.append(overridesourcefiles)
-		filestobuild.append(additionalsourcefiles)
-		copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild)
 		
+	for sig in funcs:
+		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
+		
+		if additionalsourcefiles != None:
+			for f in additionalsourcefiles: 
+				if not f in filestosearch: filestosearch.append(f)
+				if not f in filestobuild: filestobuild.append(f)
+
+		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+		rf = ReachableFunctions(funcdecl.parent, filestosearch)
+		
+		#Don't forget to include the starting point
+		all_reachable_functions.append(funcdecl.parent)
+		if not funcdecl.parent.coord.file in filestobuild: filestobuild.append(funcdecl.parent.coord.file)
+
+		for f in rf.files:
+			if not f in filestobuild: filestobuild.append(f)
+		for f in rf.reachable_functions:
+			if not f in all_reachable_functions: all_reachable_functions.append(f)
+		
+	log().info("All reachable functions:")
+	for f in all_reachable_functions:
+		log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
+	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions)
+	
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
