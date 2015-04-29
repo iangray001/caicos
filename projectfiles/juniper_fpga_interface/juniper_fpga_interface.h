@@ -11,6 +11,7 @@ int juniper_fpga_num_partitions(int devNo);
 // If positive (or zero), the idle status
 // If negative, error.
 int juniper_fpga_partition_idle(int devNo, int partNo);
+int juniper_fpga_partition_interrupted(int devNo, int partNo);
 int juniper_fpga_partition_start(int devNo, int partNo);
 
 int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* base);

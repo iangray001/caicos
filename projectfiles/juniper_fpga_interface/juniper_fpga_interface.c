@@ -13,6 +13,60 @@ static size_t juniper_fpga_formatpath(int devNo, int partNo, char* subpath, char
 	return snprintf(buf, length, JUNIPER_PATH "%s", devNo, devNo, 'a' + partNo, subpath);
 }
 
+static int juniper_fpga_partition_read_flag(int devNo, int partNo, char* flagName)
+{
+	// Try and open the file
+	// TODO: There must be a better way, no?
+	char path[JUNIPER_PATH_BUFSZ];
+	char flag;
+	int fd;
+	int rdAmt;
+
+	juniper_fpga_formatpath(devNo, partNo, flagName, path, JUNIPER_PATH_BUFSZ);
+
+	fd = open(path, O_RDONLY);
+	if(fd == -1)
+		return JUNIPER_FPGA_FAIL_NOFILE;
+
+	// Read the byte from it
+	rdAmt = read(fd, &flag, 1);
+
+	close(fd);
+
+	if(rdAmt != 1)
+		return JUNIPER_FPGA_FAIL_DRVERR;
+
+	return flag == '1';
+}
+
+static int juniper_fpga_partition_write_flag(int devNo, int partNo, char* flagName, int flag)
+{
+	// Try and open the file
+	// TODO: There must be a better way, no?
+	char path[JUNIPER_PATH_BUFSZ];
+	char flagChar;
+	int fd;
+	int rdAmt;
+
+	flagChar = flag ? '1' : '0';
+
+	juniper_fpga_formatpath(devNo, partNo, flagName, path, JUNIPER_PATH_BUFSZ);
+
+	fd = open(path, O_WRONLY);
+	if(fd == -1)
+		return JUNIPER_FPGA_FAIL_NOFILE;
+
+	// Read the byte from it
+	rdAmt = write(fd, &flagChar, 1);
+
+	close(fd);
+
+	if(rdAmt != 1)
+		return JUNIPER_FPGA_FAIL_DRVERR;
+
+	return JUNIPER_FPGA_OK;
+}
+
 int juniper_fpga_num_devices()
 {
 	// TODO: Actually check...
@@ -27,51 +81,17 @@ int juniper_fpga_num_partitions(int devNo)
 
 int juniper_fpga_partition_idle(int devNo, int partNo)
 {
-	// Try and open the file
-	// TODO: There must be a better way, no?
-	char path[JUNIPER_PATH_BUFSZ];
-	char idle;
-	int fd;
-	int rdAmt;
-
-	juniper_fpga_formatpath(devNo, partNo, "accel_idle", path, JUNIPER_PATH_BUFSZ);
-
-	fd = open(path, O_RDONLY);
-	if(fd == -1)
-		return JUNIPER_FPGA_FAIL_NOFILE;
-
-	// Read the byte from it
-	rdAmt = read(fd, &idle, 1);
-
-	close(fd);
-
-	if(rdAmt != 1)
-		return JUNIPER_FPGA_FAIL_DRVERR;
-
-	return idle;
+	return juniper_fpga_partition_read_flag(devNo, partNo, "accel_idle");
 }
 
 int juniper_fpga_partition_start(int devNo, int partNo)
 {
-	char path[JUNIPER_PATH_BUFSZ];
-	char go = '1';
-	int fd;
-	int wrAmt;
+	return juniper_fpga_partition_write_flag(devNo, partNo, "accel_start", 1);
+}
 
-	juniper_fpga_formatpath(devNo, partNo, "accel_start", path, JUNIPER_PATH_BUFSZ);
-
-	fd = open(path, O_WRONLY);
-	if(fd == -1)
-		return JUNIPER_FPGA_FAIL_NOFILE;
-
-	wrAmt = write(fd, &go, 1);
-
-	close(fd);
-
-	if(wrAmt != 1)
-		return JUNIPER_FPGA_FAIL_DRVERR;
-
-	return JUNIPER_FPGA_OK;
+int juniper_fpga_partition_interrupted(int devNo, int partNo)
+{
+	return juniper_fpga_partition_read_flag(devNo, partNo, "accel_interrupted");
 }
 
 int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* base)
