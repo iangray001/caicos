@@ -1,0 +1,35 @@
+JUNIPER JFM Host Kernel Module
+===================================
+DISCLAIMER: THIS MODULE IS FRAGILE IN ITS CURRENT FORM. INFACT, FRAGILE IS GIVING IT CREDIT. THIS WILL KILL YOUR KERNEL.
+I MEAN, CALLING THIS MODULE FRAGILE IS LIKE CALLING A BULL IN A CHINA SHOP "FRAGILE". USE. AT. YOUR. RISK.
+
+This is the kernel module to manage the interface between a Linux host and the JFM running on the FPGA
+over PCI-Express. This has currently been tested with a VC707 board in a Linux 2.6 machine, simply because that's
+what the FPGA is currently in and so it makes testing easier for us.
+
+To port to kernel 3.x, the required changes are as follows:
+* Add `struct file*` to the binary attribute function prototypes in juniper_sysfs.c.
+
+This module will register a bunch of files under /sys, which are as follows:
+
+* /sys/class/juniper - root folder containing physical PCI endpoints (e.g. FPGA cards).
+* * As an example, an FPGA card will be located under /sys/class/juniper/juniper0
+* * These folders contain a special file, `reconfig`. Cat a **binary** bitfile to this (e.g. from `write_bitstream -bin_file`)
+    to begin partial reconfiguration of the FPGA.
+* * * While you can cat a full bitstream to this, and it'll "work", it will bomb as the bus gets nuked halfway through.
+      This is not recommended.
+* * /sys/class/juniper/juniperX/juniperXY - the folders for the individual accelerators. These contain some control files.
+* * * juniperXY/accel_idle - Whether the accelerator is idle (i.e. not doing **anything**)
+* * * juniperXY/accel_start - Echo "1" to this to start the accelerator running.
+* * * juniperXY/mem - Read/write the memory space of the accelerator.
+* * * juniperXY/accel_hold - Read/write the "hold" status of the accelerator. When "hold" is active, the core is held in reset
+      and **all** outputs are driven to ground. This decouples the accelerator such that partial reconfiguration can
+      take place. A CORE MUST BE IN A HELD STATE TO SAFELY PARTIALLY RECONFIGURE IT.
+
+There are a few bugs with the current setup:
+* juniperX/reconfig must have a number of 32-bit words written to it, or it will fail. Offsets are ignored.
+* juniperX/juniperXY/mem must be accessed with 32-bit aligned offsets, and the transaction size must be a multiple of 32-bits.
+  Not doing means you may get garbage data or crash the kernel. To read/write safely, use dd bs=4 count=Z if=<in> of=<out>
+  for now.
+* There is error checking, but no safe recovery system. A failure in this module will likely cause a kernel panic.
+* /sys files are currently created with UGO+(r/w). Fix this.

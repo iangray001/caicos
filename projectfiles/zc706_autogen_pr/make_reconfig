@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# So, of course, the initial reaction is "WHY DIDN'T YOU JUST DO THIS IN TCL?!"
+# Well, I hate Tcl, so I'm doing it in bash. Doing it in pure Tcl will come later...
+
+TCLFILE="assemble/prbuild.tcl"
+
+# Nuke the existing output directory
+rm -rf assemble
+
+mkdir assemble
+mkdir assemble/bitstream
+
+# Copy in the designs
+cp zc706_hw/zc706_hw.runs/synth_1/juniper_board_wrapper.dcp ./assemble/base_synth.dcp
+cp generated.xdc ./assemble/generated.xdc
+cp reconfig_4partition.xdc ./assemble/reconfig_4partition.xdc
+cp base/juniperHLS/solution1/impl/ip/hls.dcp ./assemble/hls.dcp
+
+for d in ./reconfig/*; do
+	if [ -d $d ]; then
+		NAME=`basename $d`
+		
+		# Get the assembled version across
+		cp $d/juniperHLS/solution1/impl/ip/hls.dcp assemble/${NAME}_synth.dcp
+	fi
+done
+
+# Now build hell-script!
+echo "open_checkpoint base_synth.dcp" > $TCLFILE
+
+for i in {0..9}; do
+    if [ -d "./base/$i" ]; then
+        echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg hls.dcp" >> $TCLFILE
+    	echo "set_property HD.RECONFIGURABLE 1 [get_cells */top_${i}/U0/brg]" >> $TCLFILE
+    fi
+done
+
+cat >> $TCLFILE <<EOF
+read_xdc generated.xdc
+read_xdc reconfig_4partition.xdc
+opt_design
+place_design
+route_design
+write_checkpoint base_routed.dcp
+EOF
+
+# Blank the regions
+for i in {0..9}; do
+    if [ -d "./base/$i" ]; then
+    	echo "update_design -cell juniper_board_i/top_${i}/U0/brg -black_box" >> $TCLFILE
+    fi
+done
+
+echo "lock_design -level routing" >> $TCLFILE
+echo "write_checkpoint base_static.dcp" >> $TCLFILE
+
+# Now substitute in the reconfig modules
+for d in ./reconfig/*; do
+	if [ -d $d ]; then
+		NAME=`basename $d`
+
+		for i in {0..9}; do
+    		if [ -d "./base/$i" ]; then
+    			echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg ${NAME}_synth.dcp" >> $TCLFILE
+    		fi
+    	done
+
+    	echo "opt_design" >> $TCLFILE
+    	echo "place_design" >> $TCLFILE
+    	echo "route_design" >> $TCLFILE
+    	echo "write_checkpoint ${NAME}_fulldesign_routed.dcp" >> $TCLFILE
+	fi
+done
+
+# Bitstream generation!
+cat >> $TCLFILE <<EOF
+close_project
+open_checkpoint base_routed.dcp
+write_bitstream -bin_file -file bitstream/base.bit
+close_project
+EOF
+
+for d in ./reconfig/*; do
+	if [ -d $d ]; then
+		NAME=`basename $d`
+		cat >> $TCLFILE <<EOF
+open_checkpoint ${NAME}_fulldesign_routed.dcp
+write_bitstream -file bitstream/${NAME}.bit
+close_project
+EOF
+	fi
+done
+
+# Create the blanking bitstream
+echo "open_checkpoint base_static.dcp" >> $TCLFILE
+for i in {0..9}; do
+    if [ -d "./base/$i" ]; then
+    	echo "update_design -cell juniper_board_i/top_${i}/U0/brg -buffer_ports" >> $TCLFILE
+    fi
+done
+
+cat >> $TCLFILE <<EOF
+place_design
+route_design
+write_checkpoint base_static_buffer.dcp
+write_bitstream -bin_file -file bitstream/base_static_buffer.bit
+close_project
+EOF
+
+cd assemble
+vivado -mode batch -source `basename $TCLFILE`
+cd ../

@@ -1,0 +1,22 @@
+Ok, the system design that comes out of this script looks a little mental, this should help
+to explain why it is the way that it is.
+
+AXI_Interconnect_0 acts as a peripheral bus. As an optimisation, this can be converted from a crossbar
+to a simple bus without much in the way of a performance detriment. This connects the control
+signals for the reconfigurable partitions together, allows for control of the DMA core and 
+other misc peripherals.
+
+AXI_Interconnect_2 is effectively the memory bus. This should be kept as a crossbar. This allows
+the reconfigurable partitions to access memory, and also allows the PCI express controller to
+be able to read/write from RAM. This bus also connects to the PCI Express slave port. This is 
+because the CDMA needs to be able to access memory and PCI Express.
+- Consider creating a separate AXI bus for the CDMA to be able to access both memory
+  and PCI Express later...
+
+AXI_Interconnect_1 should be a small bus to enable the PCI-Express to talk to either the peripheral
+bus (AXI0), or the memory bus (AXI2).
+
+The connections of the CDMA aren't nice. This is because the master port needs to be clocked from
+the PCI Express bus clock in order for the MSI interrupt to be synchronised correctly. If not,
+some MSI interrupts may be missed. On the master side, the domain crossing would have to happen at one
+point anyway in order to cause the domain crossing to the PCI-E slave.
