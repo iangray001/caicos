@@ -26,7 +26,7 @@ def get(filename, alternateincludepath = None):
 		if filename in cache:
 			return cache[filename]
 		else:
-			log().info("Parsing " + filename)
+			log().info("Parsing " + str(filename))
 			ast = parse_jamaica_output(filename, alternateincludepath)
 			add_parent_links(ast)
 			cache[filename] = ast
