@@ -445,9 +445,10 @@ ssize_t accel_interrupted_show(struct device* dev, struct device_attribute* attr
 	buf[0] = accel_data->interrupted ? '1' : '0';
 	buf[1] = '\0';
 
-	printk(KERN_INFO "READING INTERRUPTED FOR %d VAL %d ADDR %p!\n", accel_data->idx, accel_data->interrupted, accel_data);
+	//printk(KERN_INFO "READING INTERRUPTED FOR %d VAL %d ADDR %p!\n", accel_data->idx, accel_data->interrupted, accel_data);
 
-	accel_data->interrupted = 0;
+	if(accel_data->interrupted)
+		accel_data->interrupted = 0;
 	return 2;
 }
 
@@ -467,30 +468,30 @@ ssize_t accel_syscall_args_show(struct device* dev, struct device_attribute* att
 	// Loop unrolling, innit.
 	buf[0] = (cmd >> 0) & 0xFF;
 
-	buf[1] = (arg1 >> 24) & 0xFF;
-	buf[2] = (arg1 >> 16) & 0xFF;
-	buf[3] = (arg1 >> 8)  & 0xFF;
-	buf[4] = (arg1 >> 0)  & 0xFF;
+	buf[1] = (arg1 >> 0) & 0xFF;
+	buf[2] = (arg1 >> 8) & 0xFF;
+	buf[3] = (arg1 >> 16)  & 0xFF;
+	buf[4] = (arg1 >> 24)  & 0xFF;
 
-	buf[5] = (arg2 >> 24) & 0xFF;
-	buf[6] = (arg2 >> 16) & 0xFF;
-	buf[7] = (arg2 >> 8)  & 0xFF;
-	buf[8] = (arg2 >> 0)  & 0xFF;
+	buf[5] = (arg2 >> 0) & 0xFF;
+	buf[6] = (arg2 >> 8) & 0xFF;
+	buf[7] = (arg2 >> 16)  & 0xFF;
+	buf[8] = (arg2 >> 24)  & 0xFF;
 
-	buf[9] = (arg3 >> 24) & 0xFF;
-	buf[10] = (arg3 >> 16) & 0xFF;
-	buf[11] = (arg3 >> 8)  & 0xFF;
-	buf[12] = (arg3 >> 0)  & 0xFF;
+	buf[9] = (arg3 >> 0) & 0xFF;
+	buf[10] = (arg3 >> 8) & 0xFF;
+	buf[11] = (arg3 >> 16)  & 0xFF;
+	buf[12] = (arg3 >> 24)  & 0xFF;
 
-	buf[13] = (arg4 >> 24) & 0xFF;
-	buf[14] = (arg4 >> 16) & 0xFF;
-	buf[15] = (arg4 >> 8)  & 0xFF;
-	buf[16] = (arg4 >> 0)  & 0xFF;
+	buf[13] = (arg4 >> 0) & 0xFF;
+	buf[14] = (arg4 >> 8) & 0xFF;
+	buf[15] = (arg4 >> 16)  & 0xFF;
+	buf[16] = (arg4 >> 24)  & 0xFF;
 
-	buf[17] = (arg5 >> 24) & 0xFF;
-	buf[18] = (arg5 >> 16) & 0xFF;
-	buf[19] = (arg5 >> 8)  & 0xFF;
-	buf[20] = (arg5 >> 0)  & 0xFF;
+	buf[17] = (arg5 >> 0) & 0xFF;
+	buf[18] = (arg5 >> 8) & 0xFF;
+	buf[19] = (arg5 >> 16)  & 0xFF;
+	buf[20] = (arg5 >> 24)  & 0xFF;
 
 	buf[21] = '\0';
 
@@ -508,10 +509,10 @@ ssize_t accel_syscall_args_store(struct device* dev, struct device_attribute* at
 
 	cmd |= buf[0];
 
-	arg1 |= buf[1] << 24;
-	arg1 |= buf[2] << 16;
-	arg1 |= buf[3] << 8;
-	arg1 |= buf[4] << 0;
+	arg1 |= buf[1] << 0;
+	arg1 |= buf[2] << 8;
+	arg1 |= buf[3] << 16;
+	arg1 |= buf[4] << 24;
 
 	juniper_interp_set_syscall_arg(accel_data, 1, arg1);
 	juniper_interp_set_syscall_arg(accel_data, 0, cmd); // Todo: Do the command shuffling here?

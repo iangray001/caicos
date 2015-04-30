@@ -32,7 +32,7 @@ static int juniper_fpga_partition_read_bytes(int devNo, int partNo, char* flagNa
 
 	close(fd);
 
-	if(rdAmt != 1)
+	if(rdAmt != length)
 		return JUNIPER_FPGA_FAIL_DRVERR;
 
 	return JUNIPER_FPGA_OK;
@@ -44,20 +44,22 @@ static int juniper_fpga_partition_write_bytes(int devNo, int partNo, char* flagN
 	// TODO: There must be a better way, no?
 	char path[JUNIPER_PATH_BUFSZ];
 	int fd;
-	int rdAmt;
+	int wrAmt;
 
 	juniper_fpga_formatpath(devNo, partNo, flagName, path, JUNIPER_PATH_BUFSZ);
 
-	fd = open(path, O_RDONLY);
+	//fprintf(stderr, "PATH: %s\n", path);
+
+	fd = open(path, O_WRONLY);
 	if(fd == -1)
 		return JUNIPER_FPGA_FAIL_NOFILE;
 
 	// Read the byte from it
-	rdAmt = write(fd, storage, length);
+	wrAmt = write(fd, storage, length);
 
 	close(fd);
 
-	if(rdAmt != 1)
+	if(wrAmt != length)
 		return JUNIPER_FPGA_FAIL_DRVERR;
 
 	return JUNIPER_FPGA_OK;
