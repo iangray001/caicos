@@ -84,6 +84,25 @@ static int juniper_fpga_partition_write_flag(int devNo, int partNo, char* flagNa
 	return juniper_fpga_partition_write_bytes(devNo, partNo, flagName, &flagChar, 1);
 }
 
+static unsigned int juniper_fpga_unpack_int(unsigned char* bytes)
+{
+	unsigned int tmp = 0;
+	tmp |= (bytes[0]) << 0;
+	tmp |= (bytes[1]) << 8;
+	tmp |= (bytes[2]) << 16;
+	tmp |= (bytes[3]) << 24;
+
+	return tmp;
+}
+
+static void juniper_fpga_pack_int(unsigned int i, unsigned char* buf)
+{
+	buf[0] = (i >> 0) & 0xFF;
+	buf[1] = (i >> 8) & 0xFF;
+	buf[2] = (i >> 16) & 0xFF;
+	buf[3] = (i >> 24) & 0xFF;
+}
+
 int juniper_fpga_num_devices()
 {
 	// TODO: Actually check...
@@ -122,12 +141,7 @@ int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* bas
 	if(rv != JUNIPER_FPGA_OK)
 		return rv;
 
-	// Pack it.
-	tmp = 0;
-	tmp |= baseBuf[0];
-	tmp |= baseBuf[1] << 8;
-	tmp |= baseBuf[2] << 16;
-	tmp |= baseBuf[3] << 24;
+	tmp = juniper_fpga_unpack_int(baseBuf);
 
 	*base = tmp;
 	return JUNIPER_FPGA_OK;
@@ -145,11 +159,7 @@ int juniper_fpga_partition_get_retval(int devNo, int partNo, unsigned int* retOu
 		return rv;
 
 	// Pack it.
-	tmp = 0;
-	tmp |= baseBuf[0];
-	tmp |= baseBuf[1] << 8;
-	tmp |= baseBuf[2] << 16;
-	tmp |= baseBuf[3] << 24;
+	tmp = juniper_fpga_unpack_int(baseBuf);
 
 	*retOut = tmp;
 	return JUNIPER_FPGA_OK;
@@ -163,11 +173,7 @@ int juniper_fpga_partition_set_mem_base(int devNo, int partNo, unsigned int base
 	int wrAmt;
 	int rv;
 	
-	// Pack it...
-	baseBuf[0] = base & 0xFF;
-	baseBuf[1] = (base >> 8) & 0xFF;
-	baseBuf[2] = (base >> 16) & 0xFF;
-	baseBuf[3] = (base >> 24) & 0xFF;
+	juniper_fpga_pack_int(base, baseBuf);
 
 	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
 }
@@ -188,12 +194,7 @@ int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, unsigned in
 	if(rv != JUNIPER_FPGA_OK)
 		return rv;
 
-	// Pack it.
-	tmp = 0;
-	tmp |= baseBuf[0];
-	tmp |= baseBuf[1] << 8;
-	tmp |= baseBuf[2] << 16;
-	tmp |= baseBuf[3] << 24;
+	tmp = juniper_fpga_unpack_int(baseBuf);
 
 	*arg = tmp;
 	return JUNIPER_FPGA_OK;
@@ -213,11 +214,7 @@ int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, unsigned in
 
 	fileName[len - 1] += argNo;
 	
-	// Pack it...
-	baseBuf[0] =  arg & 0xFF;
-	baseBuf[1] = (arg >> 8) & 0xFF;
-	baseBuf[2] = (arg >> 16) & 0xFF;
-	baseBuf[3] = (arg >> 24) & 0xFF;
+	juniper_fpga_pack_int(arg, baseBuf);
 
 	return juniper_fpga_partition_write_bytes(devNo, partNo, fileName, baseBuf, 4);
 }
