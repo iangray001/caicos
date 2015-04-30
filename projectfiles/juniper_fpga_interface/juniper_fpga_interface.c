@@ -84,7 +84,7 @@ static int juniper_fpga_partition_write_flag(int devNo, int partNo, char* flagNa
 	return juniper_fpga_partition_write_bytes(devNo, partNo, flagName, &flagChar, 1);
 }
 
-static unsigned int juniper_fpga_unpack_int(unsigned char* bytes)
+static uint32_t juniper_fpga_unpack_int(unsigned char* bytes)
 {
 	unsigned int tmp = 0;
 	tmp |= (bytes[0]) << 0;
@@ -95,7 +95,7 @@ static unsigned int juniper_fpga_unpack_int(unsigned char* bytes)
 	return tmp;
 }
 
-static void juniper_fpga_pack_int(unsigned int i, unsigned char* buf)
+static void juniper_fpga_pack_int(uint32_t i, unsigned char* buf)
 {
 	buf[0] = (i >> 0) & 0xFF;
 	buf[1] = (i >> 8) & 0xFF;
@@ -130,10 +130,10 @@ int juniper_fpga_partition_interrupted(int devNo, int partNo)
 	return juniper_fpga_partition_read_flag(devNo, partNo, "accel_interrupted");
 }
 
-int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* base)
+int juniper_fpga_partition_get_mem_base(int devNo, int partNo, uint32_t* base)
 {
 	unsigned char baseBuf[4];
-	unsigned int tmp;
+	uint32_t tmp;
 	int rv;
 
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
@@ -147,10 +147,10 @@ int juniper_fpga_partition_get_mem_base(int devNo, int partNo, unsigned int* bas
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_get_retval(int devNo, int partNo, unsigned int* retOut)
+int juniper_fpga_partition_get_retval(int devNo, int partNo, uint32_t* retOut)
 {
 	unsigned char baseBuf[4];
-	unsigned int tmp;
+	uint32_t tmp;
 	int rv;
 
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_retval", baseBuf, 4);
@@ -165,7 +165,7 @@ int juniper_fpga_partition_get_retval(int devNo, int partNo, unsigned int* retOu
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_set_mem_base(int devNo, int partNo, unsigned int base)
+int juniper_fpga_partition_set_mem_base(int devNo, int partNo, uint32_t base)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char baseBuf[4];
@@ -178,10 +178,10 @@ int juniper_fpga_partition_set_mem_base(int devNo, int partNo, unsigned int base
 	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
 }
 
-int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, unsigned int* arg)
+int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, uint32_t* arg)
 {
 	unsigned char baseBuf[4];
-	unsigned int tmp;
+	uint32_t tmp;
 	int rv;
 
 	// Cheat...
@@ -200,7 +200,7 @@ int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, unsigned in
 	return JUNIPER_FPGA_OK;
 }
 
-int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, unsigned int arg)
+int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, uint32_t arg)
 {
 	char path[JUNIPER_PATH_BUFSZ];
 	unsigned char baseBuf[4];
@@ -217,4 +217,42 @@ int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, unsigned in
 	juniper_fpga_pack_int(arg, baseBuf);
 
 	return juniper_fpga_partition_write_bytes(devNo, partNo, fileName, baseBuf, 4);
+}
+
+int juniper_fpga_partition_get_syscall_args(int devNo, int partNo, juniper_fpga_syscall_args* args)
+{
+	int rv;
+	unsigned char buf[JUNIPER_FPGA_SYSCALL_IN_ARGS_SIZE];
+
+	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_syscall_args", buf, JUNIPER_FPGA_SYSCALL_IN_ARGS_SIZE);
+
+	if(rv != JUNIPER_FPGA_OK)
+		return rv;
+
+	args->cmd = buf[0];
+	args->arg1 = juniper_fpga_unpack_int(&buf[1]);
+	args->arg2 = juniper_fpga_unpack_int(&buf[1+4]);
+	args->arg3 = juniper_fpga_unpack_int(&buf[1+8]);
+	args->arg4 = juniper_fpga_unpack_int(&buf[1+12]);
+	args->arg5 = juniper_fpga_unpack_int(&buf[1+16]);
+
+	return JUNIPER_FPGA_OK;
+}
+
+int juniper_fpga_partition_set_syscall_return(int devNo, int partNo, unsigned int val)
+{
+	int rv;
+	unsigned char buf[JUNIPER_FPGA_SYSCALL_OUT_ARGS_SIZE];
+
+	buf[0] = JUNIPER_FPGA_SYSCALL_OUT_KNOCK1;
+	juniper_fpga_pack_int(val, &buf[1]);
+
+	rv = juniper_fpga_partition_write_bytes(devNo, partNo, "accel_syscall_args", buf, JUNIPER_FPGA_SYSCALL_OUT_ARGS_SIZE);
+
+	if(rv != JUNIPER_FPGA_OK)
+		return rv;
+
+	buf[0] = JUNIPER_FPGA_SYSCALL_OUT_KNOCK2;
+
+	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_syscall_args", buf, JUNIPER_FPGA_SYSCALL_OUT_ARGS_SIZE);
 }
