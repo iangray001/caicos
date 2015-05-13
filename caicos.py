@@ -59,7 +59,11 @@ def build_all(config):
 		cwd = os.path.dirname(os.path.realpath(__file__))
 		mkdir(config['outputdir'])
 		
+		hwdir = os.path.join(config['outputdir'], "hardware")
+		swdir = os.path.join(config['outputdir'], "software")
+		
 		#Build hardware project
+		log().info("Building hardware project in " + str(hwdir) + "...")
 		if config.get('dev_softwareonly', "false").lower() == "true":
 			log().warning("dev_softwareonly is set. Generating software only.")
 			bindings = __getfakebindings(config['signatures'])
@@ -67,17 +71,18 @@ def build_all(config):
 			bindings = prepare_hls_project.build_from_functions(
 				config['signatures'], 
 				config['jamaicabuilderoutputdir'],
-				os.path.join(config['outputdir'], "hardware"), 
+				hwdir, 
 				config.get('additionalhardwarefiles'), 
 				config['fpgapart'])
 		
 			shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(config['outputdir'], "hardware", "push.sh"))
 			
 		#Build software project
+		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(
 			bindings,
 			config['jamaicabuilderoutputdir'],
-			os.path.join(config['outputdir'], "software"),
+			swdir,
 			config['jamaicatarget'])
 	
 		#Output templated Makefile

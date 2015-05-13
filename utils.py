@@ -50,7 +50,7 @@ def deglob_file(globbedname):
 	"""
 	matches = glob.glob(str(globbedname))
 	if len(matches) == 0:
-		logging.warning("The filename \"" + str(globbedname) + "\" does not match any files.")
+		raise CaicosError("The filename \"" + str(globbedname) + "\" does not match any files.")
 		return None
 	if len(matches) > 1:
 		logging.warning("Multiple matches for filename " + str(globbedname) + "\"")

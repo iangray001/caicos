@@ -1,15 +1,15 @@
 open_project "juniperHLS"
 open_solution "solution1"
 
-# We assume the toplevel is called HLS for now...
+# toplevel is called 'hls'
 set_top hls
 
-foreach f [exec ls | grep -F .cpp] {
-    add_files $f -cflags "-I."
+foreach f [exec ls src/ | grep -F .c] {
+    add_files src/$f -cflags "-Iinclude"
 }
 
-foreach f [exec ls | grep -F .h] {
-    add_files $f -cflags "-I./"
+foreach f [exec ls src/ | grep -F .cpp] {
+    add_files src/$f -cflags "-Iinclude"
 }
 
 # Use VC707

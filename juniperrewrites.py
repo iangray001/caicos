@@ -124,7 +124,12 @@ def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 		name = name + part + "_"
 	name = name + "V*__.c"
 
-	return utils.deglob_file(os.path.join(c_output_base, name))
+	try:
+		matches = utils.deglob_file(os.path.join(c_output_base, name))
+	except CaicosError, e:
+		raise CaicosError("No source file was found for class '" + str(classname) + "'. Are the bindings in the config file correct?")
+
+	return matches
 
 
 
