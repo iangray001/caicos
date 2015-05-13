@@ -5,34 +5,11 @@
 rm -rf ./iprepo
 mkdir ./iprepo
 
-NUMPRJ=4
-for i in {0..9}; do
-    if [ -d "./base/$i" ]; then
-        #sed "s/VERSIONNUM/1.${i}/" < autobuild.tcl.tpl > ./base/$i/autobuild.tcl;
-        #cd ./base/$i;
-        #vivado_hls -i -f autobuild.tcl || exit 1;
-        #cd ../../;
-
-        #cp -R ./base/${i}/juniperHLS/solution1/impl/ip ./iprepo/${i}_core
-        #cp logo.png ./iprepo/${i}_core/misc
-        #touch ./iprepo/${i}_core/component.xml
-        #((NUMPRJ++))
-        echo "LOL"
-    fi
-done
+NUMPRJ=1
 
 cd base
 vivado_hls -i -f autobuild.tcl || exit 1
 cd ../
-
-for d in ./reconfig/*; do
-    if [ -d $d ]; then
-        sed "s/VERSIONNUM/1.0/" < autobuild_dcp.tcl.tpl > ./$d/autobuild.tcl;
-        cd $d;
-        vivado_hls -i -f autobuild.tcl || exit 1;
-        cd ../../;
-    fi
-done
 
 # Now create the Vivado projects.
 rm -rf vc707_hw
@@ -47,13 +24,13 @@ cat > ./vivado_bd_cores.tcl <<EOF
     # Resize the AXI buses
     set_property -dict [ list CONFIG.NUM_SI {$((NUMPRJ+2))} ] [get_bd_cells mem_interconnect]
     set_property -dict [ list CONFIG.NUM_MI {$((NUMPRJ+6))} ] [get_bd_cells periph_interconnect]
-    set_property -dict [ list CONFIG.C_GPIO_WIDTH {$((NUMPRJ))}  ] [get_bd_cells axi_gpio_0]
+    set_property -dict [ list CONFIG.C_GPIO_WIDTH {$((NUMPRJ+1))}  ] [get_bd_cells axi_gpio_0]
     set_property -dict [ list CONFIG.NUM_PORTS {$((NUMPRJ+1))} ] [get_bd_cells axi_intc_concat]
 EOF
 
 # And sub into the MHS file
 # I'd call this bit completely and utterly fragile, but that's giving the impression that it might not break...
-for i in {0..3}; do
+for i in $(seq 0 1 $((NUMPRJ-1))); do
 #    if [ -d "./base/$i" ]; then
         # Create the cores...
         cat >> ./vivado_bd_cores.tcl <<EOF
@@ -71,7 +48,7 @@ connect_bd_net -net axi_intc_concat_$((i+1)) [get_bd_pins top_${i}/jamaica_sysca
 
 # Create instance: xlslice_${i}, and set properties
 set xlslice_${i} [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_${i} ]
-set_property -dict [ list CONFIG.DIN_WIDTH {${NUMPRJ}} CONFIG.DIN_FROM ${i} CONFIG.DIN_TO ${i} ] \$xlslice_${i}
+set_property -dict [ list CONFIG.DIN_WIDTH {$((NUMPRJ+1))} CONFIG.DIN_FROM ${i} CONFIG.DIN_TO ${i} ] \$xlslice_${i}
 connect_bd_net -net axi_gpio_0_gpio_io_o [get_bd_pins axi_gpio_0/gpio_io_o] [get_bd_pins xlslice_${i}/Din]
 connect_bd_net -net xlslice_${i}_Dout [get_bd_pins top_${i}/hold_outputs] [get_bd_pins xlslice_${i}/Dout]
 EOF
@@ -98,4 +75,5 @@ EOF
 
 vivado -mode batch -source vivado_bd_cores.tcl vc707_hw/vc707_hw.xpr
 
+./make_base
 ./make_reconfig
