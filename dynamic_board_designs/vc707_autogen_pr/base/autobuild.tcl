@@ -4,11 +4,11 @@ open_solution "solution1"
 set_top hls
 
 foreach f [exec ls | grep -F .cpp] {
-    add_files $f -cflags "-I../jamaciaheaders/."
+    add_files $f -cflags "-I../../projectfiles/include/"
 }
 
 foreach f [exec ls | grep -F .h] {
-    add_files $f -cflags "-I../jamaciaheaders/."
+    add_files $f -cflags "-I../../projectfiles/include/"
 }
 
 # Use VC707

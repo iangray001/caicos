@@ -5,11 +5,11 @@ open_solution "solution1"
 set_top hls
 
 foreach f [exec ls src/ | grep -F .c] {
-    add_files src/$f -cflags "-Iinclude"
+    add_files src/$f -cflags "-Iinclude -I../../projectfiles/include/"
 }
 
 foreach f [exec ls src/ | grep -F .cpp] {
-    add_files src/$f -cflags "-Iinclude"
+    add_files src/$f -cflags "-Iinclude -I../../projectfiles/include/"
 }
 
 # Use VC707
