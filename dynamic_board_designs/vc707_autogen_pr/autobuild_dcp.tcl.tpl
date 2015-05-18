@@ -15,13 +15,12 @@ foreach f [exec ls src/ | grep -F .cpp] {
 # Use VC707
 set_part {xc7vx485tffg1761-2}
 
-# I'm not sure the clock actually matters...
 create_clock -period 10 -name default
 
 # Create some hardware
 csynth_design
 
 # And dump to ISE
-export_design -format syn_dcp -description "A module for the JUNIPER project" -vendor "york.ac.uk" -version "VERSIONNUM"
+export_design -format syn_dcp -description "caicos dynamic hardware project" -vendor "york.ac.uk" -version "VERSIONNUM"
 
 exit

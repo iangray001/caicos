@@ -1,4 +1,4 @@
-Ok, the system design that comes out of this script looks a little mental, this should help
+The system design that comes out of this script looks a little non-standard, this should help
 to explain why it is the way that it is.
 
 AXI_Interconnect_0 acts as a peripheral bus. As an optimisation, this can be converted from a crossbar
