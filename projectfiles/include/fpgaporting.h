@@ -15,7 +15,9 @@
 #define INLINE_MEMORY_ACCESS_FUNCTIONS
 #define INLINE_RESOLVE_TREE_ARRAY
 #define INLINE_ARRAY_ACCESS_FUNCTIONS
+#define INLINE_GC_STATE_FUNCTIONS
 #define JUNIPER_SUPPORT_FLOATS
+
 
 //Prototypes of porting functions
 int __juniper_call(int call_id);
@@ -58,6 +60,24 @@ void juniper_ram_set_ub(int addr, int subwordoffset, jamaica_uint8 ub);
 void juniper_ram_set_f(int addr, int subwordoffset, jamaica_float f);
 void juniper_ram_set_l(int addr, int subwordoffset, jamaica_int64 val);
 void juniper_ram_set_d(int addr, int subwordoffset, jamaica_double val);
+
+//GC state manipulation
+jamaica_GCEnv *juniper_get_gcenv_ref(jamaica_thread *ct);
+jamaica_ref *juniper_get_l_array_ref(jamaica_thread *ct);
+
+jamaica_int32 juniper_get_m_cli(jamaica_thread *ct);
+void juniper_set_m_cli(jamaica_thread *ct, jamaica_int32 i);
+
+jamaica_int32 juniper_get_javastacksize(jamaica_thread *ct);
+jamaica_bool juniper_get_plainalloc(jamaica_thread *ct);
+jamaica_ref juniper_get_gc_white(jamaica_thread *ct);
+jamaica_ref juniper_get_gc_greylist(jamaica_thread *ct);
+
+void juniper_set_javastacksize(jamaica_thread *ct, jamaica_int32 size);
+void juniper_set_plainalloc(jamaica_thread *ct, jamaica_bool plainalloc);
+void juniper_set_gc_white(jamaica_thread *ct, jamaica_ref ref);
+void juniper_set_gc_greylist(jamaica_thread *ct, jamaica_ref ref);
+
 
 //Declarations of global structures
 extern volatile int *__juniper_ram_master;

@@ -9,7 +9,8 @@
 
 //Struct prototypes
 typedef struct jamaica_VM jamaica_VM;
-typedef struct jamaica_thread jamaica_thread;
+typedef unsigned int jamaica_thread;
+typedef unsigned int jamaica_GCEnv;
 //typedef struct jamaica_cpu jamaica_cpu;
 
 
@@ -261,7 +262,6 @@ INLINE_FUNCTION jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *
   } while (0)
 
 
-#include "jamaica_structures.h"
 #include <fpgaporting.h>
 
 

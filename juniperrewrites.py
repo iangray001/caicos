@@ -1,9 +1,11 @@
 import os
 import re
 
-from pycparser import c_ast, c_generator
+from pycparser import c_ast
 import pycparser
+from pycparser.c_generator import CGenerator 
 
+from astcache import add_parent_links
 import astcache
 from utils import CaicosError, log
 import utils
@@ -40,70 +42,55 @@ def rewrite_RAM_structure_dereferences(ast):
 	Unfortunately, JamaicaBuilder assumes that the type of this pointer is a complex 
 	union-of-structs-of-arrays. This rewrites such accesses to use a set of memory access functions
 	declared in fpgaporting.h that allow a more HLS-friendly representation of RAM.
+	We are looking for structures like the following:
+	  ArrayRef:
+		StructRef: .
+		  ArrayRef: 
+			ID: __juniper_ram_master
+			<Anything else>
+		  ID: f
+		Constant: int, 2
 	"""
-	class Visitor(c_ast.NodeVisitor):
-		"""
-		We are looking for structures like the following:
-		  ArrayRef:
-			StructRef: .
-			  ArrayRef: 
-				ID: __juniper_ram_master
-				<Anything else>
-			  ID: f
-			Constant: int, 2
-		""" 
-		def visit_StructRef(self, node):
-			c = node.children()
-			if len(c) == 2:
-				if isinstance(c[0][1], c_ast.ArrayRef) and isinstance(c[1][1], c_ast.ID):
-					refch = c[0][1].children()
-					if len(refch) > 0 and isinstance(refch[0][1], c_ast.ID):
-						if getattr(refch[0][1], 'name') == RAM_NAME:
-							
-							#Appropriate node found.
-							structmember = c[1][1].name #What was dereferenced ('i', 's', 'c', 'r', etc.)
-							if logreplacements: 
-								log().debug(str(node.coord) + ":")
-								log().debug("\tOriginal: " + utils.getlineoffile(node.coord.file, node.coord.line).strip())
-							rewrite_RAM_structure_dereferences(refch[1][1]) #Deal with ram accesses in the argument
-							functionargs = c_generator.CGenerator().visit(refch[1][1])
-							
-							#If there a higher-level ArrayRef we are interested in we need to get the index
-							if isinstance(node.parent, c_ast.ArrayRef):
-								if len(node.parent.children()) >= 2 and isinstance(node.parent.children()[1][1], c_ast.Constant):
-									rewrite_RAM_structure_dereferences(node.parent.children()[1][1]) #Deal with ram accesses in the argument
-									arrayrefoffset = c_generator.CGenerator().visit(node.parent.children()[1][1])
-									nodetoreplace = node.parent
-								else:
-									raise CaicosError("Unsupported ArrayRef format detected")
-							else:
-								arrayrefoffset = 0
-								nodetoreplace = node
-							
-							#We also need to decide whether to use a GET or SET function
-							operation = "get"
-							if isinstance(nodetoreplace.parent, c_ast.Assignment):
-								if nodetoreplace.parent.op == "=":
-									if nodetoreplace.parent.lvalue == nodetoreplace:
-										operation = "set"
-										rvalue = nodetoreplace.parent.rvalue
-										
-							if operation == "get": 
-								call = RAM_GET_NAME + structmember + "(" + functionargs + ", " + str(arrayrefoffset) + ")"
-							else:
-								rewrite_RAM_structure_dereferences(rvalue) #Deal with ram accesses in the argument
-								call = RAM_SET_NAME + structmember + "(" + \
-										functionargs + ", " + str(arrayrefoffset) + \
-										", " + pycparser.c_generator.CGenerator().visit(rvalue) + ")"
-								nodetoreplace = nodetoreplace.parent
-							
-							if logreplacements: log().debug("\tReplacement: " + call)
-							replacementnode = c_ast.ID("name")
-							setattr(replacementnode, 'name', call)
-							replace_node(nodetoreplace, replacementnode)
-							
-	v = Visitor()
-	v.visit(ast)
+	def rewrite_structref(node):
+		deref_type = node.field.name #What was dereferenced ('i', 's', 'c', 'r', etc.)
+
+		#When a subword type, there may be a higher level arrayref :- __juniper_ram_master[x].s[4]
+		#Save the '4' ast in top_array_deref
+		top_array_deref = None
+		if isinstance(node.parent, c_ast.ArrayRef) and not node == node.parent.subscript:
+			top_array_deref = node.parent.subscript
+			nodetoreplace = node.parent
+		else:
+			nodetoreplace = node	
+		
+		arf = node.name
+
+		if isinstance(nodetoreplace.parent, c_ast.Assignment) and nodetoreplace.parent.op == "=" and nodetoreplace.parent.lvalue == nodetoreplace:
+			callname = RAM_SET_NAME
+			callargs = [arf.subscript, top_array_deref, nodetoreplace.parent.rvalue]
+			nodetoreplace = nodetoreplace.parent #The top level Assignment 
+		else: 
+			callname = RAM_GET_NAME
+			callargs = [arf.subscript, top_array_deref]
+		callname = callname + str(deref_type)
+		
+		replacementnode = make_func_call_node(callname, callargs)
+		replace_node(nodetoreplace, replacementnode)
+
+	def recurse(node):
+		changemade = False
+		for c in node.children(): 
+			if recurse(c[1]): changemade = True
+		if isinstance(node, c_ast.StructRef):
+			if node.type == "." and isinstance(node.name, c_ast.ArrayRef) and node.name.name.name == RAM_NAME:
+				rewrite_structref(node)
+				changemade = True
+		return changemade
+				
+	while recurse(ast): 
+		#After moving nodes we need to correct the parent links. 
+		#TODO: Potential optimisation to fix the links only as they are moved, but this isn't too slow
+		add_parent_links(ast)
 
 
 
@@ -126,7 +113,7 @@ def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 
 	try:
 		matches = utils.deglob_file(os.path.join(c_output_base, name))
-	except CaicosError, e:
+	except CaicosError, _:
 		raise CaicosError("No source file was found for class '" + str(classname) + "'. Are the bindings in the config file correct?")
 
 	return matches
@@ -247,10 +234,83 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 	for c in ast.children():
 		if isinstance(c[1], c_ast.FuncDef):
 			if reachable_functions == None or is_funcdef_in_reachable_list(c[1]):
+				rewrite_ct_refs(c[1])
+				
 				outf.write(generator.visit(c[1]))
 				outf.write("\n")
 
 	outf.close()
+
+
+
+
+def make_func_call_node(name, args):
+	"""
+	Build a function call node from a function name and a list of arguments.
+	Arguments may be AST nodes, or strings. Strings are inserted as instances of c_ast.ID
+	None arguments are turned into ID("0")
+	"""
+	exprs = []
+	for a in args:
+		if a != None:
+			if isinstance(a, ''.__class__):
+				exprs.append(c_ast.ID(str(a)))
+			else:
+				exprs.append(a)
+		else:
+			exprs.append(c_ast.ID('0'))
+	explist = c_ast.ExprList(exprs)
+	return c_ast.FuncCall(c_ast.ID(name), explist)
+
+
+
+def rewrite_ct_refs(ast):
+	"""
+	Jamaica Builder uses references to the current thread in a way which is not synthesisable, so we rewrite them 
+	to use functions in the porting layer.
+	"""
+	codegen = CGenerator()
+	
+	def build_setter_or_getter(node, fnname, var):
+		if isinstance(node.parent, c_ast.Assignment) and node.parent.lvalue == node:
+			rewrite_ct_refs(node.parent.rvalue)
+			replace_node(node.parent, make_func_call_node("juniper_set_" + str(fnname), [var, node.parent.rvalue]))
+		else: 
+			replace_node(node, make_func_call_node("juniper_get_" + str(fnname), [var]))
+
+	def rewrite_structref(node):
+		"""
+		Rewrite other structure dereferences of the ct reference 
+		"""
+		reftext = codegen.visit(node)
+		rewritepairs = {
+			"ct->m.cli": ("m_cli", 'ct'),
+			"ct->plainAlloc": ("plainalloc", 'ct'),
+			"ct->javaStackSize": ("javastacksize", 'ct'),
+			"gc->white": ("gc_white", 'ct'),
+			"gc->greyList": ("gc_greylist", 'ct')
+		}
+		if reftext in rewritepairs.keys():
+			fname, var = rewritepairs[reftext]
+			build_setter_or_getter(node, fname, var)
+
+	def rewrite_decl(node):
+		"""
+		Rewrite declarations of the l and gc local pointers.
+		"""
+		if node.name == "l" and isinstance(node.type, c_ast.PtrDecl) and node.type.type.type.names[0] == "jamaica_ref":
+			node.init = make_func_call_node("juniper_get_l_array_ref", ['ct'])
+		elif node.name == "gc" and isinstance(node.type, c_ast.PtrDecl) and node.type.type.type.names[0] == "jamaica_GCEnv":
+			node.init = make_func_call_node("juniper_get_gcenv_ref", ['ct'])
+
+	def recurse(node):
+		for c in node.children(): 
+			recurse(c[1])
+		if isinstance(node, c_ast.StructRef): rewrite_structref(node)
+		if isinstance(node, c_ast.Decl): rewrite_decl(node)
+
+	recurse(ast)
+
 
 	
 def get_line_bounds_for_function(declnode):

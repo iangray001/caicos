@@ -340,7 +340,109 @@ jamaica_int32 jamaicaGC_GetArrayLength(jamaica_ref b) {
 }
 
 
+jamaica_GCEnv *juniper_get_gcenv_ref(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return (jamaica_GCEnv *) __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+}
 
+jamaica_ref *juniper_get_l_array_ref(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	//The code this replaces is: jamaica_ref *l=&(ct->m.cl[ct->m.cli]);
+	unsigned int cli = __juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI];
+	unsigned int cl_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_CL];
+	return (jamaica_ref *) cl_addr + cli; //Assumes width of jamaica_ref * is 4!
+}
+
+jamaica_int32 juniper_get_m_cli(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI];
+}
+
+void juniper_set_m_cli(jamaica_thread *ct, jamaica_int32 i) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI] = i;
+}
+
+
+jamaica_int32 juniper_get_javastacksize(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[ct + JAMAICA_OFFSET_JAVASTACKSIZE];
+}
+
+jamaica_bool juniper_get_plainalloc(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	return __juniper_ram_master[ct + JAMAICA_OFFSET_PLAINALLOC];
+}
+
+jamaica_ref juniper_get_gc_white(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	return (jamaica_ref) __juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_WHITE];
+}
+
+jamaica_ref juniper_get_gc_greylist(jamaica_thread *ct) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	return (jamaica_ref) __juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_GREYLIST];
+}
+
+void juniper_set_javastacksize(jamaica_thread *ct, jamaica_int32 size) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[ct + JAMAICA_OFFSET_JAVASTACKSIZE] = size;
+}
+
+void juniper_set_plainalloc(jamaica_thread *ct, jamaica_bool plainalloc) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	__juniper_ram_master[ct + JAMAICA_OFFSET_PLAINALLOC] = plainalloc;
+}
+
+void juniper_set_gc_white(jamaica_thread *ct, jamaica_ref ref) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	__juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_WHITE] = (unsigned int) ref;
+}
+
+void juniper_set_gc_greylist(jamaica_thread *ct, jamaica_ref ref) {
+#ifdef INLINE_GC_STATE_FUNCTIONS
+#pragma HLS INLINE
+#endif
+#pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
+	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	__juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_GREYLIST] = (unsigned int) ref;
+}
 
 /**
  * Currently these functions are nulled because either they will not be called from hardware,
