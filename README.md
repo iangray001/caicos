@@ -14,7 +14,7 @@ Caicos is invoked by running the following:
 The format of the config file is described in caicos.py. An example is shown below:
 
 	outputdir = /Users/me/caicosout
-	jamaicabuilderoutputdir = /Users/me/JamaicaGeneratedCode
+	jamaicaoutputdir = /Users/me/JamaicaGeneratedCode
 	fpgapart = xc7vx690tffg1761-2
 	jamaicatarget = /Users/me/jamaica/current32/target/linux-x86/include
 	signature = dataProcessing/SumPrimitiveArrays.run()V

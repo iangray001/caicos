@@ -30,7 +30,7 @@ from utils import mkdir, CaicosError, log
 config_specification = {
 	#Standard options
 	'signatures': (True, ""), # list of Java method signatures to be compiled to hardware
-	'jamaicabuilderoutputdir': (True, ""), # path to compiled C files from jamaicabuilder
+	'jamaicaoutputdir': (True, ""), # path to compiled C files from jamaicabuilder
 	'additionalhardwarefiles': (False, ""), # list of paths to additional files to add to the hardware project
 	'outputdir': (True, ""), # path to directory to output to
 	'fpgapart': (True, ""), # the FPGA part to target, in Xilinx format
@@ -70,7 +70,7 @@ def build_all(config):
 		else:		
 			bindings = prepare_hls_project.build_from_functions(
 				config['signatures'], 
-				config['jamaicabuilderoutputdir'],
+				config['jamaicaoutputdir'],
 				hwdir, 
 				config.get('additionalhardwarefiles'), 
 				config['fpgapart'])
@@ -81,7 +81,7 @@ def build_all(config):
 		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(
 			bindings,
-			config['jamaicabuilderoutputdir'],
+			config['jamaicaoutputdir'],
 			swdir,
 			config['jamaicatarget'])
 	
