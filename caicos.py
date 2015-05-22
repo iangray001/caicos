@@ -6,16 +6,6 @@ and to read and parse configuration files.
 
 Call build_all() to begin.
 """
-"""
-Describes the required options in the configuration of caicos.
-All valid options must be enumerated in this dictionary. Each option name maps
-to a tuple of (required, arrayname) where required is a boolean that is True
-if the option is mandatory. If arrayname is not "", then the option will be
-added as a member of an array with that name.
-
-Multiple definitions of the same variable are valid, and the last definition
-takes precedence.
-"""
 
 import os
 import shutil
@@ -27,6 +17,16 @@ import prepare_src_project
 from utils import mkdir, CaicosError, log
 
 
+"""
+Describes the required options in the configuration of caicos.
+All valid options must be enumerated in this dictionary. Each option name maps
+to a tuple of (required, arrayname) where required is a boolean that is True
+if the option is mandatory. If arrayname is not "", then the option will be
+added as a member of an array with that name.
+
+Multiple definitions of the same variable are valid, and the last definition
+takes precedence.
+"""
 config_specification = {
 	#Standard options
 	'signatures': (True, ""), # list of Java method signatures to be compiled to hardware
@@ -36,6 +36,9 @@ config_specification = {
 	'fpgapart': (True, ""), # the FPGA part to target, in Xilinx format
 	'jamaicatarget': (True, ""), # path to the Jamaica target directory to use for the host software  
 	'cleanoutput': (False, ""), # if 'true', the contents of outputdir will be cleaned first
+	'hwoutputdir': (False, ""), #if set, then the hardware project will be put here instead of the default location
+	'swoutputdir': (False, ""), #if set, then the software project will be put here instead of the default location
+	'jamaicaoutputdir_hw': (False, ""), #if set, then caicos will use this Jamaica Builder output directory for the hardware project instead of jamaicaoutputdir
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
@@ -59,18 +62,19 @@ def build_all(config):
 		cwd = os.path.dirname(os.path.realpath(__file__))
 		mkdir(config['outputdir'])
 		
-		hwdir = os.path.join(config['outputdir'], "hardware")
-		swdir = os.path.join(config['outputdir'], "software")
+		#Determine output paths
+		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
+		hwdir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
 		
 		#Build hardware project
 		log().info("Building hardware project in " + str(hwdir) + "...")
 		if config.get('dev_softwareonly', "false").lower() == "true":
 			log().warning("dev_softwareonly is set. Generating software only.")
 			bindings = __getfakebindings(config['signatures'])
-		else:		
+		else:	
 			bindings = prepare_hls_project.build_from_functions(
 				config['signatures'], 
-				config['jamaicaoutputdir'],
+				config.get('jamaicaoutputdir_hw', config['jamaicaoutputdir']),
 				hwdir, 
 				config.get('additionalhardwarefiles'), 
 				config['fpgapart'])
