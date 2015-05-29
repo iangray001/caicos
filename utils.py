@@ -1,3 +1,9 @@
+"""
+Utility functions that are not related specifically to parsing or code generation.
+
+Includes error handling and info logging, and file system manipulation.
+"""
+
 import glob
 import logging
 import os
@@ -57,7 +63,8 @@ def mkdir(d):
 	"""
 	If the directory d does not exist, create it
 	"""
-	if not os.path.exists(d): os.makedirs(d)
+	if not os.path.exists(d): 
+		os.makedirs(d)
 	
 	
 
@@ -79,4 +86,10 @@ def copy_files(srcdir, targetdir, suffixes = None):
 			else:
 				shutil.copyfile(abspath, os.path.join(targetdir, f))
 	
+	
+def cwd():
+	"""
+	Returns the directory that contains the current script.
+	"""
+	return os.path.dirname(os.path.realpath(__file__))
 	
