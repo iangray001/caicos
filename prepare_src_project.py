@@ -6,6 +6,7 @@ build_src_project is the main entry point to this module
 @author: ian
 '''
 import os
+from os.path import join
 import shutil
 
 from pycparser import c_ast
@@ -14,8 +15,8 @@ import astcache
 from juniperrewrites import c_filename_of_java_method_sig, \
 	c_decl_node_of_java_sig, get_line_bounds_for_function, c_name_of_type
 from prepare_hls_project import get_paramlist_of_sig
-from utils import CaicosError, mkdir, copy_files
-from os.path import join
+from utils import CaicosError, mkdir, copy_files, project_path
+
 
 def build_src_project(bindings, jamaicaoutput, targetdir):
 	"""
@@ -34,14 +35,13 @@ def build_src_project(bindings, jamaicaoutput, targetdir):
 	if not os.path.isfile(join(jamaicaoutput, "Main__nc.o")):
 		raise CaicosError("Cannot find file " + str(join(jamaicaoutput, "Main__nc.o")) + 
 						". Ensure that the application has first be been built by Jamaica Builder.")
-	
-	cwd = os.path.dirname(os.path.realpath(__file__))	
+		
 	mkdir(targetdir)
-	copy_files(join(cwd, "projectfiles", "juniper_fpga_interface"), join(targetdir, "juniper_fpga_interface"))
-	copy_files(join(cwd, "projectfiles", "malloc_preload"), join(targetdir, "malloc_preload"))
+	copy_files(project_path("projectfiles", "juniper_fpga_interface"), join(targetdir, "juniper_fpga_interface"))
+	copy_files(project_path("projectfiles", "malloc_preload"), join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"))
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
-	shutil.copy(join(cwd, "projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
+	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
 
 
 def refactor_src(bindings, jamaicaoutput, targetdir):

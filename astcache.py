@@ -16,7 +16,7 @@ import os
 import pycparser
 from pycparser.plyparser import ParseError
 
-from utils import log, CaicosError, deglob_file
+from utils import log, CaicosError, deglob_file, project_path
 
 
 cache = {}
@@ -68,8 +68,6 @@ def parse_jamaica_output(filename, includepath = None):
 	if '*' in filename:
 		filename = deglob_file(filename)
 	
-	cwd = os.path.dirname(os.path.realpath(__file__))
-
 	cppargs = ['-E', 
 			   '-DNDEBUG', #Disable Jamaica debug support 
 			   '-U__GNUC__', #Prevents use of __attribute__, will cause an "unsupported compiler" #warning
@@ -77,11 +75,11 @@ def parse_jamaica_output(filename, includepath = None):
 			   '-DJAMAICA_NATIVE_TIME_GET_HIGH_RESOLUTION_TIMESTAMP', #These use volatile asm() which is not supported by pycparser
 			   '-DJAMAICA_NATIVE_THREAD_COMPARE_AND_SWAP',
 			   '-D__CAICOS__', #So we can tell if we are being parsed by caicos
-			   r'-I' + os.path.join(cwd, "stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
+			   r'-I' + project_path("stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
 			   ]
 	
 	if includepath == None: 
-		cppargs.append(r'-I' + os.path.join(cwd, "projectfiles", "include"))
+		cppargs.append(r'-I' + project_path("projectfiles", "include"))
 	else: 
 		cppargs.append(r'-I' + str(includepath))
 	

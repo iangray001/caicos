@@ -87,9 +87,13 @@ def copy_files(srcdir, targetdir, suffixes = None):
 				shutil.copyfile(abspath, os.path.join(targetdir, f))
 	
 	
-def cwd():
+def project_path(*path_parts):
 	"""
-	Returns the directory that contains the current script.
+	Returns the project directory as an absolute path with path_parts appended.
+	Used to more easily reference files in the project directory.
 	"""
-	return os.path.dirname(os.path.realpath(__file__))
+	parts = [os.path.dirname(os.path.realpath(__file__))]
+	parts.extend(path_parts)
+	return os.path.join(*parts)
+	
 	

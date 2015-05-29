@@ -10,8 +10,8 @@ from pycparser import c_ast
 from flowanalysis import ReachableFunctions, get_files_to_search
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
-from utils import log, mkdir, copy_files
-
+from utils import log, mkdir, copy_files, project_path
+from os.path import join
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, notranslatesigs):
 	"""
@@ -28,8 +28,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
 	"""
 	filestobuild = set()
-	cwd = os.path.dirname(os.path.realpath(__file__))	
-	filestobuild.add(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
+	filestobuild.add(project_path("projectfiles", "src", "fpgaporting.c"))
 
 	#All functions that should be translated
 	all_reachable_functions = set() 
@@ -92,11 +91,10 @@ def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, 
 		reachable_functions: array of FuncDecl nodes that are reachable and require translation
 		syscalls: map{string->int} names of function calls that should be translated to PCIe system calls -> ID of call
 	"""
-	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
-	copy_files(os.path.join(cwd, "projectfiles", "include"), os.path.join(targetdir, "include"), [".h"])
-	copy_files(os.path.join(cwd, "projectfiles", "src"), os.path.join(targetdir, "src"), [".h", ".c"])
-	shutil.copy(os.path.join(jamaicaoutputdir, "Main__.h"), os.path.join(targetdir, "include"))
+	copy_files(project_path("projectfiles", "include"), join(targetdir, "include"), [".h"])
+	copy_files(project_path("projectfiles", "src"), join(targetdir, "src"), [".h", ".c"])
+	shutil.copy(join(jamaicaoutputdir, "Main__.h"), join(targetdir, "include"))
 
 	for f in filestobuild:
 		if not os.path.basename(f) == "fpgaporting.c": #We needed fpgaporting to perform reachability analysis, but don't rewrite it

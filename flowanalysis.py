@@ -13,7 +13,7 @@ from pycparser import c_ast
 
 import astcache
 from juniperrewrites import c_filename_of_java_method_sig
-from utils import log, deglob_file, CaicosError
+from utils import log, deglob_file, CaicosError, project_path
 
 
 excluded_functions = ['jamaicaGC_PlainAllocHeadBlock', 'jamaicaInterpreter_allocJavaObject', 'jamaicaInterpreter_allocSimpleArray', 
@@ -190,8 +190,7 @@ def get_files_to_search(sig, jamaicaoutputdir):
 	filestosearch.append(c_filename_of_java_method_sig(sig, jamaicaoutputdir))
 	
 	#Then the FPGA porting layer
-	cwd = os.path.dirname(os.path.realpath(__file__))	
-	filestosearch.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
+	filestosearch.append(project_path("projectfiles", "src", "fpgaporting.c"))
 	
 	#Then the java.lang package
 	filestosearch.append(deglob_file(os.path.join(jamaicaoutputdir, "PKG_java_lang_V*__.c")))
@@ -210,8 +209,7 @@ def get_funcdecl_of_system_funccall(call):
 	"""
 	Given a FuncCall to a Jamaica system call (or just the string of its name), return the corresponding FuncDecl node.
 	"""
-	cwd = os.path.dirname(os.path.realpath(__file__))	
-	ast = astcache.get(os.path.join(cwd, "projectfiles", "include", "jamaica.h"))
+	ast = astcache.get(project_path("projectfiles", "include", "jamaica.h"))
 	fdecs = functions_declared_in_ast(ast)
 	
 	if isinstance(call, c_ast.FuncCall):

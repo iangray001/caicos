@@ -7,16 +7,6 @@ and to read and parse configuration files.
 Call build_all() to begin.
 """
 
-import os
-import shutil
-from string import Template
-import sys
-
-import prepare_hls_project
-import prepare_src_project
-from utils import mkdir, CaicosError, log
-
-
 """
 Describes the required options in the configuration of caicos.
 All valid options must be enumerated in this dictionary. Each option name maps
@@ -27,6 +17,17 @@ added as a member of an array with that name.
 Multiple definitions of the same variable are valid, and the last definition
 takes precedence.
 """
+
+import os
+import shutil
+from string import Template
+import sys
+
+import prepare_hls_project
+import prepare_src_project
+from utils import mkdir, CaicosError, log, project_path
+
+
 config_specification = {
 	#Standard options
 	'signatures': (True, ""), # list of Java method signatures to be compiled to hardware
@@ -61,7 +62,6 @@ def build_all(config):
 		if config.get('cleanoutput', "false").lower() == "true":
 			shutil.rmtree(config['outputdir'], ignore_errors=True)
 		
-		cwd = os.path.dirname(os.path.realpath(__file__))
 		mkdir(config['outputdir'])
 		
 		#Determine output paths
@@ -83,14 +83,14 @@ def build_all(config):
 				config.get('notranslates', [])
 			)
 		
-			shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(hwdir, "push.sh"))
+			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), os.path.join(hwdir, "push.sh"))
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir)
 	
 		#Output templated Makefile
-		contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
+		contents = open(project_path("projectfiles", "scripts", "Makefile")).read()
 		subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
 		template = Template(contents)
 		fout = open(os.path.join(swdir, "Makefile"), "w")
