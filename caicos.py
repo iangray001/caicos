@@ -87,11 +87,7 @@ def build_all(config):
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
-		prepare_src_project.build_src_project(
-			bindings,
-			config['jamaicaoutputdir'],
-			swdir,
-			config['jamaicatarget'])
+		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir)
 	
 		#Output templated Makefile
 		contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
