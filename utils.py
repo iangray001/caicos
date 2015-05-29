@@ -4,10 +4,12 @@ import os
 import shutil
 import sys
 
-import pycparser
-
-
-theLogger = None
+theLogger = logging.getLogger("Caicos")
+ch = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
+ch.setFormatter(formatter)
+theLogger.addHandler(ch)
+theLogger.setLevel(logging.WARN) #This is the default log level. Can be changed in scripts if necessary.
 
 
 class CaicosError(Exception):
@@ -18,14 +20,6 @@ class CaicosError(Exception):
 
 
 def log():
-	global theLogger
-	if theLogger == None:
-		theLogger = logging.getLogger("Caicos")
-		ch = logging.StreamHandler(sys.stdout)
-		formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
-		ch.setFormatter(formatter)
-		theLogger.addHandler(ch)
-		theLogger.setLevel(logging.WARN) #This is the default log level. Can be changed in scripts if necessary.
 	return theLogger
 
 
@@ -51,7 +45,6 @@ def deglob_file(globbedname):
 	matches = glob.glob(str(globbedname))
 	if len(matches) == 0:
 		raise CaicosError("The filename \"" + str(globbedname) + "\" does not match any files.")
-		return None
 	if len(matches) > 1:
 		logging.warning("Multiple matches for filename " + str(globbedname) + "\"")
 		logging.warning("Using: " + matches[0])
