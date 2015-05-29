@@ -1,0 +1,11 @@
+[MESSAGES CONTROL]
+
+#Disabled messages:
+#	W0312: Found indentation with %ss instead of %ss
+#	C0103 = Invalid name
+#	C0303 = Trailing whitespace
+#	C0301 = Line too long
+#	C0111 = Missing docstring
+#	R0201 = No self use
+
+disable=W0312,C0103,C0303,C0301,C0111,R0201
