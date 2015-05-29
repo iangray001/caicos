@@ -9,7 +9,6 @@ from astcache import add_parent_links
 import astcache
 from utils import CaicosError, log
 import utils
-import flowanalysis
 
 RAM_NAME = '__juniper_ram_master'
 RAM_GET_NAME = 'juniper_ram_get_'
@@ -212,7 +211,7 @@ def c_decl_node_of_java_sig(sig, c_output_base):
 	names = javanames_cache[astcache.get(filename)]
 	if not sig in names:
 		raise CaicosError("There is no method with the signature " + str(sig) + " in file " + str(filename))
-	node = names[sig][1];
+	node = names[sig][1]
 	declnode = node.children()[0][1]
 	if not isinstance(declnode, c_ast.Decl):
 		raise CaicosError("Unexpected function declaration format in file " + str(filename) + " for signature " + str(sig))
@@ -241,11 +240,11 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls):
 	rewrite_RAM_structure_dereferences(ast)
 	
 	outf = open(outputfile, "w")
-	outf.write('#include "jamaica.h"\n');
-	outf.write('#include "jni.h"\n');
-	outf.write('#include "jbi.h"\n');
-	outf.write('#include "Main__.h"\n');
-	outf.write('\n');
+	outf.write('#include "jamaica.h"\n')
+	outf.write('#include "jni.h"\n')
+	outf.write('#include "jbi.h"\n')
+	outf.write('#include "Main__.h"\n')
+	outf.write('\n')
 	
 	generator = pycparser.c_generator.CGenerator()
 	for c in ast.children():
@@ -265,23 +264,11 @@ def rewrite_syscall_calls(funcdef, syscalls):
 	Search the current function definition for any calls to functions, the name of which are in syscalls.
 	When found, rewrite to be an invocation of pcie_syscall, with arguments appropriately cast.
 	"""
-	
-	def typename(typenode):
-		typename = ""
-		current = typenode
-		while isinstance(current, c_ast.PtrDecl):
-			typename = typename + "*"
-			current = current.type
-		return typename + current.type.names[0]
-	
 	class FuncCallVisitor(c_ast.NodeVisitor):
 		def __init__(self): self.fns = {}
 		
 		def visit_FuncCall(self, node):
 			if node.name.name in syscalls:
-				#Resolve the system call into a FuncDecl so we can check its types
-				decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
-				
 				if len(node.args.exprs) > MAX_SYSCALL_ARGS:
 					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " has " + str(len(node.args.exprs)) + " arguments. Maximum is " + str(MAX_SYSCALL_ARGS))
 
@@ -289,7 +276,7 @@ def rewrite_syscall_calls(funcdef, syscalls):
 				if not first.name == "ct":
 					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " does not use the current thread as the first argument.")
 				
-				#Set the first parameter to the ID of the call
+				#Set the first parameter to the ID of the call (This should be 'ct', which we don't need as the host code knows it anyway).
 				node.args.exprs[0] = c_ast.ID(str(syscalls[node.name.name]))
 				
 				#Set the name of the syscall function
@@ -298,9 +285,18 @@ def rewrite_syscall_calls(funcdef, syscalls):
 				while(len(node.args.exprs) != MAX_SYSCALL_ARGS):
 					node.args.exprs.append(c_ast.ID("0"))
 				
-				print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
+				#print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
 				#TODO: Do we need to cast the arguments or return type? Currently jamaica_ref is only used so this /should/ coerce OK
+				#Resolve the system call into a FuncDecl so we can check its types
+				#decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
 				#typename(decl.type)
+				#	def typename(typenode):
+				#		typename = ""
+				#		current = typenode
+				#		while isinstance(current, c_ast.PtrDecl):
+				#			typename = typename + "*"
+				#			current = current.type
+				#		return typename + current.type.names[0]
 				
 	v = FuncCallVisitor()
 	v.visit(funcdef)
