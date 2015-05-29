@@ -22,6 +22,11 @@ from utils import log, CaicosError, deglob_file
 cache = {}
 
 def get(filename, alternateincludepath = None):
+	"""
+	Get the AST for the file pointed to by the absolute path filename
+	If alternateincludepath is provided then a different include path is passed to the
+	preprocessor before parsing
+	"""
 	try:
 		if filename in cache:
 			return cache[filename]
@@ -36,11 +41,17 @@ def get(filename, alternateincludepath = None):
 		
 		
 def invalidate_ast_for(filename):
+	"""
+	If the filename has been parsed and is in cache, this cached AST is deleted.
+	"""
 	if filename in cache:
 		del cache[filename]
 
 
 def clear():
+	"""
+	Clear the cache.
+	"""
 	cache.clear()
 
 
@@ -69,8 +80,10 @@ def parse_jamaica_output(filename, includepath = None):
 			   r'-I' + os.path.join(cwd, "stdlibheaders"), #Override stdlib headers with blank versions (Jamaica builder doesn't use them, but includes them)
 			   ]
 	
-	if includepath == None: cppargs.append(r'-I' + os.path.join(cwd, "projectfiles", "include"))
-	else: cppargs.append(r'-I' + str(includepath))
+	if includepath == None: 
+		cppargs.append(r'-I' + os.path.join(cwd, "projectfiles", "include"))
+	else: 
+		cppargs.append(r'-I' + str(includepath))
 	
 	return pycparser.parse_file(filename, use_cpp=True, cpp_path="gcc", cpp_args=cppargs)
 
