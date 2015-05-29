@@ -6,7 +6,6 @@ and to read and parse configuration files.
 
 Call build_all() to begin.
 """
-
 """
 Describes the required options in the configuration of caicos.
 All valid options must be enumerated in this dictionary. Each option name maps
@@ -23,6 +22,7 @@ import shutil
 from string import Template
 import sys
 
+import astcache
 import prepare_hls_project
 import prepare_src_project
 from utils import mkdir, CaicosError, log, project_path
@@ -44,6 +44,7 @@ config_specification = {
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
+	'astcache': (False, ""), #If set to a directory, caches parsed ASTs here 
 	
 	#Array singletons
 	'signature': (False, "signatures"),
@@ -67,6 +68,9 @@ def build_all(config):
 		#Determine output paths
 		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
 		hwdir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
+		
+		if 'astcache' in config:
+			astcache.activate_cache(config['astcache'])
 		
 		#Build hardware project
 		log().info("Building hardware project in " + str(hwdir) + "...")

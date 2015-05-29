@@ -11,15 +11,19 @@ If code is being modified invalidate_ast_for(filename) can be used to
 remove a cached AST and force a reparse.
 """
 
+import errno
 import os
 
 import pycparser
 from pycparser.plyparser import ParseError
 
-from utils import log, CaicosError, deglob_file, project_path
+import astcache
+import cPickle as pickle
+from utils import log, CaicosError, deglob_file, project_path, mkdir
 
 
-cache = {}
+filecache = None
+memcache = {}
 
 def get(filename, alternateincludepath = None):
 	"""
@@ -28,13 +32,19 @@ def get(filename, alternateincludepath = None):
 	preprocessor before parsing
 	"""
 	try:
-		if filename in cache:
-			return cache[filename]
+		if filename in memcache:
+			return memcache[filename]
 		else:
+			cachedast = fetch_from_filecache(filename)
+			if cachedast != None:
+				memcache[filename] = cachedast
+				return cachedast
+			
 			log().info("Parsing " + str(filename))
 			ast = parse_jamaica_output(filename, alternateincludepath)
 			add_parent_links(ast)
-			cache[filename] = ast
+			memcache[filename] = ast
+			save_to_filecache(filename, ast)
 			return ast
 	except ParseError, pe:
 		raise CaicosError("Parse error in file '" + str(filename) + "'.\n\t" + str(pe.message))
@@ -42,18 +52,63 @@ def get(filename, alternateincludepath = None):
 		
 def invalidate_ast_for(filename):
 	"""
-	If the filename has been parsed and is in cache, this cached AST is deleted.
+	If the filename has been parsed and is in memcache, this cached AST is deleted.
 	"""
-	if filename in cache:
-		del cache[filename]
+	if filename in memcache:
+		del memcache[filename]
 
 
 def clear():
 	"""
-	Clear the cache.
+	Clear the memcache.
 	"""
-	cache.clear()
+	memcache.clear()
 
+
+def fetch_from_filecache(filename):
+	"""
+	Checks to see if we have a cached version of the AST in the file cache
+	If filecache is None then immediately returns None
+	If no suitable file exists, returns None
+	Else returns the requested AST.
+	"""
+	if filecache != None:
+		if os.path.isfile(cache_filename(filename)):
+			sourcefile_mtime = os.stat(filename).st_mtime
+			cache_mtime = os.stat(cache_filename(filename))
+			if cache_mtime > sourcefile_mtime:
+				log().info("Using cached AST for " + str(filename))
+				return pickle.load(open(cache_filename(filename), 'rb'))
+	else:
+		return None
+	
+def save_to_filecache(filename, ast):
+	"""
+	Save the provided AST (which was generated from the provided filename) to the file cache
+	"""
+	if filecache != None:
+		cdir = os.path.dirname(cache_filename(filename))
+		try:
+			os.makedirs(cdir)
+		except OSError as exc:
+			if exc.errno == errno.EEXIST and os.path.isdir(cdir):
+				pass
+			else: raise
+			
+		f = open(cache_filename(filename), 'wb')
+		pickler = pickle.Pickler(f, protocol=pickle.HIGHEST_PROTOCOL)
+		pickler.dump(ast)
+		f.close()	
+	
+	
+def cache_filename(sourcefile):
+	"""
+	Return the filename that should be used in the file cache for the given source file 
+	"""
+	if sourcefile.startswith(os.sep):
+		sourcefile = sourcefile[len(os.sep):]
+	return os.path.join(filecache, sourcefile)
+	
 
 def parse_jamaica_output(filename, includepath = None):
 	"""
@@ -97,5 +152,12 @@ def add_parent_links(ast):
 	recurse(ast, None)
 
 
+def activate_cache(path):
+	"""
+	Turn on the file cache by providing an absolute path to a directory.
+	ASTs are pickled here once created and used to speed subsequent runs of caicos.
+	"""
+	mkdir(path)
+	astcache.filecache = path
 
 	
