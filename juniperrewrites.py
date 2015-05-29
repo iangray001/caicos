@@ -300,14 +300,6 @@ def rewrite_syscall_calls(funcdef, syscalls):
 				#TODO: Do we need to cast the arguments or return type? Currently jamaica_ref is only used so this /should/ coerce OK
 				#Resolve the system call into a FuncDecl so we can check its types
 				#decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
-				#typename(decl.type)
-				#	def typename(typenode):
-				#		typename = ""
-				#		current = typenode
-				#		while isinstance(current, c_ast.PtrDecl):
-				#			typename = typename + "*"
-				#			current = current.type
-				#		return typename + current.type.names[0]
 				
 	v = FuncCallVisitor()
 	v.visit(funcdef)
@@ -419,4 +411,22 @@ def get_line_bounds_for_function(declnode):
 	return (startline, endline)
 
 
+def c_name_of_type(typenode):
+	"""
+	TypeNode:
+		Either a PtrDecl or TypeDecl
+	Returns:
+		The name of the type, with the appropriate number of *s before it to indicate 
+		the level of pointer indirection in the AST. 
+	"""
+	typename = ""
+	current = typenode
+	while isinstance(current, c_ast.PtrDecl):
+		typename = typename + "*"
+		current = current.type
+		
+	if not isinstance(current, c_ast.TypeDecl):
+		raise CaicosError("Unhandled type in c_name_of_type. Code: " + pycparser.c_generator.CGenerator().visit(typenode))
+
+	return typename + current.type.names[0]
 		
