@@ -221,21 +221,3 @@ def get_funcdecl_of_system_funccall(call):
 		if dec.parent.name == call:
 			return dec
 	raise CaicosError("Cannot find the definition of system function: " + str(call))
-	return None
-
-
-	
-def test_reachable_functions(ast):
-	class FnVis(c_ast.NodeVisitor):
-		def visit_FuncDef(self, node):
-			if node.decl.name == "main":
-				self.found = node
-	fv = FnVis()
-	fv.visit(ast)
-	
-	rv = ReachableFunctions(fv.found, "/Users/ian/Dropbox/Java/juniperworkspace2/caicos/tests")
-
-	print "Reachable functions:"
-	for fn in rv.reachable_functions: 
-		print "\t" + str(fn.decl.name) + " - " + str(fn.decl.coord.file)
-	print "Files: " + str(rv.files)
