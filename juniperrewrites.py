@@ -9,10 +9,13 @@ from astcache import add_parent_links
 import astcache
 from utils import CaicosError, log
 import utils
+import flowanalysis
 
 RAM_NAME = '__juniper_ram_master'
 RAM_GET_NAME = 'juniper_ram_get_'
 RAM_SET_NAME = 'juniper_ram_set_'
+MAX_SYSCALL_ARGS = 5
+SYSCALL_NAME = 'pcie_syscall'
 
 logreplacements = False
 
@@ -24,7 +27,7 @@ def replace_node(orignode, newnode):
 		if child == orignode:
 			if '[' in child_name:
 				arrayname = child_name[:child_name.find('[')]
-				arrayidx = child_name[child_name.find('[')+1:child_name.find(']')]
+				arrayidx = child_name[child_name.find('[') + 1:child_name.find(']')]
 				try:
 					arrayidx = int(arrayidx)
 				except:
@@ -52,10 +55,10 @@ def rewrite_RAM_structure_dereferences(ast):
 		Constant: int, 2
 	"""
 	def rewrite_structref(node):
-		deref_type = node.field.name #What was dereferenced ('i', 's', 'c', 'r', etc.)
+		deref_type = node.field.name  # What was dereferenced ('i', 's', 'c', 'r', etc.)
 
-		#When a subword type, there may be a higher level arrayref :- __juniper_ram_master[x].s[4]
-		#Save the '4' ast in top_array_deref
+		# When a subword type, there may be a higher level arrayref :- __juniper_ram_master[x].s[4]
+		# Save the '4' ast in top_array_deref
 		top_array_deref = None
 		if isinstance(node.parent, c_ast.ArrayRef) and not node == node.parent.subscript:
 			top_array_deref = node.parent.subscript
@@ -68,7 +71,7 @@ def rewrite_RAM_structure_dereferences(ast):
 		if isinstance(nodetoreplace.parent, c_ast.Assignment) and nodetoreplace.parent.op == "=" and nodetoreplace.parent.lvalue == nodetoreplace:
 			callname = RAM_SET_NAME
 			callargs = [arf.subscript, top_array_deref, nodetoreplace.parent.rvalue]
-			nodetoreplace = nodetoreplace.parent #The top level Assignment 
+			nodetoreplace = nodetoreplace.parent  # The top level Assignment 
 		else: 
 			callname = RAM_GET_NAME
 			callargs = [arf.subscript, top_array_deref]
@@ -88,8 +91,8 @@ def rewrite_RAM_structure_dereferences(ast):
 		return changemade
 				
 	while recurse(ast): 
-		#After moving nodes we need to correct the parent links. 
-		#TODO: Potential optimisation to fix the links only as they are moved, but this isn't too slow
+		# After moving nodes we need to correct the parent links. 
+		# TODO: Potential optimisation to fix the links only as they are moved, but this isn't too slow
 		add_parent_links(ast)
 
 
@@ -144,6 +147,28 @@ def c_name_of_java_method(sig, c_output_base):
 	return names[sig]
 	
 	
+	
+def get_java_names_of_funcdef(funcdef):
+	"""
+	Given a c_ast.FuncDef node, determine the Java signature from which it was generated
+	Returns (java_method_sig, (c_fn_name, funcdef))
+	"""
+	pattern = re.compile(
+		r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+		re.DOTALL | re.MULTILINE
+	)        
+	line = utils.getlineoffile(funcdef.decl.coord.file, funcdef.decl.coord.line)
+	comments = re.findall(pattern, line)
+	if len(comments) == 1:
+		c = comments[0]
+		if c[:2] == "/*" and c[-2:] == "*/":
+			javaname = c[2:-2].strip()
+			return (javaname, (funcdef.decl.name, funcdef))
+	else:
+		return None
+	
+	
+	
 def get_java_names_of_C_fns(ast):
 	"""
 	Search for all function definitions, extract the original 
@@ -155,21 +180,15 @@ def get_java_names_of_C_fns(ast):
 			self.fns = {}
 		
 		def visit_FuncDef(self, node):
-			pattern = re.compile(
-				r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-				re.DOTALL | re.MULTILINE
-			)        
-			line = utils.getlineoffile(node.decl.coord.file, node.decl.coord.line)
-			comments = re.findall(pattern, line)
-			if len(comments) == 1:
-				c = comments[0]
-				if c[:2] == "/*" and c[-2:] == "*/":
-					javaname = c[2:-2].strip()
-					self.fns[javaname] = (node.decl.name, node)
-			else:
-				#Lots of functions are declared in jamaica.h and we do not want to report warnings about those
+			details = get_java_names_of_funcdef(node)
+			if details == None:
+				# Lots of functions are declared in jamaica.h and we do not want to report warnings about those
 				if not str(node.decl.coord.file).endswith("jamaica.h"):
 					log().error("Unexpected comment format in Jamaica output: " + str(node.decl.coord.file) + " " + str(node.decl.coord.line))
+			else:	
+				javaname = details[0]
+				rv = details[1]
+				self.fns[javaname] = rv
 				
 	v = FuncDefVisitor()
 	v.visit(ast)
@@ -208,11 +227,9 @@ def c_prototype_of_java_sig(sig, c_output_base):
 	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base)) + ";"
 	
 
-def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
+def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
-	
-	If reachable_functions != None, then unreachable functions will be trimmed.
 	"""
 	def is_funcdef_in_reachable_list(funcdef):
 		for r in reachable_functions:
@@ -235,6 +252,7 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 		if isinstance(c[1], c_ast.FuncDef):
 			if reachable_functions == None or is_funcdef_in_reachable_list(c[1]):
 				rewrite_ct_refs(c[1])
+				rewrite_syscall_calls(c[1], syscalls)
 				
 				outf.write(generator.visit(c[1]))
 				outf.write("\n")
@@ -242,6 +260,52 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions = None):
 	outf.close()
 
 
+def rewrite_syscall_calls(funcdef, syscalls):
+	"""
+	Search the current function definition for any calls to functions, the name of which are in syscalls.
+	When found, rewrite to be an invocation of pcie_syscall, with arguments appropriately cast.
+	"""
+	
+	def typename(typenode):
+		typename = ""
+		current = typenode
+		while isinstance(current, c_ast.PtrDecl):
+			typename = typename + "*"
+			current = current.type
+		return typename + current.type.names[0]
+	
+	class FuncCallVisitor(c_ast.NodeVisitor):
+		def __init__(self): self.fns = {}
+		
+		def visit_FuncCall(self, node):
+			if node.name.name in syscalls:
+				#Resolve the system call into a FuncDecl so we can check its types
+				decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
+				
+				if len(node.args.exprs) > MAX_SYSCALL_ARGS:
+					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " has " + str(len(node.args.exprs)) + " arguments. Maximum is " + str(MAX_SYSCALL_ARGS))
+
+				first = node.args.exprs[0]
+				if not first.name == "ct":
+					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " does not use the current thread as the first argument.")
+				
+				#Set the first parameter to the ID of the call
+				node.args.exprs[0] = c_ast.ID(str(syscalls[node.name.name]))
+				
+				#Set the name of the syscall function
+				node.name.name = SYSCALL_NAME
+				
+				while(len(node.args.exprs) != MAX_SYSCALL_ARGS):
+					node.args.exprs.append(c_ast.ID("0"))
+				
+				print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
+				#TODO: Do we need to cast the arguments or return type? Currently jamaica_ref is only used so this /should/ coerce OK
+				#typename(decl.type)
+				
+	v = FuncCallVisitor()
+	v.visit(funcdef)
+	
+	
 
 
 def make_func_call_node(name, args):
@@ -331,8 +395,8 @@ def get_line_bounds_for_function(declnode):
 		children = node.parent.children()
 		for i in xrange(len(children)):
 			if children[i][1] == node:
-				if i+1 < len(children):
-					return children[i+1][1]
+				if i + 1 < len(children):
+					return children[i + 1][1]
 				else:
 					return None	
 				

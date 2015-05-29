@@ -13,8 +13,12 @@ from pycparser import c_ast
 
 import astcache
 from juniperrewrites import c_filename_of_java_method_sig
-from utils import log, deglob_file
+from utils import log, deglob_file, CaicosError
 
+
+excluded_functions = ['jamaicaGC_PlainAllocHeadBlock', 'jamaicaInterpreter_allocJavaObject', 'jamaicaInterpreter_allocSimpleArray', 
+					'jamaicaInterpreter_allocMultiArray', 'jamaicaInterpreter_initialize_class_helper', 
+					'jamaicaInterpreter_enterMonitor', 'jamaicaInterpreter_exitMonitor']
 
 calls_to_ignore = ["printf", "sprintf",
 
@@ -27,9 +31,6 @@ calls_to_ignore = ["printf", "sprintf",
 	
 #No need to resolve in the porting layer as we will be including that anyway
 	"jamaicaThreads_checkCStackOverflow",
-	"jamaicaGC_PlainAllocHeadBlock",
-	"jamaicaInterpreter_allocSimpleArray",
-	"jamaicaInterpreter_allocJavaObject",
 	"jamaicaGC_GetArray32", "jamaicaGC_SetArray32", 
 	"jamaicaGC_GetArray16", "jamaicaGC_SetArray16", 
 	"jamaicaGC_GetArray8", "jamaicaGC_SetArray8", 
@@ -42,8 +43,7 @@ calls_to_ignore = ["printf", "sprintf",
 	"jamaica_throwIllMonitorStateExc", "jamaica_throwArrStoreExc", "jamaica_throwNoClassDefFndErr"
 	"jamaica_throwInterruptedExc", "jamaica_throwInternalErr", "jamaica_throwInternalErrMsg"
 	"jamaica_throwInternalErrcmsg", "jamaica_throwIllArgExccmsg", "jamaica_throwStringIdxOutOfBndsExc"
-	"jamaica_throwIllAssgmtErr", "jamaica_throwStackOvrflwErr",
-	"jamaicaInterpreter_enterMonitor", "jamaicaInterpreter_exitMonitor",
+	"jamaica_throwIllAssgmtErr", "jamaica_throwStackOvrflwErr"
 ]
 
 
@@ -64,6 +64,19 @@ def functions_defined_in_ast(ast):
 	return f.rv
 
 
+def functions_declared_in_ast(ast):
+	"""
+	Returns a list of all the function declarations in a given AST
+	"""
+	class FnVis(c_ast.NodeVisitor):
+		def __init__(self):
+			self.rv = []
+		def visit_FuncDecl(self, node):
+			self.rv.append(node)
+	f = FnVis()
+	f.visit(ast)
+	return f.rv
+
 	
 class ReachableFunctions():
 	"""
@@ -81,6 +94,7 @@ class ReachableFunctions():
 	def __init__(self, startfndef, filestosearch):
 		self.filestosearch = filestosearch
 		self.reachable_functions = set()
+		self.reachable_non_translated = set()
 		self.func_defs_seen = []
 		self.files = set()
 		
@@ -134,12 +148,15 @@ class ReachableFunctions():
 				log().warning("A cast to a function type detected at " + os.path.basename(call.coord.file) + ":" + str(call.coord.line) + ". Flow analysis may not be complete.")
 			else:
 				callname = str(call.name.name)
-				if not callname in calls_to_ignore:			
-					if not callname in resolutioncache:
-						resolutioncache[callname] = self.resolve_call(call)
-					if resolutioncache[callname] != None:
-						self.reachable_functions.add(resolutioncache[callname])
-						self.find_reachable_functions(resolutioncache[callname])
+				if callname in excluded_functions:
+					self.reachable_non_translated.add(callname)
+				else:
+					if not callname in calls_to_ignore:			
+						if not callname in resolutioncache:
+							resolutioncache[callname] = self.resolve_call(call)
+						if resolutioncache[callname] != None:
+							self.reachable_functions.add(resolutioncache[callname])
+							self.find_reachable_functions(resolutioncache[callname])
 
 
 	def get_files(self):
@@ -186,6 +203,25 @@ def get_files_to_search(sig, jamaicaoutputdir):
 			filestosearch.append(ffullpath)
 			
 	return filestosearch
+
+
+
+def get_funcdecl_of_system_funccall(call):
+	"""
+	Given a FuncCall to a Jamaica system call (or just the string of its name), return the corresponding FuncDecl node.
+	"""
+	cwd = os.path.dirname(os.path.realpath(__file__))	
+	ast = astcache.get(os.path.join(cwd, "projectfiles", "include", "jamaica.h"))
+	fdecs = functions_declared_in_ast(ast)
+	
+	if isinstance(call, c_ast.FuncCall):
+		call = call.name.name
+	
+	for dec in fdecs:
+		if dec.parent.name == call:
+			return dec
+	raise CaicosError("Cannot find the definition of system function: " + str(call))
+	return None
 
 
 	

@@ -13,7 +13,7 @@ import juniperrewrites
 from utils import log, mkdir, copy_files
 
 
-def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part):
+def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, notranslatesigs):
 	"""
 	Build a Vivado HLS project that contains the hardware for a set of Java functions
 	
@@ -23,14 +23,18 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		outputdir: Absolute path of the target directory in which to build the project. Will be created if does not exist.
 		additionalsourcefiles: Iterable of abs paths for other source files that are required.
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
+		notranslatesigs: Signatures of methods that should not be translated
 	Returns:
-		A dictionary of {int -> Java sig} of the methods and their associated call ids.
+		A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
 	"""
-	filestobuild = []
+	filestobuild = set()
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
 	
-	all_reachable_functions = []
+	#All functions that should be translated
+	all_reachable_functions = set() 
+	#Reachable functions that have been excluded by flowanalysis.excluded_functions so need to be handled as a PCIe interrupt
+	reachable_non_translated = set() 
 		
 	for sig in funcs:
 		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
@@ -47,15 +51,28 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		all_reachable_functions.append(funcdecl.parent)
 		if not funcdecl.parent.coord.file in filestobuild: filestobuild.append(funcdecl.parent.coord.file)
 
-		for f in rf.files:
-			if not f in filestobuild: filestobuild.append(f)
-		for f in rf.reachable_functions:
-			if not f in all_reachable_functions: all_reachable_functions.append(f)
+		for f in rf.files: filestobuild.append(f)
+		for f in rf.reachable_functions: all_reachable_functions.append(f)
+		for r in rf.reachable_non_translated: reachable_non_translated.append(r)
 		
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
-		log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))		
-	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions)
+		log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))
+		
+	#Build the syscall structure
+	#TODO: notranslatedecls is not currently used
+	notranslatedecls = determine_no_translate_fns(all_reachable_functions, notranslatesigs)
+	callid = 1
+	syscalls = {}
+	for sysname in reachable_non_translated:
+		syscalls[sysname] = callid
+		callid = callid + 1
+	if len(syscalls) > 0:
+		log().info("Generating syscalls for:")
+		for callname, sysid in syscalls.iteritems():
+			log().info("\t" + str(sysid) + ": " + str(callname))
+	
+	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions, syscalls)
 	
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
@@ -63,15 +80,17 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	return bindings
 
 
-def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, extrasourcefiles, reachable_functions = None):
+def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
-	extrasourcefiles is an array of absolute file paths and will be added to the HLS tcl script as source files
-	
-	If reachable_functions != None, then when jamaica builder output files are scanned they will have
-	unreachable functions trimmed from them. If reachable_functions is None, then the entire file will be
-	copied. 
+	Args:
+		targetdir: directory to output to
+		jamaicaoutputdir: absolute path that contains the output of Jamaica builder
+		fgpapartname: string of the fpga part name
+		filestobuild: array of absolute file paths and will be added to the HLS tcl script as source files
+		reachable_functions: array of FuncDecl nodes that are reachable and require translation
+		syscalls: map{string->int} names of function calls that should be translated to PCIe system calls -> ID of call
 	"""
 	cwd = os.path.dirname(os.path.realpath(__file__))	
 	mkdir(targetdir)
@@ -79,20 +98,12 @@ def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, extrasourcefil
 	copy_files(os.path.join(cwd, "projectfiles", "src"), os.path.join(targetdir, "src"), [".h", ".c"])
 	shutil.copy(os.path.join(jamaicaoutputdir, "Main__.h"), os.path.join(targetdir, "include"))
 
-	for f in extrasourcefiles:
+	for f in filestobuild:
 		if not os.path.basename(f) == "fpgaporting.c": #We needed fpgaporting to perform reachability analysis, but don't rewrite it
 			log().info("Adding source file: " + f)
 			if f.endswith(".c"): #We only parse C files
 				targetfile = os.path.join(targetdir, "src", os.path.basename(f))
-				"""
-				Jamaica builder outputs C files. It is easier to work in HLS with C++. Consequentially, we need the 
-				C files to declare C linkage (with extern "C" {...}). However, this construct is not supported by
-				pycparser so we must compile without __c_plusplus declared and the linkage is not included, leading to
-				errors. There are 2 options, either manually add the extern "C" declarations back in later, or
-				rename the C source to CPP. 
-				"""
-				#targetfile = os.path.splitext(targetfile)[0] + ".cpp"
-				rewrite_source_file(f, targetfile, reachable_functions)
+				rewrite_source_file(f, targetfile, reachable_functions, syscalls)
 		
 
 	
@@ -258,3 +269,19 @@ def write_functions_c(functions, jamaicaoutputdir, outputfile):
 	hfile.close()
 	return bindings
 
+
+
+def determine_no_translate_fns(all_reachable_functions, notranslatesigs):
+	"""
+	Return an array which is a subset of all_reachable_functions for the functions that 
+	the user has configured to not be translated and therefore implemented as a PCIe 
+	interrupt to the host.
+	"""
+	rv = set()	
+	for funcdef in all_reachable_functions:
+		details = juniperrewrites.get_java_names_of_funcdef(funcdef)
+		if details != None and details[0] in notranslatesigs:
+			rv.add(funcdef)
+			
+	return rv
+	

@@ -39,6 +39,7 @@ config_specification = {
 	'hwoutputdir': (False, ""), #if set, then the hardware project will be put here instead of the default location
 	'swoutputdir': (False, ""), #if set, then the software project will be put here instead of the default location
 	'jamaicaoutputdir_hw': (False, ""), #if set, then caicos will use this Jamaica Builder output directory for the hardware project instead of jamaicaoutputdir
+	'notranslates': (False, ""), #A list of Java signatures which should not be translated into hardware
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
@@ -46,6 +47,7 @@ config_specification = {
 	#Array singletons
 	'signature': (False, "signatures"),
 	'additionalhardwarefile': (False, "additionalhardwarefiles"),
+	'notranslate': (False, 'notranslates'),
 }
 
 
@@ -77,9 +79,11 @@ def build_all(config):
 				config.get('jamaicaoutputdir_hw', config['jamaicaoutputdir']),
 				hwdir, 
 				config.get('additionalhardwarefiles'), 
-				config['fpgapart'])
+				config['fpgapart'],
+				config.get('notranslates', [])
+			)
 		
-			shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(config['outputdir'], "hardware", "push.sh"))
+			shutil.copyfile(os.path.join(cwd, "projectfiles", "scripts", "push.sh"), os.path.join(hwdir, "push.sh"))
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
@@ -93,7 +97,7 @@ def build_all(config):
 		contents = open(os.path.join(cwd, "projectfiles", "scripts", "Makefile")).read()
 		subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
 		template = Template(contents)
-		fout = open(os.path.join(config['outputdir'], "software", "Makefile"), "w")
+		fout = open(os.path.join(swdir, "Makefile"), "w")
 		fout.write(template.safe_substitute(subs))
 		fout.close()
 	except CaicosError, e:

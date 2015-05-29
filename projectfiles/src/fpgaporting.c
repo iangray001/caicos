@@ -449,36 +449,8 @@ void juniper_set_gc_greylist(jamaica_thread *ct, jamaica_ref ref) {
  * or they are not required to do anything.
  */
 
-jamaica_ref jamaicaGC_PlainAllocHeadBlock(jamaica_thread *ct, jamaica_uint32 refs) {
-	return (jamaica_ref) 0;
-}
-
 jamaica_bool jamaicaGC_haltFunction(const char *function, const char *filename, unsigned long lineNb, const char *text) {
 	return TRUE;
-}
-
-jamaica_ref jamaicaInterpreter_allocJavaObject(jamaica_thread *ct,jamaica_ref cl) {
-	return JAMAICA_NULL;
-}
-
-jamaica_ref jamaicaInterpreter_allocSimpleArray(jamaica_thread *ct,jamaica_int32 sz, jamaica_ref cl) {
-	return JAMAICA_NULL;
-}
-
-jamaica_ref jamaicaInterpreter_allocMultiArray(jamaica_thread *ct,jamaica_int32 *s,jamaica_int32 first_dim,jamaica_int32 dimensions, jamaica_ref cl) {
-	return JAMAICA_NULL;
-}
-
-jamaica_int32 jamaicaInterpreter_initialize_class_helper(jamaica_thread *ct, jamaica_ref clazz, jamaica_int32  startpc) {
-	return 0;
-}
-
-void jamaicaInterpreter_enterMonitor(jamaica_thread *ct, jamaica_ref obj) {
-
-}
-
-void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj) {
-
 }
 
 /*
@@ -487,9 +459,6 @@ void jamaicaInterpreter_exitMonitor(jamaica_thread *ct, jamaica_ref obj) {
 jamaica_ref jamaicaInterpreter_getInterfaceMethod(jamaica_thread *ct, jamaica_ref target, jamaica_ref method) {
 	return 0;
 }
-
-
-
 
 jamaica_int32 jamaicaInterpreter_castDoubleToInteger(jamaica_double d) {
 	//TODO Test
