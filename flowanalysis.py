@@ -78,7 +78,7 @@ def functions_declared_in_ast(ast):
 	return f.rv
 
 	
-class ReachableFunctions():
+class ReachableFunctions(object):
 	"""
 	Starting at a given FuncDef node, recursively walks down the AST finding FuncCall nodes. For each node, attempts to
 	resolve that call into its corresponding FuncDef node. It does this by parsing all the C files in the provided
