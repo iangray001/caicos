@@ -29,8 +29,8 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	"""
 	filestobuild = set()
 	cwd = os.path.dirname(os.path.realpath(__file__))	
-	filestobuild.append(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
-	
+	filestobuild.add(os.path.join(cwd, "projectfiles", "src", "fpgaporting.c"))
+
 	#All functions that should be translated
 	all_reachable_functions = set() 
 	#Reachable functions that have been excluded by flowanalysis.excluded_functions so need to be handled as a PCIe interrupt
@@ -42,18 +42,18 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		if additionalsourcefiles != None:
 			for f in additionalsourcefiles: 
 				if not f in filestosearch: filestosearch.append(f)
-				if not f in filestobuild: filestobuild.append(f)
+				filestobuild.add(f)
 
 		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 		rf = ReachableFunctions(funcdecl.parent, filestosearch)
 		
 		#Don't forget to include the starting point
-		all_reachable_functions.append(funcdecl.parent)
-		if not funcdecl.parent.coord.file in filestobuild: filestobuild.append(funcdecl.parent.coord.file)
+		all_reachable_functions.add(funcdecl.parent)
+		filestobuild.add(funcdecl.parent.coord.file)
 
-		for f in rf.files: filestobuild.append(f)
-		for f in rf.reachable_functions: all_reachable_functions.append(f)
-		for r in rf.reachable_non_translated: reachable_non_translated.append(r)
+		for f in rf.files: filestobuild.add(f)
+		for f in rf.reachable_functions: all_reachable_functions.add(f)
+		for r in rf.reachable_non_translated: reachable_non_translated.add(r)
 		
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
