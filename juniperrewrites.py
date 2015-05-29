@@ -54,6 +54,9 @@ def rewrite_RAM_structure_dereferences(ast):
 		Constant: int, 2
 	"""
 	def rewrite_structref(node):
+		"""
+		Called by recurse to check a StructRef node for if rewrites are necessary, and if so, make them. 
+		"""
 		deref_type = node.field.name  # What was dereferenced ('i', 's', 'c', 'r', etc.)
 
 		# When a subword type, there may be a higher level arrayref :- __juniper_ram_master[x].s[4]
@@ -80,9 +83,15 @@ def rewrite_RAM_structure_dereferences(ast):
 		replace_node(nodetoreplace, replacementnode)
 
 	def recurse(node):
+		"""
+		Recurse depth-first through the provided AST down to the leaf nodes.
+		Then, whilst popping off the stack, any StructRef nodes are passed to rewrite_structref
+		If changes are made, returns True
+		"""
 		changemade = False
 		for c in node.children(): 
-			if recurse(c[1]): changemade = True
+			if recurse(c[1]):
+				changemade = True
 		if isinstance(node, c_ast.StructRef):
 			if node.type == "." and isinstance(node.name, c_ast.ArrayRef) and node.name.name.name == RAM_NAME:
 				rewrite_structref(node)
@@ -103,7 +112,8 @@ def c_filename_of_javaclass(classname, c_output_base, classdelimiter='.'):
 	Jamaica translates on a per-package basis, so many classes may be in the same C file.
 	"""
 	parts = classname.strip().split(classdelimiter)
-	if not os.path.exists(c_output_base): return None
+	if not os.path.exists(c_output_base): 
+		return None
 
 	if len(parts) < 2:
 		raise CaicosError("Class name " + str(classname) + " appears to reference an unpackaged class, which is not supported by JamaicaBuilder or modern Java.")
@@ -265,7 +275,8 @@ def rewrite_syscall_calls(funcdef, syscalls):
 	When found, rewrite to be an invocation of pcie_syscall, with arguments appropriately cast.
 	"""
 	class FuncCallVisitor(c_ast.NodeVisitor):
-		def __init__(self): self.fns = {}
+		def __init__(self): 
+			self.fns = {}
 		
 		def visit_FuncCall(self, node):
 			if node.name.name in syscalls:
@@ -282,7 +293,7 @@ def rewrite_syscall_calls(funcdef, syscalls):
 				#Set the name of the syscall function
 				node.name.name = SYSCALL_NAME
 				
-				while(len(node.args.exprs) != MAX_SYSCALL_ARGS):
+				while len(node.args.exprs) != MAX_SYSCALL_ARGS:
 					node.args.exprs.append(c_ast.ID("0"))
 				
 				#print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
@@ -331,13 +342,6 @@ def rewrite_ct_refs(ast):
 	"""
 	codegen = CGenerator()
 	
-	def build_setter_or_getter(node, fnname, var):
-		if isinstance(node.parent, c_ast.Assignment) and node.parent.lvalue == node:
-			rewrite_ct_refs(node.parent.rvalue)
-			replace_node(node.parent, make_func_call_node("juniper_set_" + str(fnname), [var, node.parent.rvalue]))
-		else: 
-			replace_node(node, make_func_call_node("juniper_get_" + str(fnname), [var]))
-
 	def rewrite_structref(node):
 		"""
 		Rewrite other structure dereferences of the ct reference 
@@ -352,7 +356,11 @@ def rewrite_ct_refs(ast):
 		}
 		if reftext in rewritepairs.keys():
 			fname, var = rewritepairs[reftext]
-			build_setter_or_getter(node, fname, var)
+			if isinstance(node.parent, c_ast.Assignment) and node.parent.lvalue == node:
+				rewrite_ct_refs(node.parent.rvalue)
+				replace_node(node.parent, make_func_call_node("juniper_set_" + str(fname), [var, node.parent.rvalue]))
+			else: 
+				replace_node(node, make_func_call_node("juniper_get_" + str(fname), [var]))
 
 	def rewrite_decl(node):
 		"""
@@ -364,10 +372,16 @@ def rewrite_ct_refs(ast):
 			node.init = make_func_call_node("juniper_get_gcenv_ref", ['ct'])
 
 	def recurse(node):
+		"""
+		Recurse depth-first down the AST. Whilst popping off the stack, call rewrite_structref or rewrite_decl
+		if a StructRef or Decl node respectively is seen
+		"""
 		for c in node.children(): 
 			recurse(c[1])
-		if isinstance(node, c_ast.StructRef): rewrite_structref(node)
-		if isinstance(node, c_ast.Decl): rewrite_decl(node)
+		if isinstance(node, c_ast.StructRef): 
+			rewrite_structref(node)
+		if isinstance(node, c_ast.Decl): 
+			rewrite_decl(node)
 
 	recurse(ast)
 
