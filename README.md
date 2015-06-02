@@ -7,7 +7,7 @@ This work is internal to the EU Seventh Framework project JUNIPER and should not
 externally distributed until cleared by project review, whereupon it will become GPLv2.
 
 ##Usage
-Caicos is invoked by running the following:
+caicos is invoked by running the following:
 
 	python caicos.py <configfile>
 
