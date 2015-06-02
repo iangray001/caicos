@@ -97,3 +97,26 @@ def project_path(*path_parts):
 	return os.path.join(*parts)
 	
 	
+
+def remove_slots_from_classes(module):
+	"""
+	When passed a module, iterate through the classes in that module and replace any classes which use 
+	__slots__ with a copy that is otherwise identical but doesn't define __slots__.
+	
+	This is because pycparser recently updated to use __slots__ and this prevents the use of pickle and
+	prevents caicos from adding in parent links (astcache.add_parent_links).
+	
+	This is clearly a large monkey-patch, but the nature of __slots__ means that it is actually
+	very difficult to make optional (classes need to be wrapped in a factory which selectively returns
+	the __slots__ version or not). As this a significant change to pycparser, this is the path of least
+	resistance.
+	"""
+	for name, cls in module.__dict__.iteritems():
+		if isinstance(cls, type):
+			clonedict = dict(cls.__dict__) #Copy the target class' dictionary
+			if '__slots__' in clonedict:
+				for m in clonedict['__slots__']: #Delete the member_descriptors that __slots__ adds
+					del clonedict[m] 
+				del clonedict['__slots__'] #And delete the __slots__ for good measure
+				replacement = type(cls.__name__, cls.__bases__, clonedict) #Return a new class with the amended interface
+				setattr(module, name, replacement)

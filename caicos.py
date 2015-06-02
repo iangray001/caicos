@@ -22,10 +22,13 @@ import shutil
 from string import Template
 import sys
 
+import pycparser
+
 import astcache
 import prepare_hls_project
 import prepare_src_project
 from utils import mkdir, CaicosError, log, project_path
+import utils
 
 
 config_specification = {
@@ -53,12 +56,12 @@ config_specification = {
 }
 
 
-
-
 def build_all(config):
 	"""
 	Build a JUNIPER project. Format of the config dictionary is described in the docstring for config_specification.
 	"""
+	utils.remove_slots_from_classes(pycparser)
+	
 	try:
 		if config.get('cleanoutput', "false").lower() == "true":
 			shutil.rmtree(config['outputdir'], ignore_errors=True)
