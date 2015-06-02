@@ -25,7 +25,7 @@ from utils import log, CaicosError, deglob_file, project_path, mkdir
 filecache = None
 memcache = {}
 
-def get(filename, alternateincludepath = None):
+def get(filename, alternateincludepath = None, addparentlinks = True):
 	"""
 	Get the AST for the file pointed to by the absolute path filename
 	If alternateincludepath is provided then a different include path is passed to the
@@ -42,7 +42,8 @@ def get(filename, alternateincludepath = None):
 			
 			log().info("Parsing " + str(filename))
 			ast = parse_jamaica_output(filename, alternateincludepath)
-			add_parent_links(ast)
+			if addparentlinks:
+				add_parent_links(ast)
 			memcache[filename] = ast
 			save_to_filecache(filename, ast)
 			return ast
