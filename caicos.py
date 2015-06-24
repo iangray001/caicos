@@ -22,9 +22,8 @@ import shutil
 from string import Template
 import sys
 
-import pycparser
-
 import astcache
+import pycparser
 import prepare_hls_project
 import prepare_src_project
 from utils import mkdir, CaicosError, log, project_path

@@ -115,8 +115,12 @@ def remove_slots_from_classes(module):
 		if isinstance(cls, type):
 			clonedict = dict(cls.__dict__) #Copy the target class' dictionary
 			if '__slots__' in clonedict:
-				for m in clonedict['__slots__']: #Delete the member_descriptors that __slots__ adds
-					del clonedict[m] 
+				#Delete the member_descriptors that __slots__ adds
+				if isinstance(clonedict['__slots__'], "".__class__):
+					del clonedict[clonedict['__slots__']]
+				else:
+					for m in clonedict['__slots__']:
+						del clonedict[m]
 				del clonedict['__slots__'] #And delete the __slots__ for good measure
 				replacement = type(cls.__name__, cls.__bases__, clonedict) #Return a new class with the amended interface
 				setattr(module, name, replacement)

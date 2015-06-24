@@ -145,6 +145,8 @@ def parse_jamaica_output(filename, includepath = None):
 def add_parent_links(ast):
 	"""
 	Iterate over an AST annotating every node with a link to its parent node.
+	This adds a 'parent' attribute to the AST nodes and will cause problems if __slots__ is
+	present on the c_ast.Node class 
 	"""
 	def recurse(node, parent):
 		node.parent = parent
