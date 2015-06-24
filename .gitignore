@@ -123,3 +123,5 @@ docs/_build/
 # PyBuilder
 target/
 
+/lextab.py
+/yacctab.py
