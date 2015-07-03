@@ -15,6 +15,9 @@
 #define FPGA_CONFIG_MAX_SIZE 128 * 1024 * 1024
 #define ACCEL_MEM_SIZE 512 * 1024 * 1024
 
+#define WR_PERM (S_IWUSR | S_IWGRP)
+#define RD_PERM (S_IRUSR | S_IRGRP)
+
 int juniper_sysfs_lost_device_iter(struct device* dev, void* data);
 int juniper_sysfs_lost_device_accel_iter(struct device* dev, void* data);
 
@@ -31,10 +34,10 @@ ssize_t accel_retVal_show(struct device* dev, struct device_attribute* attr, cha
 ssize_t accel_ram_base_show(struct device* dev, struct device_attribute* attr, char* buf);
 ssize_t accel_ram_base_store(struct device* dev, struct device_attribute* attr, const char* buf, size_t count);
 
-ssize_t accel_mem_read(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
-ssize_t accel_mem_write(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
+ssize_t accel_mem_read(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
+ssize_t accel_mem_write(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
 
-ssize_t fpga_icap_write(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
+ssize_t fpga_icap_write(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count);
 
 ssize_t accel_interrupted_show(struct device* dev, struct device_attribute* attr, char* buf);
 
@@ -54,20 +57,20 @@ struct bin_attribute bin_attr_reconfig = {
 };
 
 // Attributes for the accelerators
-DEVICE_ATTR(accel_idle, S_IRUGO, accel_idle_show, NULL);                       // Is the accelerator idle?
-DEVICE_ATTR(accel_start, S_IWUGO, NULL, accel_start_store);                    // Start the accelerator running
-DEVICE_ATTR(accel_hold, S_IRUGO | S_IWUGO, accel_hold_show, accel_hold_store); // Accelerator isolator. USE BEFORE RECONFIG!
-DEVICE_ATTR(accel_arg0, S_IRUGO | S_IWUGO, accel_argN_show, accel_argN_store); // Arguments
-DEVICE_ATTR(accel_arg1, S_IRUGO | S_IWUGO, accel_argN_show, accel_argN_store);
-DEVICE_ATTR(accel_arg2, S_IRUGO | S_IWUGO, accel_argN_show, accel_argN_store);
-DEVICE_ATTR(accel_arg3, S_IRUGO | S_IWUGO, accel_argN_show, accel_argN_store);
-DEVICE_ATTR(accel_retval, S_IRUGO, accel_retVal_show, NULL);
-DEVICE_ATTR(accel_ram_base, S_IRUGO | S_IWUGO, accel_ram_base_show, accel_ram_base_store);
-DEVICE_ATTR(accel_interrupted, S_IRUGO, accel_interrupted_show, NULL);
-DEVICE_ATTR(accel_syscall_args, S_IRUGO | S_IWUGO, accel_syscall_args_show, accel_syscall_args_store);
+DEVICE_ATTR(accel_idle, RD_PERM, accel_idle_show, NULL);                       // Is the accelerator idle?
+DEVICE_ATTR(accel_start, WR_PERM, NULL, accel_start_store);                    // Start the accelerator running
+DEVICE_ATTR(accel_hold, RD_PERM | WR_PERM, accel_hold_show, accel_hold_store); // Accelerator isolator. USE BEFORE RECONFIG!
+DEVICE_ATTR(accel_arg0, RD_PERM | WR_PERM, accel_argN_show, accel_argN_store); // Arguments
+DEVICE_ATTR(accel_arg1, RD_PERM | WR_PERM, accel_argN_show, accel_argN_store);
+DEVICE_ATTR(accel_arg2, RD_PERM | WR_PERM, accel_argN_show, accel_argN_store);
+DEVICE_ATTR(accel_arg3, RD_PERM | WR_PERM, accel_argN_show, accel_argN_store);
+DEVICE_ATTR(accel_retval, RD_PERM, accel_retVal_show, NULL);
+DEVICE_ATTR(accel_ram_base, RD_PERM | WR_PERM, accel_ram_base_show, accel_ram_base_store);
+DEVICE_ATTR(accel_interrupted, RD_PERM, accel_interrupted_show, NULL);
+DEVICE_ATTR(accel_syscall_args, RD_PERM | WR_PERM, accel_syscall_args_show, accel_syscall_args_store);
 
 struct bin_attribute bin_attr_accel_mem = {
-	.attr = {.name = "mem", .mode = S_IWUGO | S_IRUGO },
+	.attr = {.name = "mem", .mode = WR_PERM | RD_PERM },
 	.read = accel_mem_read,
 	.write = accel_mem_write,
 	.size = ACCEL_MEM_SIZE
@@ -285,7 +288,7 @@ ssize_t accel_hold_store(struct device* dev, struct device_attribute* attr, cons
 	return count; // Fully consume
 }
 
-ssize_t accel_mem_read(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
+ssize_t accel_mem_read(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
 {
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct juniper_accel_device* accel_data = dev_get_drvdata(dev);
@@ -294,7 +297,7 @@ ssize_t accel_mem_read(struct kobject* kobj, struct bin_attribute* bin_attr, cha
 	return count;
 }
 
-ssize_t accel_mem_write(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
+ssize_t accel_mem_write(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
 {
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct juniper_accel_device* accel_data = dev_get_drvdata(dev);
@@ -303,7 +306,7 @@ ssize_t accel_mem_write(struct kobject* kobj, struct bin_attribute* bin_attr, ch
 	return count;
 }
 
-ssize_t fpga_icap_write(struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
+ssize_t fpga_icap_write(struct file* f, struct kobject* kobj, struct bin_attribute* bin_attr, char* buf, loff_t offset, size_t count)
 {
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct juniper_accel_device* accel_data = dev_get_drvdata(dev);
@@ -524,9 +527,9 @@ static int juniper_sysfs_interrupted_find_accel(struct device* dev, void* userDa
 {
 	struct juniper_accel_device* accel = dev_get_drvdata(dev);
 
-	printk(KERN_INFO "JFM: Find device, curIdx = %d userdata = %d drvdata: %p\n", accel->idx, (int)userData, accel);
+	printk(KERN_INFO "JFM: Find device, curIdx = %d userdata = %ld drvdata: %p\n", accel->idx, (long)userData, accel);
 
-	if(accel->idx == (int)userData)
+	if(accel->idx == (long)userData)
 		return 1;
 	else
 		return 0;
@@ -543,10 +546,10 @@ void juniper_sysfs_interrupted(struct juniper_device* dev)
 	struct device* jdev = NULL;
 	struct device* childDev = NULL;
 	struct device* childAccel = NULL;
-	volatile struct juniper_fpga_device* fpga_data = NULL;
-	volatile struct juniper_accel_device* accel_data = NULL;
-	
-	uint32_t hp_intr = -1;
+	struct juniper_fpga_device* fpga_data = NULL;
+	struct juniper_accel_device* accel_data = NULL;
+
+	long hp_intr = -1;
 
 	jdev = juniper_pci_getdev(dev);
 
@@ -568,7 +571,7 @@ void juniper_sysfs_interrupted(struct juniper_device* dev)
 	childDev = device_find_child(jdev, (void*)hp_intr, juniper_sysfs_interrupted_find_device);
 	if(childDev == NULL)
 	{
-		printk(KERN_ERR "JFM: Could not find child device %d in interrupt!\n", hp_intr);
+		printk(KERN_ERR "JFM: Could not find child device %ld in interrupt!\n", hp_intr);
 		return;
 	}
 
@@ -576,7 +579,7 @@ void juniper_sysfs_interrupted(struct juniper_device* dev)
 	childAccel = device_find_child(childDev, (void*)hp_intr, juniper_sysfs_interrupted_find_accel);
 
 	accel_data = dev_get_drvdata(childAccel);
-	printk(KERN_INFO "JFM: Got interrupt for accelerator number %d TEST: %d ADDR %p\n", hp_intr, accel_data->idx, accel_data);
+	printk(KERN_INFO "JFM: Got interrupt for accelerator number %ld TEST: %d ADDR %p\n", hp_intr, accel_data->idx, accel_data);
 	
 	accel_data->interrupted = 1;
 	put_device(childDev);
