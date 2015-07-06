@@ -27,8 +27,8 @@
 #define CDMA_CDMASR_IOC_IRQ_BIT 12
 #define CDMA_BTT_MASK           0x003FFFFF
 
-static int __devinit juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent);
-static void __devexit juniper_remove(struct pci_dev *pdev);
+static int juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent);
+static void juniper_remove(struct pci_dev *pdev);
 
 static irqreturn_t juniper_irqhandler(int irq, void* data);
 
@@ -63,7 +63,7 @@ static struct pci_driver juniper_driver =
 	.name = "JUNIPER JFM Host Driver",
 	.id_table = juniper_ids,
 	.probe = juniper_probe,
-	.remove = __devexit_p(juniper_remove)
+	.remove = juniper_remove
 };
 
 void (*new_device_callback)(struct juniper_device* dev) = NULL;
@@ -94,7 +94,7 @@ unsigned int juniper_pci_devidx(struct juniper_device* dev)
 }
 
 // TODO: More graceful error handling.
-static int __devinit juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent)
+static int juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent)
 {
 	int rc = 0;
 	struct juniper_dev_privdata* pd = kzalloc(sizeof(struct juniper_dev_privdata), GFP_KERNEL);
@@ -184,7 +184,7 @@ static int __devinit juniper_probe(struct pci_dev *pdev, const struct pci_device
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "JFM: Got memory at 0x%x. DAC: %d\n", (unsigned int)pd->dma_mem_backing, pd->dma_using_dac);
+	printk(KERN_INFO "JFM: Got memory at %p. DAC: %d\n", pd->dma_mem_backing, pd->dma_using_dac);
 
 	// Map through to get a DMA handle
 	pd->dma_handle = pci_map_single(pdev, pd->dma_mem_backing, PAGE_SIZE * (1 << MEM_ORDER), PCI_DMA_FROMDEVICE);
@@ -215,7 +215,7 @@ static int __devinit juniper_probe(struct pci_dev *pdev, const struct pci_device
 	return 0; // TODO: Isn't there a macro for this (EOK?)
 }
 
-static void __devexit juniper_remove(struct pci_dev *pdev)
+static void juniper_remove(struct pci_dev *pdev)
 {
 	struct juniper_dev_privdata* pd;
 	pd = pci_get_drvdata(pdev);
