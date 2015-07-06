@@ -37,8 +37,8 @@
  PORT pcie_txn = axi_pcie_0_pci_exp_txn, DIR = O, VEC = [0:0]
  PORT pcie_rxp = axi_pcie_0_pci_exp_rxp, DIR = I, VEC = [0:0]
  PORT pcie_rxn = axi_pcie_0_pci_exp_rxn, DIR = I, VEC = [0:0]
- PORT pcie_refclk_p = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = P
- PORT pcie_refclk_n = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = N
+ PORT pcie_refclk_p = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = P, CLK_FREQ=125000000
+ PORT pcie_refclk_n = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = N, CLK_FREQ=125000000
 
 
 BEGIN proc_sys_reset
@@ -150,6 +150,7 @@ BEGIN axi_pcie
  PARAMETER C_INTERCONNECT_S_AXI_MASTERS = mp_to_mem.M_AXI & axi_cdma_0.M_AXI
  PARAMETER C_AXIBAR_0 = 0x40000000
  PARAMETER C_AXIBAR_HIGHADDR_0 = 0x5FFFFFFF
+ PARAMETER C_REF_CLK_FREQ = 1
  BUS_INTERFACE S_AXI = mem_interconnect
  BUS_INTERFACE S_AXI_CTL = periph_interconnect
  BUS_INTERFACE M_AXI = pcie_mem_periph_split
