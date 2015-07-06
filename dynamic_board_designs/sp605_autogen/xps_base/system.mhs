@@ -1,0 +1,256 @@
+
+# ##############################################################################
+# Created by Base System Builder Wizard for Xilinx EDK 14.6 Build EDK_P.68d
+# Fri Jul  3 09:54:49 2015
+# Target Board:  xilinx.com sp605 Rev C
+# Family:    spartan6
+# Device:    xc6slx45t
+# Package:   fgg484
+# Speed Grade:  -3
+# ##############################################################################
+ PARAMETER VERSION = 2.1.0
+
+
+ PORT zio = zio, DIR = IO
+ PORT rzq = rzq, DIR = IO
+ PORT mcbx_dram_we_n = mcbx_dram_we_n, DIR = O
+ PORT mcbx_dram_udqs_n = mcbx_dram_udqs_n, DIR = IO
+ PORT mcbx_dram_udqs = mcbx_dram_udqs, DIR = IO
+ PORT mcbx_dram_udm = mcbx_dram_udm, DIR = O
+ PORT mcbx_dram_ras_n = mcbx_dram_ras_n, DIR = O
+ PORT mcbx_dram_odt = mcbx_dram_odt, DIR = O
+ PORT mcbx_dram_ldm = mcbx_dram_ldm, DIR = O
+ PORT mcbx_dram_dqs_n = mcbx_dram_dqs_n, DIR = IO
+ PORT mcbx_dram_dqs = mcbx_dram_dqs, DIR = IO
+ PORT mcbx_dram_dq = mcbx_dram_dq, DIR = IO, VEC = [15:0]
+ PORT mcbx_dram_ddr3_rst = mcbx_dram_ddr3_rst, DIR = O
+ PORT mcbx_dram_clk_n = mcbx_dram_clk_n, DIR = O, SIGIS = CLK
+ PORT mcbx_dram_clk = mcbx_dram_clk, DIR = O, SIGIS = CLK
+ PORT mcbx_dram_cke = mcbx_dram_cke, DIR = O
+ PORT mcbx_dram_cas_n = mcbx_dram_cas_n, DIR = O
+ PORT mcbx_dram_ba = mcbx_dram_ba, DIR = O, VEC = [2:0]
+ PORT mcbx_dram_addr = mcbx_dram_addr, DIR = O, VEC = [12:0]
+ PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
+ PORT CLK_P = CLK, DIR = I, DIFFERENTIAL_POLARITY = P, SIGIS = CLK, CLK_FREQ = 200000000
+ PORT CLK_N = CLK, DIR = I, DIFFERENTIAL_POLARITY = N, SIGIS = CLK, CLK_FREQ = 200000000
+ PORT pcie_txp = axi_pcie_0_pci_exp_txp, DIR = O, VEC = [0:0]
+ PORT pcie_txn = axi_pcie_0_pci_exp_txn, DIR = O, VEC = [0:0]
+ PORT pcie_rxp = axi_pcie_0_pci_exp_rxp, DIR = I, VEC = [0:0]
+ PORT pcie_rxn = axi_pcie_0_pci_exp_rxn, DIR = I, VEC = [0:0]
+ PORT pcie_refclk_p = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = P
+ PORT pcie_refclk_n = pcie_refclk, DIR = I, SIGIS = CLK, DIFFERENTIAL_POLARITY = N
+
+
+BEGIN proc_sys_reset
+ PARAMETER INSTANCE = mem_proc_sys_reset
+ PARAMETER HW_VER = 3.00.a
+ PARAMETER C_EXT_RESET_HIGH = 1
+ PORT Dcm_locked = proc_sys_reset_0_Dcm_locked
+ PORT Slowest_sync_clk = clk_50_0000MHzPLL0
+ PORT Interconnect_aresetn = proc_sys_reset_0_Interconnect_aresetn
+ PORT Ext_Reset_In = RESET
+ PORT BUS_STRUCT_RESET = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT Peripheral_Reset = mem_proc_sys_reset_Peripheral_Reset
+ PORT Peripheral_aresetn = mem_proc_sys_reset_Peripheral_aresetn
+END
+
+BEGIN clock_generator
+ PARAMETER INSTANCE = mem_clk_gen
+ PARAMETER HW_VER = 4.03.a
+ PARAMETER C_CLKIN_FREQ = 200000000
+ PARAMETER C_CLKOUT0_FREQ = 600000000
+ PARAMETER C_CLKOUT0_GROUP = PLL0
+ PARAMETER C_CLKOUT0_BUF = FALSE
+ PARAMETER C_CLKOUT1_FREQ = 600000000
+ PARAMETER C_CLKOUT1_PHASE = 180
+ PARAMETER C_CLKOUT1_GROUP = PLL0
+ PARAMETER C_CLKOUT1_BUF = FALSE
+ PARAMETER C_CLKOUT2_FREQ = 100000000
+ PARAMETER C_CLKOUT2_GROUP = PLL0
+ PARAMETER C_CLKOUT3_FREQ = 50000000
+ PARAMETER C_CLKOUT3_GROUP = PLL0
+ PORT LOCKED = proc_sys_reset_0_Dcm_locked
+ PORT CLKOUT2 = clk_100_0000MHzPLL0
+ PORT CLKOUT3 = clk_50_0000MHzPLL0
+ PORT RST = RESET
+ PORT CLKOUT0 = clk_600_0000MHzPLL0_nobuf
+ PORT CLKOUT1 = clk_600_0000MHz180PLL0_nobuf
+ PORT CLKIN = CLK
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = pcie_mem_periph_split
+ PARAMETER HW_VER = 1.06.a
+ PORT interconnect_aclk = axi_pcie_0_axi_aclk_out
+ PORT INTERCONNECT_ARESETN = pci_proc_sys_reset_Interconnect_aresetn
+END
+
+BEGIN axi_s6_ddrx
+ PARAMETER INSTANCE = MCB_DDR3
+ PARAMETER HW_VER = 1.06.a
+ PARAMETER C_MCB_RZQ_LOC = K7
+ PARAMETER C_MCB_ZIO_LOC = M7
+ PARAMETER C_MEM_TYPE = DDR3
+ PARAMETER C_MEM_PARTNO = MT41J64M16XX-187E
+ PARAMETER C_MEM_BANKADDR_WIDTH = 3
+ PARAMETER C_MEM_NUM_COL_BITS = 10
+ PARAMETER C_SKIP_IN_TERM_CAL = 0
+ PARAMETER C_S0_AXI_ENABLE = 1
+ PARAMETER C_INTERCONNECT_S0_AXI_MASTERS = axi_cdma_0.M_AXI & mp_to_mem.M_AXI
+ PARAMETER C_INTERCONNECT_S0_AXI_AW_REGISTER = 8
+ PARAMETER C_INTERCONNECT_S0_AXI_AR_REGISTER = 8
+ PARAMETER C_INTERCONNECT_S0_AXI_W_REGISTER = 8
+ PARAMETER C_INTERCONNECT_S0_AXI_R_REGISTER = 8
+ PARAMETER C_INTERCONNECT_S0_AXI_B_REGISTER = 8
+ PARAMETER C_S0_AXI_BASEADDR = 0x00000000
+ PARAMETER C_S0_AXI_HIGHADDR = 0x07FFFFFF
+ BUS_INTERFACE S0_AXI = mem_interconnect
+ PORT zio = zio
+ PORT rzq = rzq
+ PORT s0_axi_aclk = clk_100_0000MHzPLL0
+ PORT ui_clk = clk_100_0000MHzPLL0
+ PORT mcbx_dram_we_n = mcbx_dram_we_n
+ PORT mcbx_dram_udqs_n = mcbx_dram_udqs_n
+ PORT mcbx_dram_udqs = mcbx_dram_udqs
+ PORT mcbx_dram_udm = mcbx_dram_udm
+ PORT mcbx_dram_ras_n = mcbx_dram_ras_n
+ PORT mcbx_dram_odt = mcbx_dram_odt
+ PORT mcbx_dram_ldm = mcbx_dram_ldm
+ PORT mcbx_dram_dqs_n = mcbx_dram_dqs_n
+ PORT mcbx_dram_dqs = mcbx_dram_dqs
+ PORT mcbx_dram_dq = mcbx_dram_dq
+ PORT mcbx_dram_ddr3_rst = mcbx_dram_ddr3_rst
+ PORT mcbx_dram_clk_n = mcbx_dram_clk_n
+ PORT mcbx_dram_clk = mcbx_dram_clk
+ PORT mcbx_dram_cke = mcbx_dram_cke
+ PORT mcbx_dram_cas_n = mcbx_dram_cas_n
+ PORT mcbx_dram_ba = mcbx_dram_ba
+ PORT mcbx_dram_addr = mcbx_dram_addr
+ PORT sysclk_2x = clk_600_0000MHzPLL0_nobuf
+ PORT sysclk_2x_180 = clk_600_0000MHz180PLL0_nobuf
+ PORT SYS_RST = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT PLL_LOCK = proc_sys_reset_0_Dcm_locked
+ PORT s0_axi_aresetn = mem_proc_sys_reset_Peripheral_aresetn
+END
+
+BEGIN axi_pcie
+ PARAMETER INSTANCE = axi_pcie_0
+ PARAMETER HW_VER = 1.08.a
+ PARAMETER C_BASEADDR = 0x24000000
+ PARAMETER C_HIGHADDR = 0x2400FFFF
+ PARAMETER C_NUM_MSI_REQ = 2
+ PARAMETER C_CLASS_CODE = 0x0B4000
+ PARAMETER C_VENDOR_ID = 0x10EE
+ PARAMETER C_DEVICE_ID = 0x7011
+ PARAMETER C_AXIBAR_NUM = 1
+ PARAMETER C_PCIEBAR_AS = 1
+ PARAMETER C_PCIEBAR_LEN_0 = 29
+ PARAMETER C_PCIEBAR2AXIBAR_0 = 0x00000000
+ PARAMETER C_INTERCONNECT_S_AXI_CTL_MASTERS = mp_to_periph.M_AXI
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = mp_to_mem.M_AXI & axi_cdma_0.M_AXI
+ PARAMETER C_AXIBAR_0 = 0x40000000
+ PARAMETER C_AXIBAR_HIGHADDR_0 = 0x5FFFFFFF
+ BUS_INTERFACE S_AXI = mem_interconnect
+ BUS_INTERFACE S_AXI_CTL = periph_interconnect
+ BUS_INTERFACE M_AXI = pcie_mem_periph_split
+ PORT mmcm_lock = axi_pcie_0_mmcm_lock
+ PORT axi_aclk_out = axi_pcie_0_axi_aclk_out
+ PORT axi_aclk = axi_pcie_0_axi_aclk_out
+ PORT axi_ctl_aclk_out = axi_pcie_0_axi_ctl_aclk_out
+ PORT axi_ctl_aclk = axi_pcie_0_axi_ctl_aclk_out
+ PORT pci_exp_txp = axi_pcie_0_pci_exp_txp
+ PORT pci_exp_txn = axi_pcie_0_pci_exp_txn
+ PORT pci_exp_rxp = axi_pcie_0_pci_exp_rxp
+ PORT pci_exp_rxn = axi_pcie_0_pci_exp_rxn
+ PORT INTX_MSI_Request = Interrupt
+ PORT REFCLK = pcie_refclk
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = periph_interconnect
+ PARAMETER HW_VER = 1.06.a
+ PORT INTERCONNECT_ACLK = axi_pcie_0_axi_aclk_out
+ PORT INTERCONNECT_ARESETN = pci_proc_sys_reset_Interconnect_aresetn
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = mem_interconnect
+ PARAMETER HW_VER = 1.06.a
+ PORT INTERCONNECT_ACLK = axi_pcie_0_axi_aclk_out
+ PORT INTERCONNECT_ARESETN = pci_proc_sys_reset_Interconnect_aresetn
+END
+
+BEGIN axi2axi_connector
+ PARAMETER INSTANCE = mp_to_mem
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_pcie_0.M_AXI
+ PARAMETER C_S_AXI_RNG00_BASEADDR = 0x00000000
+ PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x1FFFFFFF
+ BUS_INTERFACE S_AXI = pcie_mem_periph_split
+ BUS_INTERFACE M_AXI = mem_interconnect
+END
+
+BEGIN axi2axi_connector
+ PARAMETER INSTANCE = mp_to_periph
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_pcie_0.M_AXI
+ PARAMETER C_S_AXI_RNG00_BASEADDR = 0x20000000
+ PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x3FFFFFFF
+ BUS_INTERFACE S_AXI = pcie_mem_periph_split
+ BUS_INTERFACE M_AXI = periph_interconnect
+END
+
+BEGIN axi_bram_ctrl
+ PARAMETER INSTANCE = axi_bram_ctrl_0
+ PARAMETER HW_VER = 1.03.a
+ PARAMETER C_S_AXI_BASEADDR = 0x21000000
+ PARAMETER C_S_AXI_HIGHADDR = 0x21001FFF
+ PARAMETER C_SINGLE_PORT_BRAM = 1
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = mp_to_periph.M_AXI
+ BUS_INTERFACE S_AXI = periph_interconnect
+ BUS_INTERFACE BRAM_PORTA = axi_bram_ctrl_0_BRAM_PORTA
+ PORT S_AXI_ACLK = axi_pcie_0_axi_aclk_out
+END
+
+BEGIN bram_block
+ PARAMETER INSTANCE = bram_block_0
+ PARAMETER HW_VER = 1.00.a
+ BUS_INTERFACE PORTA = axi_bram_ctrl_0_BRAM_PORTA
+END
+
+BEGIN axi_cdma
+ PARAMETER INSTANCE = axi_cdma_0
+ PARAMETER HW_VER = 3.04.a
+ PARAMETER C_BASEADDR = 0x25000000
+ PARAMETER C_HIGHADDR = 0x2500FFFF
+ PARAMETER C_INTERCONNECT_S_AXI_LITE_MASTERS = mp_to_periph.M_AXI
+ BUS_INTERFACE S_AXI_LITE = periph_interconnect
+ BUS_INTERFACE M_AXI = mem_interconnect
+ PORT s_axi_lite_aclk = axi_pcie_0_axi_aclk_out
+ PORT m_axi_aclk = axi_pcie_0_axi_aclk_out
+ PORT cdma_introut = axi_cdma_0_cdma_introut
+END
+
+BEGIN axi_intc
+ PARAMETER INSTANCE = pcie_intr_mgr
+ PARAMETER HW_VER = 1.04.a
+ PARAMETER C_BASEADDR = 0x26000000
+ PARAMETER C_HIGHADDR = 0x2600FFFF
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = mp_to_periph.M_AXI
+ PARAMETER C_MB_CLK_NOT_CONNECTED = 0
+ BUS_INTERFACE S_AXI = periph_interconnect
+ PORT S_AXI_ACLK = axi_pcie_0_axi_aclk_out
+ PORT Irq = Interrupt
+ PORT Intr = axi_cdma_0_cdma_introut
+END
+
+BEGIN proc_sys_reset
+ PARAMETER INSTANCE = pci_proc_sys_reset
+ PARAMETER HW_VER = 3.00.a
+ PORT Dcm_locked = axi_pcie_0_mmcm_lock
+ PORT Slowest_sync_clk = axi_pcie_0_axi_aclk_out
+ PORT Ext_Reset_In = RESET
+ PORT Interconnect_aresetn = pci_proc_sys_reset_Interconnect_aresetn
+ PORT Peripheral_Reset = pci_proc_sys_reset_Peripheral_Reset
+END
+
