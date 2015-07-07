@@ -12,13 +12,15 @@ import shutil
 from pycparser import c_ast
 
 import astcache
+import flowanalysis
 from juniperrewrites import c_filename_of_java_method_sig, \
 	c_decl_node_of_java_sig, get_line_bounds_for_function, c_name_of_type
+import juniperrewrites
 from prepare_hls_project import get_paramlist_of_sig
 from utils import CaicosError, mkdir, copy_files, project_path
 
 
-def build_src_project(bindings, jamaicaoutput, targetdir):
+def build_src_project(bindings, jamaicaoutput, targetdir, syscalls):
 	"""
 	Construct the software portion of the project. Copy the C source code for the Jamaica project, 
 	refactoring the functions that are implemented on the FPGA.
@@ -40,6 +42,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir):
 	copy_files(project_path("projectfiles", "juniper_fpga_interface"), join(targetdir, "juniper_fpga_interface"))
 	copy_files(project_path("projectfiles", "malloc_preload"), join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"))
+	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls)
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
 
@@ -81,26 +84,25 @@ def refactor_src(bindings, jamaicaoutput, targetdir):
 
 				filecontents = open(filepath).readlines()
 				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n\n"
-				output = output + "extern void caicos_handle_pcie_interrupt(int devNo, int partNo);\n\n"
+				output += "extern void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo);\n\n"
 				lineno = 1
 
 				for bounds, callid, sig, decl in toreplace:
 					while lineno <= bounds[0]:
 						output = output + filecontents[lineno-1]
-						lineno = lineno + 1
+						lineno += 1
 					
-					output = output + "\t//~~~~~~~~~~~~~~~~" + str(sig) + "  " + str(bounds) + "~~~~~~~~~~~~~~~~~~~~~\n"
-					output = output + "\t" + str(generate_replacement_code(sig, decl, callid, jamaicaoutput, (0, 0)))
+					output += "\t//~~~~~~~~~~~~~~~~" + str(sig) + "  " + str(bounds) + "~~~~~~~~~~~~~~~~~~~~~\n"
+					output += "\t" + str(generate_replacement_code(sig, decl, callid, jamaicaoutput, (0, 0)))
 					
 					if bounds[1] == None:
-						output = output + "}\n\n#else\n#error 'jamaica.h' not found!\n#endif\n\n#ifdef __cplusplus\n}\n#endif\n"
+						output += "}\n\n#else\n#error 'jamaica.h' not found!\n#endif\n\n#ifdef __cplusplus\n}\n#endif\n"
 					else:
-						output = output + "}\n"
+						output += "}\n"
 						lineno = bounds[1] + 1
-					
-				outf = open(os.path.join(targetdir, item), "w")
-				outf.write(output)
-				outf.close()
+				
+				with open(os.path.join(targetdir, item), "w") as outf:
+					outf.write(output)
 
 
 def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
@@ -129,16 +131,16 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		
 	def fpga_run():
 		code = "	juniper_fpga_partition_start(" + devNoPartNo + ");\n"
-		code = code + "	while(1) {\n" 
-		code = code + "		if(juniper_fpga_partition_idle(" + devNoPartNo + ")) {\n\t\t\tbreak;\n\t\t}\n"
-		code = code + "		if(juniper_fpga_partition_interrupted(" + devNoPartNo + ") {\n\t\t\tcaicos_handle_pcie_interrupt(" + devNoPartNo + ");\n\t\t}\n"
-		code = code + "	}\n"
+		code += "	while(1) {\n" 
+		code += "		if(juniper_fpga_partition_idle(" + devNoPartNo + ")) {\n\t\t\tbreak;\n\t\t}\n"
+		code += "		if(juniper_fpga_partition_interrupted(" + devNoPartNo + ") {\n\t\t\tcaicos_handle_pcie_interrupt(ct, " + devNoPartNo + ");\n\t\t}\n"
+		code += "	}\n"
 		return code
 	
 	def fpga_set_base():
 		code = "int *base = malloc(0);\n"
-		code = code + "\tint rv;\n\n"
-		code = code + "\tjuniper_fpga_partition_set_mem_base(" + devNoPartNo + ", -((int) base));\n"
+		code += "\tint rv;\n\n"
+		code += "\tjuniper_fpga_partition_set_mem_base(" + devNoPartNo + ", -((int) base));\n"
 		return code
 
 	code = fpga_set_base()
@@ -155,59 +157,122 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 			pass
 		else:
 			if firstarg: 
-				code = code + fpga_set_arg(0, "OP_WRITE_ARG")
+				code += fpga_set_arg(0, "OP_WRITE_ARG")
 				firstarg = False
-			code = code + fpga_set_arg(1, pnum)
+			code += fpga_set_arg(1, pnum)
 			
 			if typename in ["jamaica_int8", "jamaica_int16", "jamaica_int32", "jamaica_uint8", "jamaica_uint16", "jamaica_uint32", "jamaica_bool"]:
-				code = code + fpga_set_arg(2, paramname)
+				code += fpga_set_arg(2, paramname)
 			elif typename == "jamaica_ref":
-				code = code + fpga_set_arg(2, "(int)" + paramname + " / 4")
+				code += fpga_set_arg(2, "(int)" + paramname + " / 4")
 			elif typename == "jamaica_float":
-				code = code + fpga_set_arg(2, "*((int *) &" + paramname + ")")
+				code += fpga_set_arg(2, "*((int *) &" + paramname + ")")
 			elif typename == "jamaica_address":
-				code = code + fpga_set_arg(2, paramname)
+				code += fpga_set_arg(2, paramname)
 			elif typename in ["jamaica_int64", "jamaica_uint64"]:
 				#TODO
 				pass
-				#code = code + fpga_set_arg(2, paramname)
+				#code += fpga_set_arg(2, paramname)
 			elif typename == "jamaica_double":
 				#TODO
 				pass
-				#code = code + fpga_set_arg(2, paramname)
+				#code += fpga_set_arg(2, paramname)
 			else:
 				raise CaicosError("Unknown type " + str(typename) + " in function " + str(java_sig))
 
-			code = code + fpga_run() + "\n"
+			code += fpga_run() + "\n"
 			
-	code = code + fpga_set_arg(0, "OP_CALL") + fpga_set_arg(1, callid) + fpga_run() + "\n"
+	code += fpga_set_arg(0, "OP_CALL") + fpga_set_arg(1, callid) + fpga_run() + "\n"
 	
 	#Do we need a return value?
 	rettype = decl.type.type.type.names[0]
 	if rettype == "void":
-		code = code + "	return;\n"
+		code += "	return;\n"
 	elif rettype in ["jamaica_int8", "jamaica_int16", "jamaica_int32", 
 					"jamaica_uint8", "jamaica_uint16", "jamaica_uint32", 
 					"jamaica_bool"
 					"jamaica_ref", "jamaica_address"
 					]:
-		code = code + fpga_retval("&rv")
-		code = code + "	return rv;\n"
+		code += fpga_retval("&rv")
+		code += "	return rv;\n"
 	elif rettype == "jamaica_float":
-		code = code + fpga_retval("&rv")
-		code = code + "	return *((float *)(&rv));\n"
+		code += fpga_retval("&rv")
+		code += "	return *((float *)(&rv));\n"
 	elif rettype in ["jamaica_int64", "jamaica_uint64"]:
 		#TODO
-		code = code + "	return 0;\n"
+		code += "	return 0;\n"
 	elif rettype == "jamaica_double":
 		#TODO
-		code = code + "	return 0;\n"
+		code += "	return 0;\n"
 	else:
 		raise CaicosError("Unknown return type " + str(typename) + " in function " + str(java_sig))
 	
 	return code
 
 
-#def generate_interrupt_handler(outputfile, fns):
-	
+def generate_interrupt_handler(outputfile, syscalls):
+	code = """#include <juniper_fpga_interface.h>
+#include <juniperoperations.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <jamaica.h>
+#include <jni.h>
+#include <jbi.h>
+#include "Main__.h"
 
+void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
+	int rv = 0;
+	juniper_fpga_syscall_args args;
+	memset(&args, 0, sizeof(juniper_fpga_syscall_args));
+	rv = juniper_fpga_partition_get_syscall_args(devNo, partNo, &args);
+	
+	if(rv != JUNIPER_FPGA_OK)
+		fprintf(stderr, "Failed to open syscall file with code %d.\\n", rv);
+		
+	switch(args.cmd) {
+"""
+
+	for funcname, fid in syscalls.iteritems():
+		funcdecl = flowanalysis.get_funcdecl_of_system_funccall(funcname)
+		
+		code += "\t\tcase " + str(fid) + ":\n"
+		
+		#Maybe cast the return type
+		
+		
+		code += "\t\t\trv = " + funcname + "(ct, "
+		
+		paramlist = funcdecl.children()[0][1]
+		for pid in xrange(1, len(paramlist.params)): #Skip the CT argument which is already handled
+			prm = paramlist.params[pid]
+			pointer = False
+			if isinstance(prm.type, c_ast.PtrDecl):
+				pointer = True
+				pdec = prm.type.type
+			else:
+				pdec = prm.type
+									
+			code += "(" + str(pdec.type.names[0])
+			if pointer: 
+				code += "*"
+			code += ") "
+			code += "args.arg" + str(pid) #Handily, the args are numbered from arg1 so skipping 0 above works here
+				
+			if not pid == len(paramlist.params) - 1:
+				code += ", "
+		code += ");\n"
+		code += "\t\t\tbreak;\n"
+
+	code += """
+		default:
+			rv = -1;
+			break;
+	}
+	
+	juniper_fpga_partition_set_syscall_return(devNo, partNo, rv);
+}
+"""
+	
+	with open(outputfile, "w") as outf:
+		outf.write(code)

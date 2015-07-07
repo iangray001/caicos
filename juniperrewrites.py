@@ -419,14 +419,66 @@ def c_name_of_type(typenode):
 		The name of the type, with the appropriate number of *s before it to indicate 
 		the level of pointer indirection in the AST. 
 	"""
-	typename = ""
+	ptrs, name = c_code_from_typenode(typenode)
+	return ptrs + name
+
+		
+def c_cast_for_type(typenode):
+	"""
+	TypeNode:
+		Either a PtrDecl or TypeDecl
+	Returns:
+		The name of the type, with parentheses and the appropriate number of *s after it to create a cast to this type
+	"""
+	ptrs, name = c_code_from_typenode(typenode)
+	return "(" + name + ptrs + ")"
+
+
+def c_code_from_typenode(typenode):
+	ptrs = ""
 	current = typenode
 	while isinstance(current, c_ast.PtrDecl):
-		typename = typename + "*"
+		ptrs += "*"
 		current = current.type
 		
 	if not isinstance(current, c_ast.TypeDecl):
-		raise CaicosError("Unhandled type in c_name_of_type. Code: " + pycparser.c_generator.CGenerator().visit(typenode))
-
-	return typename + current.type.names[0]
+		raise CaicosError("Unhandled type in c_code_from_typenode. Code: " + pycparser.c_generator.CGenerator().visit(typenode))
+	return (ptrs, str(current.type.names[0]))
+	
 		
+def call_code_for_funcdecl(funcdecl, funcname):
+	"""
+	Given a funcdecl node, return the C code required to call it.
+	"""
+	paramlist = funcdecl.children()[0][1]
+	rv = funcname + "("
+	
+	paramnum = 0
+	for pid in xrange(len(paramlist.params)):
+		#Insert an explicit cast to the target type
+		#Handles single-stage pointers and base types only, no arrays, because
+		#it is believed that this is all that Jamaica builder will output.
+		prm = paramlist.params[pid]
+		pointer = False
+		if isinstance(prm.type, c_ast.PtrDecl):
+			pointer = True
+			pdec = prm.type.type
+		else:
+			pdec = prm.type
+			
+		if pointer and pdec.type.names[0] == "jamaica_thread":
+			rv += "&__juniper_thread"
+		else:  		
+			rv += c_cast_for_type(prm.type)	+ " "
+			#rv += "(" + str(pdec.type.names[0])
+			#if pointer: 
+			#	rv += "*"
+			#rv += ") "
+			rv += "__juniper_args[" + str(paramnum) + "]"
+			paramnum = paramnum + 1
+			
+		if not pid == len(paramlist.params) - 1:
+			rv += ", "
+			
+	rv += ");" 
+	return rv

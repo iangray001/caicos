@@ -25,7 +25,9 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 		notranslatesigs: Signatures of methods that should not be translated
 	Returns:
-		A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
+		A pair of (bindings, syscalls)
+			bindings = A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
+			syscalls = A dictionary of {callname -> callid} of the sys calls that the hardware may make
 	"""
 	filestobuild = set()
 	filestobuild.add(project_path("projectfiles", "src", "fpgaporting.c"))
@@ -40,7 +42,8 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		
 		if additionalsourcefiles != None:
 			for f in additionalsourcefiles: 
-				if not f in filestosearch: filestosearch.append(f)
+				if not f in filestosearch: 
+					filestosearch.append(f)
 				filestobuild.add(f)
 
 		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
@@ -50,9 +53,12 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		all_reachable_functions.add(funcdecl.parent)
 		filestobuild.add(funcdecl.parent.coord.file)
 
-		for f in rf.files: filestobuild.add(f)
-		for f in rf.reachable_functions: all_reachable_functions.add(f)
-		for r in rf.reachable_non_translated: reachable_non_translated.add(r)
+		for f in rf.files: 
+			filestobuild.add(f)
+		for f in rf.reachable_functions: 
+			all_reachable_functions.add(f)
+		for r in rf.reachable_non_translated: 
+			reachable_non_translated.add(r)
 		
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
@@ -76,7 +82,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
-	return bindings
+	return (bindings, syscalls)
 
 
 def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls):
@@ -191,36 +197,7 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 	"""
 	declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 	funcdecl = declnode.children()[0][1]
-	paramlist = funcdecl.children()[0][1]
-	rv = declnode.name + "("
-	
-	paramnum = 0
-	for pid in xrange(len(paramlist.params)):
-		#Insert an explicit cast to the target type
-		#Handles single-stage pointers and base types only, no arrays, because
-		#it is believed that this is all that Jamaica builder will output.
-		prm = paramlist.params[pid]
-		pointer = False
-		if isinstance(prm.type, c_ast.PtrDecl):
-			pointer = True
-			pdec = prm.type.type
-		else:
-			pdec = prm.type
-			
-		if pointer and pdec.type.names[0] == "jamaica_thread":
-			rv = rv + "&__juniper_thread"
-		else:  					
-			rv = rv + "(" + str(pdec.type.names[0])
-			if pointer: rv = rv + "*"
-			rv = rv + ") "
-			rv = rv + "__juniper_args[" + str(paramnum) + "]"
-			paramnum = paramnum + 1
-			
-		if not pid == len(paramlist.params) - 1:
-			rv = rv + ", "
-			
-	rv = rv + ");" 
-	return rv
+	return juniperrewrites.call_code_for_funcdecl(funcdecl, declnode.name)
 
 
 
