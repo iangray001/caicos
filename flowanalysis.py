@@ -18,7 +18,7 @@ from utils import log, deglob_file, CaicosError, project_path
 
 excluded_functions = ['jamaicaGC_PlainAllocHeadBlock', 'jamaicaInterpreter_allocJavaObject', 'jamaicaInterpreter_allocSimpleArray', 
 					'jamaicaInterpreter_allocMultiArray', 'jamaicaInterpreter_initialize_class_helper', 
-					'jamaicaInterpreter_enterMonitor', 'jamaicaInterpreter_exitMonitor']
+					'jamaicaInterpreter_enterMonitor', 'jamaicaInterpreter_exitMonitor', 'jamaicaInterpreter_getInterfaceMethod']
 
 calls_to_ignore = ["printf", "sprintf",
 

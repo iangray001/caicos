@@ -279,27 +279,28 @@ def rewrite_syscall_calls(funcdef, syscalls):
 			self.fns = {}
 		
 		def visit_FuncCall(self, node):
-			if node.name.name in syscalls:
-				if len(node.args.exprs) > MAX_SYSCALL_ARGS:
-					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " has " + str(len(node.args.exprs)) + " arguments. Maximum is " + str(MAX_SYSCALL_ARGS))
-
-				first = node.args.exprs[0]
-				if not first.name == "ct":
-					raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " does not use the current thread as the first argument.")
-				
-				#Set the first parameter to the ID of the call (This should be 'ct', which we don't need as the host code knows it anyway).
-				node.args.exprs[0] = c_ast.ID(str(syscalls[node.name.name]))
-				
-				#Set the name of the syscall function
-				node.name.name = SYSCALL_NAME
-				
-				while len(node.args.exprs) != MAX_SYSCALL_ARGS:
-					node.args.exprs.append(c_ast.ID("0"))
-				
-				#print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
-				#TODO: Do we need to cast the arguments or return type? Currently jamaica_ref is only used so this /should/ coerce OK
-				#Resolve the system call into a FuncDecl so we can check its types
-				#decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
+			if not isinstance(node.name, c_ast.Cast): #We do not support function pointer casts (because HLS doesn't!) 
+				if node.name.name in syscalls:
+					if len(node.args.exprs) > MAX_SYSCALL_ARGS:
+						raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " has " + str(len(node.args.exprs)) + " arguments. Maximum is " + str(MAX_SYSCALL_ARGS))
+	
+					first = node.args.exprs[0]
+					if not first.name == "ct":
+						raise CaicosError("Call to " + str(node.name.name) + " in " + str(funcdef.decl.name) + " does not use the current thread as the first argument.")
+					
+					#Set the first parameter to the ID of the call (This should be 'ct', which we don't need as the host code knows it anyway).
+					node.args.exprs[0] = c_ast.ID(str(syscalls[node.name.name]))
+					
+					#Set the name of the syscall function
+					node.name.name = SYSCALL_NAME
+					
+					while len(node.args.exprs) != MAX_SYSCALL_ARGS:
+						node.args.exprs.append(c_ast.ID("0"))
+					
+					#print "@@@ " + str(pycparser.c_generator.CGenerator().visit(node))
+					#TODO: Do we need to cast the arguments or return type? Currently jamaica_ref is only used so this /should/ coerce OK
+					#Resolve the system call into a FuncDecl so we can check its types
+					#decl = flowanalysis.get_funcdecl_of_system_funccall(node.name.name)
 				
 	v = FuncCallVisitor()
 	v.visit(funcdef)
