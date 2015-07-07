@@ -62,3 +62,8 @@ EOF
         sed -i "/PARAMETER C_INTERCONNECT_S0_AXI_MASTERS.*/ s/$/ \& hls_${i}.M_AXI_GMEM32/" hw/system.mhs
     fi
 done
+
+# Build it!
+cd hw
+#xps -nw -scr ../xpsbuild.tcl system.xmp
+cd ../
