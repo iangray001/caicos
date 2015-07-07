@@ -13,7 +13,8 @@
 
 // Max size of a bitfile
 #define FPGA_CONFIG_MAX_SIZE 128 * 1024 * 1024
-#define ACCEL_MEM_SIZE 512 * 1024 * 1024
+//#define ACCEL_MEM_SIZE 512 * 1024 * 1024
+#define ACCEL_MEM_SIZE 0
 
 #define WR_PERM (S_IWUSR | S_IWGRP)
 #define RD_PERM (S_IRUSR | S_IRGRP)
@@ -180,6 +181,11 @@ int juniper_sysfs_new_device(struct juniper_device* dev)
 			printk(KERN_ERR "JFM: Failed to create sysfs group for subsubdevice\n");
 			return -ENODEV;
 		}
+
+		// Internally, the kernel frees based upon the attribute name, so we can tweak the parameters
+		// of the attribute here.
+		// This is, of course, a hack. But it works.
+		bin_attr_accel_mem.size = juniper_pci_memory_size(dev);
 
 		rc = device_create_bin_file(accel_dev, &bin_attr_accel_mem);
 		if(rc)
