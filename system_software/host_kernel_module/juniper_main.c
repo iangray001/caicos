@@ -40,8 +40,8 @@ int juniper_init()
 
 void juniper_exit()
 {
+  	juniper_pci_unregister();
 	juniper_sysfs_unregister();
-	juniper_pci_unregister();
 }
 
 // This mechanism exists so we can route this signal through to the filesystem layer etc.
