@@ -48,8 +48,8 @@ for i in {0..9}; do
 BEGIN hls
  PARAMETER INSTANCE = hls_$i
  PARAMETER HW_VER = 1.0${i}.a
- PARAMETER C_S_AXI_AXILITES_BASEADDR = 0xd000${i}000
- PARAMETER C_S_AXI_AXILITES_HIGHADDR = 0xd000${i}fff
+ PARAMETER C_S_AXI_AXILITES_BASEADDR = 0x2000${i}000
+ PARAMETER C_S_AXI_AXILITES_HIGHADDR = 0x2000${i}fff
  PARAMETER C_INTERCONNECT_S_AXI_AXILITES_MASTERS = mp_to_periph.M_AXI
  BUS_INTERFACE M_AXI_GMEM32 = mem_interconnect
  BUS_INTERFACE S_AXI_AXILITES = periph_interconnect
@@ -65,5 +65,5 @@ done
 
 # Build it!
 cd hw
-#xps -nw -scr ../xpsbuild.tcl system.xmp
+xps -nw -scr ../xpsbuild.tcl system.xmp
 cd ../

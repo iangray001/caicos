@@ -1,0 +1,3 @@
+run bits
+
+exit
