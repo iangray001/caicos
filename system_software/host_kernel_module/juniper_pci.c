@@ -9,6 +9,9 @@
 #define JUNIPER_PCI_INTF_WIDTH 4 // 32-bit interface
 #define MEM_ORDER 2
 
+#define JUNIPER_MEM_BAR 0
+#define JUNIPER_PERIPH_BAR 2
+
 //#define PCIE_ADDR_BASE 0x24000000
 #define PCIE_ADDR_BASE 0x04000000
 #define PCIE_OFF_BAR0U 0x208
@@ -147,18 +150,18 @@ static int juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent)
 	}
 
 	// Map all of BAR 0
-	pd->memory_bar = pci_iomap(pdev, 0, 0);
+	pd->memory_bar = pci_iomap(pdev, JUNIPER_MEM_BAR, 0);
 
 	if(!pd->memory_bar)
 	{
-		printk(KERN_ERR "JFM: Couldn't take memory BAR (0). Aborting.\n");
+	  printk(KERN_ERR "JFM: Couldn't take memory BAR (%d). Aborting.\n", JUNIPER_MEM_BAR);
 		return -ENODEV;
 	}
 
-	pd->periph_bar = pci_iomap(pdev, 1, 0);
+	pd->periph_bar = pci_iomap(pdev, JUNIPER_PERIPH_BAR, 0);
 	if(!pd->periph_bar)
 	{
-		printk(KERN_ERR "JFM: Couldn't take peripheral BAR (1). Aborting\n");
+	  printk(KERN_ERR "JFM: Couldn't take peripheral BAR (%d). Aborting\n", JUNIPER_PERIPH_BAR);
 		return -ENODEV;
 	}
 
