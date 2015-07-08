@@ -59,8 +59,12 @@ void juniper_interp_init(struct juniper_fpga_device* dev)
 	printk(KERN_INFO "JFM: INTRP: INIT\n");
 
 	// Set the GPIO as output
-	juniper_pci_write_periph(dev->phy_dev, PCI_CORE_GPIO_TRI, 0x0);
-	juniper_pci_write_periph(dev->phy_dev, PCI_CORE_GPIO, 0x0); // Remove hold on everything
+	// Only need to do this for devices that support PR
+	if(juniper_pci_is_reconfigurable(dev->phy_dev))
+	{
+		juniper_pci_write_periph(dev->phy_dev, PCI_CORE_GPIO_TRI, 0x0);
+		juniper_pci_write_periph(dev->phy_dev, PCI_CORE_GPIO, 0x0); // Remove hold on everything
+	}
 
 	// Set up the interrupt controller
 	// The PCI layer should have initialised MSI by this point

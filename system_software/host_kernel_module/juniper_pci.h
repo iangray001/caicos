@@ -18,6 +18,7 @@ unsigned int juniper_pci_devidx(struct juniper_device* dev);
 struct device* juniper_pci_getdev(struct juniper_device* dev);
 
 resource_size_t juniper_pci_memory_size(struct juniper_device* dev);
+unsigned int juniper_pci_is_reconfigurable(struct juniper_device* dev);
 
 // Raw I/O
 unsigned int juniper_pci_read_memory(struct juniper_device* dev, unsigned int address);

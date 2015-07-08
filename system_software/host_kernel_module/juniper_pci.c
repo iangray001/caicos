@@ -59,6 +59,7 @@ struct juniper_dev_privdata
 static struct pci_device_id juniper_ids[] = 
 {
 	{ PCI_VDEVICE(XILINX, 0x7011) },
+	{ PCI_VDEVICE(XILINX, 0x6011) },
 	{}
 };
 
@@ -102,6 +103,12 @@ unsigned int juniper_pci_devidx(struct juniper_device* dev)
 resource_size_t juniper_pci_memory_size(struct juniper_device* dev)
 {
 	return pci_resource_len(dev->device, 0);
+}
+
+unsigned int juniper_pci_is_reconfigurable(struct juniper_device* dev)
+{
+	// Spartan 6 devices don't support PR, only 7-series devices.
+	return dev->device->device == 0x7011;
 }
 
 // TODO: More graceful error handling.
