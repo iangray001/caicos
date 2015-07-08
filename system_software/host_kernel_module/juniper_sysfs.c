@@ -242,10 +242,10 @@ ssize_t accel_idle_show(struct device* dev, struct device_attribute* attr, char*
 {
 	// Get the status of the accelerator
 	struct juniper_accel_device* accel_data = dev_get_drvdata(dev);
-	int running = 0;
+	int idle = 0;
 
-	running = juniper_interp_accel_idle(accel_data);
-	buf[0] = running ? '1' : '0';
+	idle = juniper_interp_accel_idle(accel_data);
+	buf[0] = idle ? '1' : '0';
 	buf[1] = '\0';
 
 	return 2;
