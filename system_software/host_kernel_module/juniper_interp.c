@@ -83,7 +83,7 @@ void juniper_interp_init(struct juniper_fpga_device* dev)
 
 int juniper_interp_get_cores(struct juniper_fpga_device* dev)
 {
-	return 4; // lol...
+	return 1; // lol...
 }
 
 int juniper_interp_accel_idle(struct juniper_accel_device* dev)
