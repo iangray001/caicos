@@ -12,14 +12,17 @@ import os
 from pycparser import c_ast
 
 import astcache
-from juniperrewrites import c_filename_of_java_method_sig
+from interfaces import parse_getInterfaceMethod_call
+from juniperrewrites import c_filename_of_java_method_sig, c_name_of_java_method
 from utils import log, deglob_file, CaicosError, project_path
 
 
+#Excluded functions cannot be translated, so are converted into system calls
 excluded_functions = ['jamaicaGC_PlainAllocHeadBlock', 'jamaicaInterpreter_allocJavaObject', 'jamaicaInterpreter_allocSimpleArray', 
 					'jamaicaInterpreter_allocMultiArray', 'jamaicaInterpreter_initialize_class_helper', 
 					'jamaicaInterpreter_enterMonitor', 'jamaicaInterpreter_exitMonitor', 'jamaicaInterpreter_getInterfaceMethod']
 
+#Calls to Ignore will still be included, but we simply don't descend into them for the purpose of flow analysis
 calls_to_ignore = ["printf", "sprintf",
 
 #Many Math.h functions are provided by HLS
@@ -91,39 +94,41 @@ class ReachableFunctions(object):
 	Note that this class uses a global resolution cache, so that resolutions can be reused through the project preparation 
 	process. 
 	"""
-	def __init__(self, startfndef, filestosearch):
+	def __init__(self, startfndef, filestosearch, jamaicaoutputdir):
 		self.filestosearch = filestosearch
 		self.reachable_functions = set()
 		self.reachable_non_translated = set()
 		self.func_defs_seen = []
 		self.files = set()
+		self.jamaicaoutputdir = jamaicaoutputdir
 		
 		self.find_reachable_functions(startfndef)
 		self.get_files()
 		
 	
-	def resolve_call(self, call):
+	def resolve_call(self, callname):
 		"""
-		Given a FuncCall node, return the corresponding FuncDef node.
+		Given a the name of a C function call, return the (likely) corresponding FuncDef node.
+		Assumes code which would link without warnings about multiply defined symbols.
 		"""
-		def parse_files(calltofind):
+		def parse_files(callname):
 			"""
 			Parse all the .c files provided looking for a suitable function definition.
 			Relies on ASTCache to avoid reparsing the same files again and again. 
 			"""
-			log().info("Resolving call to: " + call.name.name)
+			log().info("Resolving call to: " + callname)
 			
 			for srcfile in self.filestosearch:
 				ast = astcache.get(srcfile)
 				fns = functions_defined_in_ast(ast)
 				for fn in fns:
-					if fn.decl.name == calltofind.name.name:
+					if fn.decl.name == callname:
 						return fn
 			return None
 
-		f = parse_files(call)
+		f = parse_files(callname)
 		if f == None:
-			log().warning("Cannot find the definition of function: " + str(call.name.name))
+			log().warning("Cannot find the definition of function: " + str(callname))
 			return None
 		return f
 	
@@ -147,16 +152,25 @@ class ReachableFunctions(object):
 			if isinstance(call.name, c_ast.Cast):
 				log().warning("A cast to a function type detected at " + os.path.basename(call.coord.file) + ":" + str(call.coord.line) + ". Flow analysis may not be complete.")
 			else:
-				callname = str(call.name.name)
-				if callname in excluded_functions:
-					self.reachable_non_translated.add(callname)
-				else:
-					if not callname in calls_to_ignore:			
-						if not callname in resolutioncache:
-							resolutioncache[callname] = self.resolve_call(call)
-						if resolutioncache[callname] != None:
-							self.reachable_functions.add(resolutioncache[callname])
-							self.find_reachable_functions(resolutioncache[callname])
+				cnames = [(str(call.name.name), None)]
+				if cnames[0][0] == "jamaicaInterpreter_getInterfaceMethod":
+					int_sigs = parse_getInterfaceMethod_call(call)
+					for sig in int_sigs:
+						cnames.append(c_name_of_java_method(sig, self.jamaicaoutputdir))
+
+				for callname, fnode in cnames:
+					if callname in excluded_functions:
+						self.reachable_non_translated.add(callname)
+					else:	
+						if not callname in calls_to_ignore:			
+							if not callname in resolutioncache:
+								if fnode == None:
+									resolutioncache[callname] = self.resolve_call(callname)
+								else: 
+									resolutioncache[callname] = fnode
+							if resolutioncache[callname] != None:
+								self.reachable_functions.add(resolutioncache[callname])
+								self.find_reachable_functions(resolutioncache[callname])
 
 
 	def get_files(self):

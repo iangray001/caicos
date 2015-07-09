@@ -4,14 +4,16 @@ build_from_functions is the main function that should be called to perform the e
 """
 
 import os, shutil
+from os.path import join
 
 from pycparser import c_ast
 
+import astcache
 from flowanalysis import ReachableFunctions, get_files_to_search
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
 from utils import log, mkdir, copy_files, project_path
-from os.path import join
+
 
 def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefiles, part, notranslatesigs):
 	"""
@@ -36,30 +38,9 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	all_reachable_functions = set() 
 	#Reachable functions that have been excluded by flowanalysis.excluded_functions so need to be handled as a PCIe interrupt
 	reachable_non_translated = set() 
-		
-	for sig in funcs:
-		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
-		
-		if additionalsourcefiles != None:
-			for f in additionalsourcefiles: 
-				if not f in filestosearch: 
-					filestosearch.append(f)
-				filestobuild.add(f)
+	
+	trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated)
 
-		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-		rf = ReachableFunctions(funcdecl.parent, filestosearch)
-		
-		#Don't forget to include the starting point
-		all_reachable_functions.add(funcdecl.parent)
-		filestobuild.add(funcdecl.parent.coord.file)
-
-		for f in rf.files: 
-			filestobuild.add(f)
-		for f in rf.reachable_functions: 
-			all_reachable_functions.add(f)
-		for r in rf.reachable_non_translated: 
-			reachable_non_translated.add(r)
-		
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
 		log().info("\t" + str(f.decl.name) + ": " + str(f.coord.file))
@@ -84,6 +65,35 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
 	return (bindings, syscalls)
 
+
+def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated):
+	"""
+	Given a list of java signatures, search for its funcdecl, then trace from each function 
+	flowwing funccall nodes to determine all reachable functions.
+	"""
+	for sig in funcs:
+		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
+		
+		if additionalsourcefiles != None:
+			for f in additionalsourcefiles: 
+				if not f in filestosearch: 
+					filestosearch.append(f)
+				filestobuild.add(f)
+
+		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
+		rf = ReachableFunctions(funcdecl.parent, filestosearch, jamaicaoutputdir)
+		
+		#Don't forget to include the starting point
+		all_reachable_functions.add(funcdecl.parent)
+		filestobuild.add(funcdecl.parent.coord.file)
+
+		for f in rf.files: 
+			filestobuild.add(f)
+		for f in rf.reachable_functions: 
+			all_reachable_functions.add(f)
+		for r in rf.reachable_non_translated: 
+			reachable_non_translated.add(r)
+	
 
 def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls):
 	"""
