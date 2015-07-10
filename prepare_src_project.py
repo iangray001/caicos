@@ -15,12 +15,11 @@ import astcache
 import flowanalysis
 from juniperrewrites import c_filename_of_java_method_sig, \
 	c_decl_node_of_java_sig, get_line_bounds_for_function, c_name_of_type
-import juniperrewrites
 from prepare_hls_project import get_paramlist_of_sig
 from utils import CaicosError, mkdir, copy_files, project_path
 
 
-def build_src_project(bindings, jamaicaoutput, targetdir, syscalls):
+def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver):
 	"""
 	Construct the software portion of the project. Copy the C source code for the Jamaica project, 
 	refactoring the functions that are implemented on the FPGA.
@@ -42,7 +41,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, syscalls):
 	copy_files(project_path("projectfiles", "juniper_fpga_interface"), join(targetdir, "juniper_fpga_interface"))
 	copy_files(project_path("projectfiles", "malloc_preload"), join(targetdir, "malloc_preload"))
 	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"))
-	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls)
+	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls, interfaceResolver)
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
 
@@ -210,7 +209,7 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 	return code
 
 
-def generate_interrupt_handler(outputfile, syscalls):
+def generate_interrupt_handler(outputfile, syscalls, interfaceResolver):
 	code = """#include <juniper_fpga_interface.h>
 #include <juniperoperations.h>
 #include <stdlib.h>
@@ -239,29 +238,31 @@ void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
 		code += "\t\tcase " + str(fid) + ":\n"
 		
 		#Maybe cast the return type
-		
-		
-		code += "\t\t\trv = " + funcname + "(ct, "
-		
-		paramlist = funcdecl.children()[0][1]
-		for pid in xrange(1, len(paramlist.params)): #Skip the CT argument which is already handled
-			prm = paramlist.params[pid]
-			pointer = False
-			if isinstance(prm.type, c_ast.PtrDecl):
-				pointer = True
-				pdec = prm.type.type
-			else:
-				pdec = prm.type
-									
-			code += "(" + str(pdec.type.names[0])
-			if pointer: 
-				code += "*"
-			code += ") "
-			code += "args.arg" + str(pid) #Handily, the args are numbered from arg1 so skipping 0 above works here
-				
-			if not pid == len(paramlist.params) - 1:
-				code += ", "
-		code += ");\n"
+		if funcname == "jamaicaInterpreter_getInterfaceMethod":
+			code += interfaceResolver.get_host_code()
+		else:
+			code += "\t\t\trv = " + funcname + "(ct, "
+			
+			paramlist = funcdecl.children()[0][1]
+			for pid in xrange(1, len(paramlist.params)): #Skip the CT argument which is already handled
+				prm = paramlist.params[pid]
+				pointer = False
+				if isinstance(prm.type, c_ast.PtrDecl):
+					pointer = True
+					pdec = prm.type.type
+				else:
+					pdec = prm.type
+										
+				code += "(" + str(pdec.type.names[0])
+				if pointer: 
+					code += "*"
+				code += ") "
+				code += "args.arg" + str(pid) #Handily, the args are numbered from arg1 so skipping 0 above works here
+					
+				if not pid == len(paramlist.params) - 1:
+					code += ", "
+			code += ");\n"
+			
 		code += "\t\t\tbreak;\n"
 
 	code += """

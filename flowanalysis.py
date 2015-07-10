@@ -12,7 +12,7 @@ import os
 from pycparser import c_ast
 
 import astcache
-from interfaces import parse_getInterfaceMethod_call
+from interfaces import InterfaceResolver
 from juniperrewrites import c_filename_of_java_method_sig, c_name_of_java_method
 from utils import log, deglob_file, CaicosError, project_path
 
@@ -101,7 +101,7 @@ class ReachableFunctions(object):
 		self.func_defs_seen = []
 		self.files = set()
 		self.jamaicaoutputdir = jamaicaoutputdir
-		
+		self.interfaceResolver = InterfaceResolver(jamaicaoutputdir)
 		self.find_reachable_functions(startfndef)
 		self.get_files()
 		
@@ -154,7 +154,7 @@ class ReachableFunctions(object):
 			else:
 				cnames = [(str(call.name.name), None)]
 				if cnames[0][0] == "jamaicaInterpreter_getInterfaceMethod":
-					int_sigs = parse_getInterfaceMethod_call(call)
+					int_sigs = self.interfaceResolver.parse_getInterfaceMethod_call(call)
 					for sig in int_sigs:
 						cnames.append(c_name_of_java_method(sig, self.jamaicaoutputdir))
 

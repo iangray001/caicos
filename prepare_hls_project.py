@@ -27,9 +27,10 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 		notranslatesigs: Signatures of methods that should not be translated
 	Returns:
-		A pair of (bindings, syscalls)
+		A tuple of (bindings, syscalls, interfaceResolver)
 			bindings = A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
 			syscalls = A dictionary of {callname -> callid} of the sys calls that the hardware may make
+			interfaceResolver = Instance of interfaces.InterfaceResolver which contains information about encountered interface calls
 	"""
 	filestobuild = set()
 	filestobuild.add(project_path("projectfiles", "src", "fpgaporting.c"))
@@ -39,7 +40,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	#Reachable functions that have been excluded by flowanalysis.excluded_functions so need to be handled as a PCIe interrupt
 	reachable_non_translated = set() 
 	
-	trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated)
+	interfaceResolver = trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated)
 
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
@@ -63,13 +64,15 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
-	return (bindings, syscalls)
+	return (bindings, syscalls, interfaceResolver)
 
 
 def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated):
 	"""
 	Given a list of java signatures, search for its funcdecl, then trace from each function 
 	flowwing funccall nodes to determine all reachable functions.
+	
+	Returns the interfaceResolver which contains information about encountered interface calls
 	"""
 	for sig in funcs:
 		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
@@ -93,6 +96,8 @@ def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filesto
 			all_reachable_functions.add(f)
 		for r in rf.reachable_non_translated: 
 			reachable_non_translated.add(r)
+			
+	return rf.interfaceResolver
 	
 
 def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls):
