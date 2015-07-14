@@ -59,7 +59,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		for callname, sysid in syscalls.iteritems():
 			log().info("\t" + str(sysid) + ": " + str(callname))
 	
-	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions, syscalls)
+	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions, syscalls, interfaceResolver)
 	
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
@@ -100,7 +100,7 @@ def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filesto
 	return rf.interfaceResolver
 	
 
-def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls):
+def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls, interfaceResolver):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
@@ -122,7 +122,7 @@ def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, 
 			log().info("Adding source file: " + f)
 			if f.endswith(".c"): #We only parse C files
 				targetfile = os.path.join(targetdir, "src", os.path.basename(f))
-				rewrite_source_file(f, targetfile, reachable_functions, syscalls)
+				rewrite_source_file(f, targetfile, reachable_functions, syscalls, interfaceResolver)
 		
 
 	

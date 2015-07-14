@@ -1,5 +1,7 @@
+from pycparser import c_ast
+
 from juniperrewrites import c_name_of_java_method
-from utils import CaicosError
+from utils import CaicosError, codegen
 
 
 INTERFACE_START = "/* All included implementations of "
@@ -55,7 +57,7 @@ class InterfaceResolver(object):
 			
 			if not name in self.interfacemapping: 
 				self.interfacemapping[name] = (self.next_id, c_name_of_java_method(name, self.jamaicaoutputdir))
-				self.next_id += 1 
+				self.next_id += 1
 			
 		return found
 
@@ -76,5 +78,48 @@ class InterfaceResolver(object):
 		code += "\t\t\t}\n"
 		
 		return code
+	
+	
+	def rewrite_interface_calls(self, funcdef):
+		intreslv = self
+		
+		class FuncCallVisitor(c_ast.NodeVisitor):
+			def __init__(self): 
+				self.fns = {}
+			
+			def visit_FuncCall(self, node):
+				if not isinstance(node.name, c_ast.Cast) and node.name.name == "jamaicaInterpreter_getInterfaceMethod":
+					#Verify the format of the getInterfaceMethod Compound. It is believed this is constant.
+					decl = node.parent
+					compound = decl.parent
+					if (not isinstance(decl, c_ast.Decl) or (not isinstance(compound, c_ast.Compound))):
+						raise CaicosError("Call to jamaicaInterpreter_getInterfaceMethod appears to be in a different format. Are you using a compatible version of Jamaica?") 
+					expected = [c_ast.Decl, c_ast.Assignment, c_ast.If, c_ast.If, c_ast.Assignment]
+					for i in xrange(len(compound.block_items)):
+						if not isinstance(compound.block_items[i], expected[i]):
+							raise CaicosError("Call to jamaicaInterpreter_getInterfaceMethod is a different format. Are you using a compatible version of Jamaica?") 
+					
+					compound.block_items[0].type.type.names[0] = "jamaica_int32"
+					
+					del compound.block_items[1] #ct->calledMethod = m;
+					del compound.block_items[1] #If jamaica_throwIncompClassChangeErr
+					del compound.block_items[1] #If jamaica_throwAbstrMethodErr
+					
+					block_items = []
+					
+					for m in intreslv.parse_getInterfaceMethod_call(node):
+						cname, _ = c_name_of_java_method(m, intreslv.jamaicaoutputdir)
+
+						funccall = c_ast.FuncCall(c_ast.ID(cname), compound.block_items[-1].rvalue.args)
+						assignment = c_ast.Assignment(compound.block_items[-1].op, compound.block_items[-1].lvalue, funccall)
+						case = c_ast.Case(c_ast.ID("(unsigned long) " + str(cname)), [assignment, c_ast.Break()])
+						block_items.append(case)
+						
+					swi = c_ast.Switch(c_ast.ID(compound.block_items[0].name), c_ast.Compound(block_items))
+					compound.block_items[-1] = swi
+
+		
+		v = FuncCallVisitor()
+		v.visit(funcdef)
 	
 	

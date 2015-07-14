@@ -10,6 +10,9 @@ import os
 import shutil
 import sys
 
+import pycparser
+
+
 theLogger = logging.getLogger("Caicos")
 ch = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(levelname)s:\t%(message)s') #%(asctime)s can be used if time is required
@@ -124,3 +127,10 @@ def remove_slots_from_classes(module):
 				del clonedict['__slots__'] #And delete the __slots__ for good measure
 				replacement = type(cls.__name__, cls.__bases__, clonedict) #Return a new class with the amended interface
 				setattr(module, name, replacement)
+
+
+def codegen(node):
+	"""
+	Utility to make it easier to codegen an AST node
+	"""
+	return pycparser.c_generator.CGenerator().visit(node)

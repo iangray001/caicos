@@ -236,7 +236,7 @@ def c_prototype_of_java_sig(sig, c_output_base):
 	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base)) + ";"
 	
 
-def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls):
+def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls, interfaceResolver):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
 	"""
@@ -261,6 +261,7 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls):
 		if isinstance(c[1], c_ast.FuncDef):
 			if reachable_functions == None or is_funcdef_in_reachable_list(c[1]):
 				rewrite_ct_refs(c[1])
+				interfaceResolver.rewrite_interface_calls(c[1])
 				rewrite_syscall_calls(c[1], syscalls)
 				
 				outf.write(generator.visit(c[1]))
