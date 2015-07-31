@@ -82,7 +82,7 @@ def refactor_src(bindings, jamaicaoutput, targetdir):
 				toreplace.sort() #Sort by ascending line number
 
 				filecontents = open(filepath).readlines()
-				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n\n"
+				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n#include \"jamaica.h\"\n\n"
 				output += "extern void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo);\n\n"
 				lineno = 1
 
