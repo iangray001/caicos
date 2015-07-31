@@ -5,7 +5,7 @@
 #include <fpgaporting.h>
 #include <ap_cint.h>
 
-#define VERSION 26
+#define VERSION 30
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -40,9 +40,6 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 #pragma HLS INTERFACE s_axilite port=arg2 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=arg3 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=return bundle=AXILiteS register
-
-	//Set up dummy __juniper_thread struct
-	create_jamaica_thread();
 
 	force_synthesis_of_syscall_interface();
 

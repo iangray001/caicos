@@ -8,7 +8,6 @@ from os.path import join
 
 from pycparser import c_ast
 
-import astcache
 from flowanalysis import ReachableFunctions, get_files_to_search
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
@@ -212,8 +211,38 @@ def call_code_for_sig(sig, jamaicaoutputdir):
 	"""
 	declnode = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
 	funcdecl = declnode.children()[0][1]
-	return juniperrewrites.call_code_for_funcdecl(funcdecl, declnode.name)
-
+	funcname = declnode.name
+	paramlist = funcdecl.children()[0][1]
+	rv = funcname + "("
+	paramnum = 1 #Param 0 is always used to pass the current thread context
+	for pid in xrange(len(paramlist.params)):
+		#Insert an explicit cast to the target type
+		#Handles single-stage pointers and base types only, no arrays, because
+		#it is believed that this is all that Jamaica builder will output.
+		prm = paramlist.params[pid]
+		pointer = False
+		if isinstance(prm.type, c_ast.PtrDecl):
+			pointer = True
+			pdec = prm.type.type
+		else:
+			pdec = prm.type
+			
+		if pointer and pdec.type.names[0] == "jamaica_thread":
+			rv += "&__juniper_thread"
+		else:
+			rv += juniperrewrites.c_cast_for_type(prm.type)	+ " "
+			#rv += "(" + str(pdec.type.names[0])
+			#if pointer: 
+			#	rv += "*"
+			#rv += ") "
+			rv += "__juniper_args[" + str(paramnum) + "]"
+			paramnum = paramnum + 1
+			
+		if not pid == len(paramlist.params) - 1:
+			rv += ", "
+			
+	rv += ");" 
+	return rv
 
 
 def write_functions_c(functions, jamaicaoutputdir, outputfile):
@@ -224,36 +253,38 @@ def write_functions_c(functions, jamaicaoutputdir, outputfile):
 	callid = 0
 	
 	s =     "#include <jamaica.h>\n"
-	s = s + "#include <toplevel.h>\n"
-	s = s + "#include <Main__.h>\n"
-	s = s + "\n"
-	s = s + "int __juniper_call(int call_id) {\n"
-	s = s + "\tswitch(call_id) {\n"
+	s += "#include <toplevel.h>\n"
+	s += "#include <Main__.h>\n"
+	s += "\n"
+	s += "int __juniper_call(int call_id) {\n"
+	s += "\tswitch(call_id) {\n"
 	
 	for f in functions:
 		bindings[callid] = f #Note the binding of index to function
-		s = s + "\t\tcase " + str(callid) + ":\n"
+		s += "\t\tcase " + str(callid) + ":\n"
+		
+		s += "\t\t\t__juniper_thread = (jamaica_thread) __juniper_args[0];\n"
 		
 		#The return type affects how we call it
 		#TODO: Currently 64-bit return types are not supported
 		declnode = c_decl_node_of_java_sig(f, jamaicaoutputdir)
 		returntype = str(declnode.type.type.type.names[0])
 		if returntype == "void":
-			s = s +"\t\t\t" + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
-			s = s + "\t\t\treturn 0;\n"
+			s += "\t\t\t" + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+			s += "\t\t\treturn 0;\n"
 		elif returntype in ['float', 'jamaica_float']:
-			s = s + "\t\t\t" + returntype + " rv;\n"
-			s = s + "\t\t\trv = " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
-			s = s + "\t\t\treturn *(int *)&rv;"
+			s += "\t\t\t" + returntype + " rv;\n"
+			s += "\t\t\trv = " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+			s += "\t\t\treturn *(int *)&rv;"
 		else:
-			s = s + "\t\t\treturn (int) " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
-		s = s +"\n"
+			s += "\t\t\treturn (int) " + str(call_code_for_sig(f, jamaicaoutputdir)) + "\n"
+		s += "\n"
 		callid = callid + 1
 		
-	s = s + "\t\tdefault:\n"
-	s = s + "\t\t\treturn 0;\n"
-	s = s + "\t}\n"
-	s = s + "}\n"
+	s += "\t\tdefault:\n"
+	s += "\t\t\treturn 0;\n"
+	s += "\t}\n"
+	s += "}\n"
 	hfile = open(outputfile, "w")
 	hfile.write(s)
 	hfile.close()

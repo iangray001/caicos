@@ -16,23 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "jamaica_offsets.h"
 #include "fpgaporting.h"
-
-
-//jamaica_GCEnv nullGcEnv = {};
-
-/**
- * We need to pass a jamaica_thread instance around because the generated code uses it.
- * We do not, however, actually need to populate most of it with real information.
- */
-void create_jamaica_thread() {
-#pragma HLS INLINE
-	__juniper_thread.javaStackSize = 1000000;
-	__juniper_thread.state = JAMAICA_THREAD_STATE_RUNNING; //FPGA threads are always running
-	//__juniper_thread.m.cl = 0; //TODO the locals list
-	//__juniper_thread.m.cli = 0; //TODO locals list count
-	//__juniper_thread.m.gcenv = &nullGcEnv;
-}
 
 
 /*
@@ -345,7 +330,7 @@ jamaica_GCEnv *juniper_get_gcenv_ref(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	return (jamaica_GCEnv *) __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	return (jamaica_GCEnv *) __juniper_ram_master[*ct + JAMAICA_OFFSET_M_GCENV];
 }
 
 jamaica_ref *juniper_get_l_array_ref(jamaica_thread *ct) {
@@ -354,8 +339,8 @@ jamaica_ref *juniper_get_l_array_ref(jamaica_thread *ct) {
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
 	//The code this replaces is: jamaica_ref *l=&(ct->m.cl[ct->m.cli]);
-	unsigned int cli = __juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI];
-	unsigned int cl_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_CL];
+	unsigned int cli = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_CLI];
+	unsigned int cl_addr = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_CL];
 	return (jamaica_ref *) cl_addr + cli; //Assumes width of jamaica_ref * is 4!
 }
 
@@ -364,7 +349,7 @@ jamaica_int32 juniper_get_m_cli(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	return __juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI];
+	return __juniper_ram_master[*ct + JAMAICA_OFFSET_M_CLI];
 }
 
 void juniper_set_m_cli(jamaica_thread *ct, jamaica_int32 i) {
@@ -372,7 +357,7 @@ void juniper_set_m_cli(jamaica_thread *ct, jamaica_int32 i) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	__juniper_ram_master[ct + JAMAICA_OFFSET_M_CLI] = i;
+	__juniper_ram_master[*ct + JAMAICA_OFFSET_M_CLI] = i;
 }
 
 
@@ -381,7 +366,7 @@ jamaica_int32 juniper_get_javastacksize(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	return __juniper_ram_master[ct + JAMAICA_OFFSET_JAVASTACKSIZE];
+	return __juniper_ram_master[*ct + JAMAICA_OFFSET_JAVASTACKSIZE];
 }
 
 jamaica_bool juniper_get_plainalloc(jamaica_thread *ct) {
@@ -389,7 +374,7 @@ jamaica_bool juniper_get_plainalloc(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	return __juniper_ram_master[ct + JAMAICA_OFFSET_PLAINALLOC];
+	return __juniper_ram_master[*ct + JAMAICA_OFFSET_PLAINALLOC];
 }
 
 jamaica_ref juniper_get_gc_white(jamaica_thread *ct) {
@@ -397,7 +382,7 @@ jamaica_ref juniper_get_gc_white(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	unsigned int gc_addr = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_GCENV];
 	return (jamaica_ref) __juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_WHITE];
 }
 
@@ -406,7 +391,7 @@ jamaica_ref juniper_get_gc_greylist(jamaica_thread *ct) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	unsigned int gc_addr = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_GCENV];
 	return (jamaica_ref) __juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_GREYLIST];
 }
 
@@ -415,7 +400,7 @@ void juniper_set_javastacksize(jamaica_thread *ct, jamaica_int32 size) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	__juniper_ram_master[ct + JAMAICA_OFFSET_JAVASTACKSIZE] = size;
+	__juniper_ram_master[*ct + JAMAICA_OFFSET_JAVASTACKSIZE] = size;
 }
 
 void juniper_set_plainalloc(jamaica_thread *ct, jamaica_bool plainalloc) {
@@ -423,7 +408,7 @@ void juniper_set_plainalloc(jamaica_thread *ct, jamaica_bool plainalloc) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	__juniper_ram_master[ct + JAMAICA_OFFSET_PLAINALLOC] = plainalloc;
+	__juniper_ram_master[*ct + JAMAICA_OFFSET_PLAINALLOC] = plainalloc;
 }
 
 void juniper_set_gc_white(jamaica_thread *ct, jamaica_ref ref) {
@@ -431,7 +416,7 @@ void juniper_set_gc_white(jamaica_thread *ct, jamaica_ref ref) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	unsigned int gc_addr = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_GCENV];
 	__juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_WHITE] = (unsigned int) ref;
 }
 
@@ -440,7 +425,7 @@ void juniper_set_gc_greylist(jamaica_thread *ct, jamaica_ref ref) {
 #pragma HLS INLINE
 #endif
 #pragma HLS INTERFACE m_axi port=__juniper_ram_master bundle=MAXI offset=slave
-	unsigned int gc_addr = __juniper_ram_master[ct + JAMAICA_OFFSET_M_GCENV];
+	unsigned int gc_addr = __juniper_ram_master[*ct + JAMAICA_OFFSET_M_GCENV];
 	__juniper_ram_master[(gc_addr / 4) + JAMAICA_OFFSET_GREYLIST] = (unsigned int) ref;
 }
 

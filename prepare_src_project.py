@@ -151,35 +151,33 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		paramname = params.params[pnum].name
 		typename = c_name_of_type(params.params[pnum].type)
 
-		if typename == "*jamaica_thread" and paramname == "ct":
-			#All functions start with a reference to the current thread and can be ignored by the FPGA
+		if firstarg: 
+			code += fpga_set_arg(0, "OP_WRITE_ARG")
+			firstarg = False
+		code += fpga_set_arg(1, pnum)
+		
+		if typename in ["jamaica_int8", "jamaica_int16", "jamaica_int32", "jamaica_uint8", "jamaica_uint16", "jamaica_uint32", "jamaica_bool"]:
+			code += fpga_set_arg(2, paramname)
+		elif typename == "jamaica_ref":
+			code += fpga_set_arg(2, "(int)" + paramname + " / 4")
+		elif typename == "jamaica_float":
+			code += fpga_set_arg(2, "*((int *) &" + paramname + ")")
+		elif typename == "jamaica_address":
+			code += fpga_set_arg(2, paramname)
+		elif typename == "*jamaica_thread" and paramname == "ct":
+			code += fpga_set_arg(2, "((unsigned int) &ct) / 4")
+		elif typename in ["jamaica_int64", "jamaica_uint64"]:
+			#TODO
 			pass
+			#code += fpga_set_arg(2, paramname)
+		elif typename == "jamaica_double":
+			#TODO
+			pass
+			#code += fpga_set_arg(2, paramname)
 		else:
-			if firstarg: 
-				code += fpga_set_arg(0, "OP_WRITE_ARG")
-				firstarg = False
-			code += fpga_set_arg(1, pnum)
-			
-			if typename in ["jamaica_int8", "jamaica_int16", "jamaica_int32", "jamaica_uint8", "jamaica_uint16", "jamaica_uint32", "jamaica_bool"]:
-				code += fpga_set_arg(2, paramname)
-			elif typename == "jamaica_ref":
-				code += fpga_set_arg(2, "(int)" + paramname + " / 4")
-			elif typename == "jamaica_float":
-				code += fpga_set_arg(2, "*((int *) &" + paramname + ")")
-			elif typename == "jamaica_address":
-				code += fpga_set_arg(2, paramname)
-			elif typename in ["jamaica_int64", "jamaica_uint64"]:
-				#TODO
-				pass
-				#code += fpga_set_arg(2, paramname)
-			elif typename == "jamaica_double":
-				#TODO
-				pass
-				#code += fpga_set_arg(2, paramname)
-			else:
-				raise CaicosError("Unknown type " + str(typename) + " in function " + str(java_sig))
+			raise CaicosError("Unknown type " + str(typename) + " in function " + str(java_sig))
 
-			code += fpga_run() + "\n"
+		code += fpga_run() + "\n"
 			
 	code += fpga_set_arg(0, "OP_CALL") + fpga_set_arg(1, callid) + fpga_run() + "\n"
 	
