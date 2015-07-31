@@ -94,11 +94,18 @@ def refactor_src(bindings, jamaicaoutput, targetdir):
 					output += "\t//~~~~~~~~~~~~~~~~" + str(sig) + "  " + str(bounds) + "~~~~~~~~~~~~~~~~~~~~~\n"
 					output += "\t" + str(generate_replacement_code(sig, decl, callid, jamaicaoutput, (0, 0)))
 					
-					if bounds[1] == None:
+					if bounds[1] == None: #If a replacement is the last thing in the file we'll need to close some things
+						#TODO: Is this branch required any more? Suspect not.
 						output += "}\n\n#else\n#error 'jamaica.h' not found!\n#endif\n\n#ifdef __cplusplus\n}\n#endif\n"
+						lineno = len(filecontents) #Done copying
 					else:
 						output += "}\n"
 						lineno = bounds[1] + 1
+				
+				#Copy the rest of the file in
+				while lineno-1 < len(filecontents):
+					output = output + filecontents[lineno-1]
+					lineno += 1
 				
 				with open(os.path.join(targetdir, item), "w") as outf:
 					outf.write(output)
@@ -132,7 +139,7 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		code = "	juniper_fpga_partition_start(" + devNoPartNo + ");\n"
 		code += "	while(1) {\n" 
 		code += "		if(juniper_fpga_partition_idle(" + devNoPartNo + ")) {\n\t\t\tbreak;\n\t\t}\n"
-		code += "		if(juniper_fpga_partition_interrupted(" + devNoPartNo + ") {\n\t\t\tcaicos_handle_pcie_interrupt(ct, " + devNoPartNo + ");\n\t\t}\n"
+		code += "		if(juniper_fpga_partition_interrupted(" + devNoPartNo + ")) {\n\t\t\tcaicos_handle_pcie_interrupt(ct, " + devNoPartNo + ");\n\t\t}\n"
 		code += "	}\n"
 		return code
 	
