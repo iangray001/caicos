@@ -3,7 +3,7 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 PROJECT=caicosout
 HOSTNAME=pegasus
-HOSTNAMETEMP=/home/iang/vivado
+HOSTNAMETEMP=/home/iang/vc707_autogen_pr/reconfig
 
 echo -e "\033[31m===========================================================================\033[0m"
 echo -e "\033[31m===========================================================================\033[0m"

@@ -145,7 +145,7 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	s = s + 'set_part {' + fpgapartname + '}\n'
 	s = s + 'create_clock -period 10 -name default\n'
 	s = s + 'csynth_design\n'
-	s = s + 'export_design -format ip_catalog\n'
+	s = s + 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 
 	script = open(outputfilename, "w")
 	script.write(s)
