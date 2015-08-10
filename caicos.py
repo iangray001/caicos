@@ -17,10 +17,8 @@ Multiple definitions of the same variable are valid, and the last definition
 takes precedence.
 """
 
-import os
-import shutil
+import os, stat, shutil, sys
 from string import Template
-import sys
 
 import astcache
 import pycparser
@@ -89,7 +87,9 @@ def build_all(config):
 				config.get('notranslates', [])
 			)
 		
-			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), os.path.join(hwdir, "push.sh"))
+			target = os.path.join(hwdir, "push.sh")
+			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
+			os.chmod(target, os.stat(target).st_mode | stat.S_IEXEC) #Make executable
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
