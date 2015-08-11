@@ -33,6 +33,7 @@ void force_synthesis_of_syscall_interface() {
 	syscall_args.arg3 = syscall_args.arg4;
 	syscall_args.arg4 = syscall_args.arg5;
 	syscall_args.arg5 = syscall_args.cmd;
+	do_syscall_interrupt();
 }
 
 
@@ -46,8 +47,7 @@ unsigned int pcie_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg
 	syscall_args.arg3 = arg3;
 	syscall_args.arg4 = arg4;
 	syscall_args.arg5 = arg5;
-	syscall_interrupt = 1;
-	syscall_interrupt = 0;
+	do_syscall_interrupt();
 	while(syscall_args.cmd != 0);
 	return syscall_args.arg1;
 }

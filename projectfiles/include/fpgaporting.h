@@ -18,12 +18,10 @@
 #define INLINE_GC_STATE_FUNCTIONS
 #define JUNIPER_SUPPORT_FLOATS
 
-
 //Prototypes of porting functions
 int __juniper_call(int call_id);
 void create_jamaica_thread();
 void force_synthesis_of_syscall_interface();
-
 
 //PCIe system call declarations
 typedef struct {
@@ -34,9 +32,8 @@ typedef struct {
 	volatile unsigned int arg4;
 	volatile unsigned int arg5;
 } PCIE_Syscall;
-
 unsigned int pcie_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5);
-
+void do_syscall_interrupt();
 
 //RAM Access functions
 jamaica_ref juniper_ram_get_r(int addr, int subwordoffset);
@@ -78,7 +75,6 @@ void juniper_set_plainalloc(jamaica_thread *ct, jamaica_bool plainalloc);
 void juniper_set_gc_white(jamaica_thread *ct, jamaica_ref ref);
 void juniper_set_gc_greylist(jamaica_thread *ct, jamaica_ref ref);
 
-
 //Declarations of global structures
 extern volatile int *__juniper_ram_master;
 extern volatile char *__juniper_ram_master_char;
@@ -86,10 +82,6 @@ extern volatile short *__juniper_ram_master_short;
 
 extern int __juniper_args[];
 extern jamaica_thread __juniper_thread;
-
-#ifndef __CAICOS__
-extern volatile uint1 syscall_interrupt;
-#endif
 
 extern PCIE_Syscall syscall_args;
 

@@ -16,8 +16,8 @@ volatile char *__juniper_ram_master_char;
 volatile short *__juniper_ram_master_short;
 
 //The PCIe syscall interface
-volatile uint1 syscall_interrupt;
 PCIE_Syscall syscall_args;
+volatile uint1 syscall_interrupt;
 
 
 int hls(int *opid, int *arg1, int *arg2, int *arg3) {
@@ -40,6 +40,9 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 #pragma HLS INTERFACE s_axilite port=arg2 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=arg3 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=return bundle=AXILiteS register
+
+#pragma HLS INTERFACE s_axilite port=syscall_args bundle=AXILiteS register
+#pragma HLS INTERFACE ap_none port=syscall_interrupt
 
 	force_synthesis_of_syscall_interface();
 
@@ -107,3 +110,8 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 	return 0;
 }
 
+void do_syscall_interrupt() {
+#pragma HLS INLINE
+	syscall_interrupt = 1;
+	syscall_interrupt = 0;
+}
