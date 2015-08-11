@@ -3,7 +3,7 @@ open_solution "solution1"
 
 set_top hls
 
-foreach f [exec ls | grep -F .cpp] {
+foreach f [exec ls | grep -F .c] {
     add_files $f
 }
 
