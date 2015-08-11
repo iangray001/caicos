@@ -280,7 +280,7 @@ begin
 	    m_axi_MAXI_BUSER => 		"0",
 	    interrupt => 				sig_interrupt,
         syscall_interrupt_o =>      sig_syscall_interrupt_o,
-        syscall_interrupt_i =>      "0"
+        syscall_interrupt_i =>      '0'
 	);
 
 	
