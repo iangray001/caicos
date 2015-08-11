@@ -136,7 +136,8 @@ architecture rtl of hls_toplevel is
 	    m_axi_MAXI_BID : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
 	    m_axi_MAXI_BUSER : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
 	    interrupt : OUT STD_LOGIC;
-        jamaica_syscall_V : OUT STD_LOGIC_VECTOR(0 DOWNTO 0)
+        syscall_interrupt_i : IN STD_LOGIC;
+        syscall_interrupt_o : OUT STD_LOGIC
 	  );
 	END COMPONENT;
 
@@ -206,7 +207,7 @@ architecture rtl of hls_toplevel is
     signal sig_m_axi_mem_BUSER :  STD_LOGIC_VECTOR(0 DOWNTO 0);
     signal sig_interrupt : STD_LOGIC;
     signal sig_dummy_user : STD_LOGIC_VECTOR(0 downto 0);
-    signal sig_jamaica_syscall : std_logic_vector(0 downto 0);
+    signal sig_syscall_interrupt_o : STD_LOGIC;
 
     attribute S : string;
     attribute S of sig_dummy_user : signal is "TRUE";
@@ -278,7 +279,8 @@ begin
 	    m_axi_MAXI_BID => 			sig_m_axi_mem_BID,
 	    m_axi_MAXI_BUSER => 		"0",
 	    interrupt => 				sig_interrupt,
-        jamaica_syscall_V =>        sig_jamaica_syscall
+        syscall_interrupt_o =>      sig_syscall_interrupt_o,
+        syscall_interrupt_i =>      "0"
 	);
 
 	
@@ -346,5 +348,5 @@ begin
     sig_m_axi_mem_BID			<= m_axi_mem_BID		;
     sig_dummy_user <= sig_m_axi_mem_AWUSER or sig_m_axi_mem_WUSER or sig_m_axi_mem_ARUSER;
 
-    jamaica_syscall <= (not hold_outputs) and sig_jamaica_syscall(0);
+    jamaica_syscall <= (not hold_outputs) and sig_syscall_interrupt_o;
 end architecture rtl;

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <ap_int.h>
+#include <ap_cint.h>
 
 typedef struct
 {
@@ -22,7 +22,7 @@ volatile short *__juniper_ram_master_short;
 volatile float *__juniper_ram_master_float;
 #endif
 
-volatile ap_uint<1>   jamaica_syscall;
+volatile uint1 syscall_interrupt;
 volatile PCIE_Syscall syscall_args;
 
 void fix_hls_compiler()
@@ -52,11 +52,11 @@ int hls(int* opid, int* arg1, int* arg2, int* arg3)
 #pragma HLS INTERFACE s_axilite port=syscall_args bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=return bundle=AXILiteS register
 
-#pragma HLS INTERFACE ap_none port=jamaica_syscall register
+#pragma HLS INTERFACE ap_none port=syscall_interrupt register
 
     // Annoyingly, it has to do *something*
     //fix_hls_compiler();
-    jamaica_syscall = 0;
+	syscall_interrupt = 0;
 
     syscall_args.cmd = 0;
     syscall_args.arg1 = 0;

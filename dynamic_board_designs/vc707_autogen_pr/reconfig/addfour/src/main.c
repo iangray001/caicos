@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <ap_int.h>
+#include <ap_cint.h>
 
 //Memory interfaces
 volatile int *__juniper_ram_master;
@@ -23,8 +23,7 @@ typedef struct
     unsigned int  retVal;
 } PCIE_Syscall;
 
-volatile ap_uint<1>   jamaica_syscall;
-//volatile int jamaica_syscall;
+volatile uint1 syscall_interrupt;
 volatile PCIE_Syscall syscall_args;
 
 void fix_hls_compiler();
@@ -40,7 +39,7 @@ unsigned int do_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg2,
 #pragma HLS INLINE
 
 #pragma HLS INTERFACE s_axilite port=syscall_args bundle=AXILiteS register
-#pragma HLS INTERFACE ap_none port=jamaica_syscall register
+#pragma HLS INTERFACE ap_none port=syscall_interrupt register
 	
 	syscall_args.cmd = cmd;
 	syscall_args.arg1 = arg1;
@@ -50,15 +49,13 @@ unsigned int do_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg2,
 	syscall_args.arg5 = arg5;
 
 	// Raise int high
-	jamaica_syscall = 1;
+	syscall_interrupt = 1;
 
 	// Wait for response
 	while(syscall_args.ret_cmd != 0xAA);
+	syscall_interrupt = 0;
 
-	jamaica_syscall = 0;
-
-        while(syscall_args.ret_cmd != 0x55);
-
+	while(syscall_args.ret_cmd != 0x55);
 	return syscall_args.retVal;
 }
 
@@ -77,18 +74,13 @@ int hls(int* opid, int* arg1, int* arg2, int* arg3)
 #pragma HLS INTERFACE s_axilite port=arg3 bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=syscall_args bundle=AXILiteS register
 #pragma HLS INTERFACE s_axilite port=return bundle=AXILiteS register
-#pragma HLS INTERFACE ap_none port=jamaica_syscall register
+#pragma HLS INTERFACE ap_none port=syscall_interrupt register
 
-//	fix_hls_compiler();
 	int foo = 0;
-	//jamaica_syscall = 0;
-
 	do_syscall(0x10, 1, 2, 3, 4, 5);
-
 	foo = __juniper_ram_master[0];
 	foo += 4;
 	__juniper_ram_master[1] = 6;
-
 	do_syscall(0x11, 1, 2, 3, 4, 5);
 
     return 0;
