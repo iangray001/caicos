@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# So, of course, the initial reaction is "WHY DIDN'T YOU JUST DO THIS IN TCL?!"
-# Well, I hate Tcl, so I'm doing it in bash. Doing it in pure Tcl will come later...
-
 TCLFILE="assemble/prbuild.tcl"
 NUMPRJ=1
 
@@ -11,11 +8,11 @@ for d in ./reconfig/*; do
         NAME=`basename $d`
         sed "s/VERSIONNUM/1.0/" < autobuild_dcp.tcl.tpl > ./$d/autobuild.tcl;
         cd $d;
-        vivado_hls -i -f autobuild.tcl || exit 1;
+        vivado_hls autobuild.tcl || exit 1;
         cd ../../;
     fi
 
-    cp $d/juniperHLS/solution1/impl/ip/hls.dcp assemble/${NAME}_synth.dcp
+    cp $d/prj/solution1/impl/ip/hls.dcp assemble/${NAME}_synth.dcp
 done
 
 

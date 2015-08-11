@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# I give up doing this in Make.
-# This doesn't do dependency management or proper error checking. Deal with it.
+# TODO: Add dependency management or proper error checking
 rm -rf ./iprepo
 mkdir ./iprepo
 
@@ -29,7 +28,7 @@ cat > ./vivado_bd_cores.tcl <<EOF
 EOF
 
 # And sub into the MHS file
-# I'd call this bit completely and utterly fragile, but that's giving the impression that it might not break...
+# TODO: This may be fragile
 for i in $(seq 0 1 $((NUMPRJ-1))); do
 #    if [ -d "./base/$i" ]; then
         # Create the cores...

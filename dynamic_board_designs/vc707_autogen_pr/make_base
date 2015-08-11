@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# So, of course, the initial reaction is "WHY DIDN'T YOU JUST DO THIS IN TCL?!"
-# Well, I hate Tcl, so I'm doing it in bash. Doing it in pure Tcl will come later...
-
 TCLFILE="assemble/basebuild.tcl"
 NUMPRJ=1
 
@@ -16,7 +13,7 @@ mkdir assemble/bitstream
 cp vc707_hw/vc707_hw.runs/synth_1/juniper_board_wrapper.dcp ./assemble/base_synth.dcp
 cp generated.xdc ./assemble/generated.xdc
 cp reconfig_4partition.xdc ./assemble/reconfig_4partition.xdc
-cp base/juniperHLS/solution1/impl/ip/hls.dcp ./assemble/hls.dcp
+cp base/hls/solution1/impl/ip/hls.dcp ./assemble/hls.dcp
 
 # Now build hell-script!
 echo "open_checkpoint base_synth.dcp" > $TCLFILE

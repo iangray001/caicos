@@ -13,10 +13,10 @@ if [ -d ./reconfig/$1 ]; then
     # Build the HLS...
     sed "s/VERSIONNUM/1.0/" < autobuild_dcp.tcl.tpl > ./reconfig/$1/autobuild.tcl;
     cd ./reconfig/$1;
-    vivado_hls -i -f autobuild.tcl || exit 1;
+    vivado_hls autobuild.tcl || exit 1;
     cd ../../;
 
-    cp ./reconfig/$1/juniperHLS/solution1/impl/ip/hls.dcp assemble/${1}_synth.dcp
+    cp ./reconfig/$1/prj/solution1/impl/ip/hls.dcp assemble/${1}_synth.dcp
 
     echo "open_checkpoint base_static.dcp" > $TCLFILE
     for i in $(seq 0 1 $((NUMPRJ-1))); do
