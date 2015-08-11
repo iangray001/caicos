@@ -62,7 +62,7 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
-	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "script.tcl"))
+	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "autobuild.tcl"))
 	return (bindings, syscalls, interfaceResolver)
 
 
@@ -145,7 +145,8 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	s = s + 'set_part {' + fpgapartname + '}\n'
 	s = s + 'create_clock -period 10 -name default\n'
 	s = s + 'csynth_design\n'
-	s = s + 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
+	#s = s + 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
+	s = s + 'export_design -format ip_catalog -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 
 	script = open(outputfilename, "w")
 	script.write(s)
