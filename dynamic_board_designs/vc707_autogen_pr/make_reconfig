@@ -6,7 +6,6 @@ NUMPRJ=1
 for d in ./reconfig/*; do
     if [ -d $d ]; then
         NAME=`basename $d`
-        sed "s/VERSIONNUM/1.0/" < autobuild_dcp.tcl.tpl > ./$d/autobuild.tcl;
         cd $d;
         vivado_hls autobuild.tcl || exit 1;
         cd ../../;

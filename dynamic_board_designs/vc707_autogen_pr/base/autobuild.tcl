@@ -4,11 +4,11 @@ open_solution "solution1"
 set_top hls
 
 foreach f [exec ls | grep -F .cpp] {
-    add_files $f -cflags "-I../../projectfiles/include/"
+    add_files $f
 }
 
 foreach f [exec ls | grep -F .h] {
-    add_files $f -cflags "-I../../projectfiles/include/"
+    add_files $f
 }
 
 # Use VC707
@@ -21,5 +21,3 @@ csynth_design
 
 # And dump to ISE
 export_design -format syn_dcp -description "caicos dynamic hardware project" -vendor "york.ac.uk" -version "1.0"
-
-exit

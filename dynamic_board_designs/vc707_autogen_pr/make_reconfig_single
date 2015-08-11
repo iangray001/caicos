@@ -11,7 +11,6 @@ fi
 
 if [ -d ./reconfig/$1 ]; then
     # Build the HLS...
-    sed "s/VERSIONNUM/1.0/" < autobuild_dcp.tcl.tpl > ./reconfig/$1/autobuild.tcl;
     cd ./reconfig/$1;
     vivado_hls autobuild.tcl || exit 1;
     cd ../../;
