@@ -2,8 +2,8 @@ open_project "prj"
 open_solution "solution1"
 set_top hls
 
-foreach f [exec ls | grep -F .c] {
-    add_files $f -cflags "-I."
+foreach f [exec ls src/ | grep -F .c] {
+    add_files src/$f -cflags "-Iinclude"
 }
 
 foreach f [exec ls | grep -F .h] {
