@@ -7,7 +7,7 @@ mkdir ./iprepo
 NUMPRJ=1
 
 cd base
-vivado_hls -i -f autobuild.tcl || exit 1
+vivado_hls autobuild.tcl || exit 1
 cd ../
 
 # Now create the Vivado projects.
