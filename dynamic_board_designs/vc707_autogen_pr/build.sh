@@ -75,4 +75,4 @@ EOF
 vivado -mode batch -source vivado_bd_cores.tcl vc707_hw/vc707_hw.xpr
 
 ./make_base
-./make_reconfig
+./make_reconfig all

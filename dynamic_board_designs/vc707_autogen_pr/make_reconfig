@@ -3,64 +3,75 @@
 TCLFILE="assemble/prbuild.tcl"
 NUMPRJ=1
 
-for d in ./reconfig/*; do
-    if [ -d $d ]; then
-        NAME=`basename $d`
-        cd $d;
-        vivado_hls autobuild.tcl || exit 1;
-        cd ../../;
-    fi
+scriptforproject() {
+	NAME=`basename $1`
+	echo "# Project: $NAME" >> $TCLFILE
 
-    cp $d/prj/solution1/impl/ip/hls.dcp assemble/${NAME}_synth.dcp
-done
+	# Run HLS 
+    cd $1;
+    vivado_hls autobuild.tcl || exit 1;
+    cd ../../;
+	cp $1/prj/solution1/impl/ip/hls.dcp assemble/${NAME}_synth.dcp
 
+	# Substitute in the reconfig modules	
+	echo "open_checkpoint base_static.dcp" >> $TCLFILE
+	NAME=`basename $1`
 
-# Now substitute in the reconfig modules
-for d in ./reconfig/*; do
-        echo "open_checkpoint base_static.dcp" >> $TCLFILE
-	if [ -d $d ]; then
-		NAME=`basename $d`
+	for i in $(seq 0 1 $((NUMPRJ-1))); do
+		echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg ${NAME}_synth.dcp" >> $TCLFILE
+	done
+            
+	echo "opt_design" >> $TCLFILE
+	echo "place_design" >> $TCLFILE
+	echo "route_design" >> $TCLFILE
+	echo "write_checkpoint ${NAME}_fulldesign_routed.dcp" >> $TCLFILE
+	echo "write_bitstream -file bitstream/${NAME}.bit" >> $TCLFILE
+	echo "close_project" >> $TCLFILE	
+	echo "" >> $TCLFILE
+}
 
-		for i in $(seq 0 1 $((NUMPRJ-1))); do
-    		    echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg ${NAME}_synth.dcp" >> $TCLFILE
-    		done
-                
-    	        echo "opt_design" >> $TCLFILE
-    	        echo "place_design" >> $TCLFILE
-    	        echo "route_design" >> $TCLFILE
-    	        echo "write_checkpoint ${NAME}_fulldesign_routed.dcp" >> $TCLFILE
+preparescript () {
+	if [ -e $TCLFILE ]; then
+		rm $TCLFILE
 	fi
 
-        echo "close_project" >> $TCLFILE
-done
-
-for d in ./reconfig/*; do
-	if [ -d $d ]; then
-		NAME=`basename $d`
-		cat >> $TCLFILE <<EOF
-open_checkpoint ${NAME}_fulldesign_routed.dcp
-write_bitstream -file bitstream/${NAME}.bit
-close_project
-EOF
+	if [ "$1" = "" ]; then
+		for d in ./reconfig/*; do
+		    if [ -d $d ]; then
+		    	scriptforproject $d
+		    fi
+		done
+	else
+		if [ -d ./reconfig/$1 ]; then
+			scriptforproject ./reconfig/$1
+		else
+			echo "Directory ./reconfig/$1 does not exist."
+			exit 1
+		fi
 	fi
-done
+}
 
-# Create the blanking bitstream
-#echo "open_checkpoint base_static.dcp" >> $TCLFILE
-#for i in {0..9}; do
-#    if [ -d "./base/$i" ]; then
-#    	echo "update_design -cell juniper_board_i/top_${i}/U0/brg -buffer_ports" >> $TCLFILE
-#    fi
-#done
 
-#cat >> $TCLFILE <<EOF
-#place_design
-#route_design
-#write_checkpoint base_static_buffer.dcp
-#write_bitstream -bin_file -file bitstream/base_static_buffer.bit
-#close_project
-#EOF
-
-cd assemble
-vivado -mode batch -source `basename $TCLFILE`
-cd ../
+case "$1" in 
+	'all' )
+		preparescript ""
+		cd assemble
+		vivado -mode batch -source `basename $TCLFILE`
+		cd ../
+	;;
+	
+	'single' )
+		if [ "$2" = "" ]; then
+			echo "Usage: $0 single <projectname>"
+		else
+			preparescript $2
+			cd assemble
+			vivado -mode batch -source `basename $TCLFILE`
+			cd ../
+		fi
+	;;
+	
+	'' ) 
+		echo "Usage: $0 [all | single ]"
+	;;
+esac
