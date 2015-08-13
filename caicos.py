@@ -87,7 +87,7 @@ def build_all(config):
 				config.get('notranslates', [])
 			)
 		
-			target = os.path.join(hwdir, "push.sh")
+			target = os.path.join(config['outputdir'], "push.sh")
 			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
 			os.chmod(target, os.stat(target).st_mode | stat.S_IEXEC) #Make executable
 			
