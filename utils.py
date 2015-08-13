@@ -88,7 +88,10 @@ def copy_files(srcdir, targetdir, suffixes = None):
 						break
 			else:
 				shutil.copyfile(abspath, os.path.join(targetdir, f))
-	
+		elif os.path.isdir(abspath):
+			mkdir(os.path.join(targetdir, f))
+			copy_files(abspath, os.path.join(targetdir, f), suffixes) 
+		
 	
 def project_path(*path_parts):
 	"""
