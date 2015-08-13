@@ -20,8 +20,9 @@ takes precedence.
 import os, stat, shutil, sys
 from string import Template
 
-import astcache
 import pycparser
+
+import astcache
 import prepare_hls_project
 import prepare_src_project
 from utils import mkdir, CaicosError, log, project_path
@@ -34,13 +35,14 @@ config_specification = {
 	'jamaicaoutputdir': (True, ""), # path to compiled C files from jamaicabuilder
 	'additionalhardwarefiles': (False, ""), # list of paths to additional files to add to the hardware project
 	'outputdir': (True, ""), # path to directory to output to
-	'fpgapart': (True, ""), # the FPGA part to target, in Xilinx format
 	'jamaicatarget': (True, ""), # path to the Jamaica target directory to use for the host software  
 	'cleanoutput': (False, ""), # if 'true', the contents of outputdir will be cleaned first
 	'hwoutputdir': (False, ""), #if set, then the hardware project will be put here instead of the default location
 	'swoutputdir': (False, ""), #if set, then the software project will be put here instead of the default location
 	'jamaicaoutputdir_hw': (False, ""), #if set, then caicos will use this Jamaica Builder output directory for the hardware project instead of jamaicaoutputdir
 	'notranslates': (False, ""), #A list of Java signatures which should not be translated into hardware
+	'targetboard': (True, ""), #Which board should we build the base system for (currently "vc707", or "zc706")
+	'fpgapart': (False, ""), # the FPGA part to target, in Xilinx format. Normally set from "targetboard", but can be overridden by specifying it manually
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
@@ -50,6 +52,14 @@ config_specification = {
 	'signature': (False, "signatures"),
 	'additionalhardwarefile': (False, "additionalhardwarefiles"),
 	'notranslate': (False, 'notranslates'),
+}
+
+"""
+An array of the fpga part names that are in each supported board.
+"""
+fpgapart = {
+	'vc707': 'xc7vx485tffg1761-2',
+	'zc706': 'xc7z045ffg900-2',
 }
 
 
@@ -67,7 +77,8 @@ def build_all(config):
 		
 		#Determine output paths
 		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
-		hwdir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
+		hwdir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hls"))
+		boarddir = os.path.join(config['outputdir'], config['targetboard'])
 		
 		if 'astcache' in config:
 			astcache.activate_cache(config['astcache'])
@@ -94,6 +105,11 @@ def build_all(config):
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver)
+	
+		#Create board design
+		log().info("Building board design for " + config['targetboard'] + " in " + str(boarddir) + "...")
+		utils.copy_files(project_path("dynamic_board_designs", 'common'), boarddir)
+		utils.copy_files(project_path("dynamic_board_designs", config['targetboard']), boarddir)
 	
 		#Output templated Makefile
 		contents = open(project_path("projectfiles", "scripts", "Makefile")).read()
@@ -149,6 +165,13 @@ def load_config(filename):
 		if spec[0]:
 			if not p in config:
 				raise CaicosError("Required parameter '" + str(p) + "' was not defined by config file " + str(filename))
+		
+	#Now validate parameters
+	if not os.path.isdir(project_path("dynamic_board_designs", config['targetboard'])):
+		raise CaicosError("targetboard is set to an unsupported board: "+ config['targetboard'])
+		
+	if not 'fpgapart' in config:
+		config['fpgapart'] = fpgapart[config['targetboard']]
 		
 	return config
 
