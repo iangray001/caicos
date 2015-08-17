@@ -1,26 +1,47 @@
 #!/bin/bash
 
 HOSTNAME=pegasus
-HOSTNAMETEMP=/home/iang/vc707_autogen_pr/reconfig
+TARGETDIR=/home/iang/caicosvc707
+XILINXSCRIPT=/home/iang/xilinx14.3.sh
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-PROJECT=caicosout
+HLSPROJECT=caicos
 
 echo -e "\033[31m===========================================================================\033[0m"
 
-#Delete and remake the target directory
-echo "Cleaning remote directory $HOSTNAMETEMP/$PROJECT..."
-ssh -q $HOSTNAME "rm -rf $HOSTNAMETEMP/$PROJECT"
-ssh -q $HOSTNAME "mkdir $HOSTNAMETEMP/$PROJECT"
+clean_dir () {
+	echo $1
+	if [ -n "$1" ]; then
+		ssh -q $HOSTNAME "rm -rf $1"
+		ssh -q $HOSTNAME "mkdir -p $1"
+	else
+		echo "clean_dir called with empty argument"
+		exit 1
+	fi
+}
 
-echo -n "Copying project $PROJECT..."
-scp -q -r $DIR/* $HOSTNAME:$HOSTNAMETEMP/$PROJECT/
-echo "done."
+copyall () {
+	echo -n "Copying project..."
+	clean_dir $TARGETDIR
+	scp -q -r $DIR $HOSTNAME:$TARGETDIR/
+	echo "done."
+}
 
-#Maybe build
-if [ "build" = "$1" ]; then
-	ssh -q $HOSTNAME "cd $HOSTNAMETEMP/$PROJECT/; . ~/xilinx14.3.sh; vivado_hls script.tcl"
-	
-	#Bring back the report
-	scp -q $HOSTNAME:$HOSTNAMETEMP/$PROJECT/prj/solution1/syn/report/hls_csynth.rpt .
-fi
+case "$1" in 
+	'copy' )
+		copyall
+	;;
+
+	'testhls' )
+		REMOTEPROJDIR=$TARGETDIR/hardware/reconfig/$HLSPROJECT
+		clean_dir $REMOTEPROJDIR
+		scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $HOSTNAME:$TARGETDIR/hardware/reconfig/
+		ssh -q $HOSTNAME "cd $REMOTEPROJDIR; . $XILINXSCRIPT; vivado_hls autobuild.tcl"
+		#Bring back the synthesis report
+		scp -q $HOSTNAME:$REMOTEPROJDIR/prj/solution1/syn/report/hls_csynth.rpt $DIR/
+	;;
+
+	'' ) 
+		echo "Usage: $0 [ copy | testhls ]"
+	;;
+esac
