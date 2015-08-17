@@ -17,7 +17,7 @@ Multiple definitions of the same variable are valid, and the last definition
 takes precedence.
 """
 
-import os, stat, shutil, sys
+import os, shutil, sys
 from string import Template
 
 import pycparser
@@ -25,7 +25,7 @@ import pycparser
 import astcache
 import prepare_hls_project
 import prepare_src_project
-from utils import mkdir, CaicosError, log, project_path
+from utils import mkdir, CaicosError, log, project_path, make_executable
 import utils
 
 
@@ -106,7 +106,12 @@ def build_all(config):
 		
 			target = os.path.join(config['outputdir'], "push.sh")
 			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
-			os.chmod(target, os.stat(target).st_mode | stat.S_IEXEC) #Make executable
+			
+			make_executable([target, 
+							os.path.join(boarddir, 'build.sh'),
+							os.path.join(boarddir, 'make_base'),
+							os.path.join(boarddir, 'make_reconfig')
+			])
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")

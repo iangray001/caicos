@@ -6,7 +6,7 @@ Includes error handling and info logging, and file system manipulation.
 
 import glob
 import logging
-import os
+import os, stat
 import shutil
 import sys
 
@@ -102,6 +102,13 @@ def project_path(*path_parts):
 	parts.extend(path_parts)
 	return os.path.join(*parts)
 	
+	
+def make_executable(targets):
+	"""
+	Stat an array of file absolute paths to make them executable
+	"""
+	for f in targets:
+		os.chmod(f, os.stat(f).st_mode | stat.S_IEXEC) 
 	
 
 def remove_slots_from_classes(module):
