@@ -43,6 +43,7 @@ config_specification = {
 	'notranslates': (False, ""), #A list of Java signatures which should not be translated into hardware
 	'targetboard': (True, ""), #Which board should we build the base system for (currently "vc707", or "zc706")
 	'fpgapart': (False, ""), # the FPGA part to target, in Xilinx format. Normally set from "targetboard", but can be overridden by specifying it manually
+	'hlsprojectname': (False, ""), #The name of the HLS project caicos should generate
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
@@ -77,11 +78,16 @@ def build_all(config):
 		
 		#Determine output paths
 		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
-		hwdir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hls"))
-		boarddir = os.path.join(config['outputdir'], config['targetboard'])
+		boarddir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
+		hwdir = os.path.join(boarddir, "reconfig", config.get('hlsprojectname', 'caicos'))
 		
 		if 'astcache' in config:
 			astcache.activate_cache(config['astcache'])
+		
+		#Create board design
+		log().info("Building board design for " + config['targetboard'] + " in " + str(boarddir) + "...")
+		utils.copy_files(project_path("dynamic_board_designs", 'common'), boarddir)
+		utils.copy_files(project_path("dynamic_board_designs", config['targetboard']), boarddir)
 		
 		#Build hardware project
 		log().info("Building hardware project in " + str(hwdir) + "...")
@@ -105,11 +111,6 @@ def build_all(config):
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver)
-	
-		#Create board design
-		log().info("Building board design for " + config['targetboard'] + " in " + str(boarddir) + "...")
-		utils.copy_files(project_path("dynamic_board_designs", 'common'), boarddir)
-		utils.copy_files(project_path("dynamic_board_designs", config['targetboard']), boarddir)
 	
 		#Output templated Makefile
 		contents = open(project_path("projectfiles", "scripts", "Makefile")).read()
