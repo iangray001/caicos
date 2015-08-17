@@ -2,7 +2,7 @@
 
 HOSTNAME=pegasus
 TARGETDIR=/home/iang/caicosvc707
-XILINXSCRIPT=/home/iang/xilinx14.3.sh
+XILINXSCRIPT=/home/iang/xilinx.sh
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 HLSPROJECT=caicos
