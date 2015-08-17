@@ -2,7 +2,7 @@ CC=gcc
 LD=gcc
 MAKE=make
 
-JAMAICATARGET := /home/ian/Documents/jamaica/current32/target/linux-x86
+JAMAICATARGET := $SUB_JAMAICATARGET
 
 C_FILES := $(wildcard src/*.c)
 OBJ_FILES := $(addprefix obj/,$(notdir $(C_FILES:.c=.o)))
@@ -25,7 +25,8 @@ main: juniper_fpga_interface/libjuniper_fpga_interface.so malloc_preload/malloc_
 	$(LD) $(OBJ_FILES) src/Main__nc.o $(LD_FLAGS) -o main
 
 obj/%.o: src/%.c
-	$(CC) $(CC_FLAGS) -c -o $@ $<
+	@echo [CC] $@
+	@$(CC) $(CC_FLAGS) -c -o $@ $<
 
 .PHONY: clean mkdirs
 
