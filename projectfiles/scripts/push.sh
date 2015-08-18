@@ -3,9 +3,10 @@
 HOSTNAME=pegasus
 TARGETDIR=/home/iang/caicosvc707
 XILINXSCRIPT=/home/iang/xilinx.sh
+TESTSERVER=lunix
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 HLSPROJECT=caicos
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 echo -e "\033[31m===========================================================================\033[0m"
 
@@ -20,14 +21,23 @@ clean_dir () {
 	fi
 }
 
+cleandir () {
+	echo "Cleaning remote directory $TARGETDIR..."
+	clean_dir $TARGETDIR 
+}
+
 copyall () {
-	echo -n "Copying project..."
-	clean_dir $TARGETDIR
-	scp -q -r $DIR $HOSTNAME:$TARGETDIR/
+	echo "Copying project..."
+	ssh -q $HOSTNAME "mkdir -p $TARGETDIR"
+	scp -q -r $DIR/* $HOSTNAME:$TARGETDIR/
 	echo "done."
 }
 
 case "$1" in 
+	'clean' )
+		cleandir
+	;;
+
 	'copy' )
 		copyall
 	;;
@@ -41,7 +51,11 @@ case "$1" in
 		scp -q $HOSTNAME:$REMOTEPROJDIR/prj/solution1/syn/report/hls_csynth.rpt $DIR/
 	;;
 
+	'testbit' )
+		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:"
+	;;
+
 	'' ) 
-		echo "Usage: $0 [ copy | testhls ]"
+		echo "Usage: $0 [ clean | copy | testhls | testbit ]"
 	;;
 esac
