@@ -33,6 +33,13 @@ copyall () {
 	echo "done."
 }
 
+copyhls () {
+	REMOTEPROJDIR=$TARGETDIR/hardware/reconfig/$HLSPROJECT
+	clean_dir $REMOTEPROJDIR
+	scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $HOSTNAME:$TARGETDIR/hardware/reconfig/
+}
+
+
 case "$1" in 
 	'clean' )
 		cleandir
@@ -43,14 +50,18 @@ case "$1" in
 	;;
 
 	'testhls' )
-		REMOTEPROJDIR=$TARGETDIR/hardware/reconfig/$HLSPROJECT
-		clean_dir $REMOTEPROJDIR
-		scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $HOSTNAME:$TARGETDIR/hardware/reconfig/
+		copyhls
 		ssh -q $HOSTNAME "cd $REMOTEPROJDIR; . $XILINXSCRIPT; vivado_hls autobuild.tcl"
 		#Bring back the synthesis report
 		scp -q $HOSTNAME:$REMOTEPROJDIR/prj/solution1/syn/report/hls_csynth.rpt $DIR/
 	;;
-
+	
+	'hls' )
+		copyhls
+		ssh -q $HOSTNAME "$TARGETDIR/hardware/make_reconfig single $HLSPROJECT"
+		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$HLSPROJECT.bit $TESTSERVER:"
+	;;
+	
 	'testbit' )
 		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:"
 	;;
