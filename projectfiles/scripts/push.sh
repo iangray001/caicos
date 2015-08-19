@@ -1,10 +1,12 @@
 #!/bin/bash
 
-HOSTNAME=pegasus
-TARGETDIR=/home/iang/caicosvc707
-XILINXSCRIPT=/home/iang/xilinx.sh
+BUILDSERVER=pegasus
 TESTSERVER=lunix
 
+BUILD_TARGETDIR=/home/iang/caicosvc707
+XILINXSCRIPT=/home/iang/xilinx.sh
+
+BUILD_TARGETDIRBASE=${BUILD_TARGETDIR##*/}
 HLSPROJECT=caicos
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
@@ -13,66 +15,57 @@ echo -e "\033[31m===============================================================
 clean_dir () {
 	echo $1
 	if [ -n "$1" ]; then
-		ssh -q $HOSTNAME "rm -rf $1"
-		ssh -q $HOSTNAME "mkdir -p $1"
+		ssh -q $BUILDSERVER "rm -rf $1"
+		ssh -q $BUILDSERVER "mkdir -p $1"
 	else
-		echo "clean_dir called with empty argument"
-		exit 1
+		echo "clean_dir called with empty argument"; exit 1
 	fi
 }
 
-cleandir () {
-	echo "Cleaning remote directory $TARGETDIR..."
-	clean_dir $TARGETDIR 
-}
-
-copyall () {
-	echo "Copying project..."
-	ssh -q $HOSTNAME "mkdir -p $TARGETDIR"
-	scp -q -r $DIR/* $HOSTNAME:$TARGETDIR/
-	echo "done."
-}
-
 copyhls () {
-	REMOTEPROJDIR=$TARGETDIR/hardware/reconfig/$HLSPROJECT
+	REMOTEPROJDIR=$BUILD_TARGETDIR/hardware/reconfig/$HLSPROJECT
 	clean_dir $REMOTEPROJDIR
-	scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $HOSTNAME:$TARGETDIR/hardware/reconfig/
+	scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $BUILDSERVER:$BUILD_TARGETDIR/hardware/reconfig/
 }
 
 
 case "$1" in 
 	'clean' )
-		cleandir
+		echo "Cleaning remote directory $BUILD_TARGETDIR..."
+		clean_dir $BUILD_TARGETDIR 
 	;;
 
 	'copy' )
-		copyall
+		echo "Copying project..."
+		ssh -q $BUILDSERVER "mkdir -p $BUILD_TARGETDIR"
+		scp -q -r $DIR/* $BUILDSERVER:$BUILD_TARGETDIR/
+		echo "done."
 	;;
 
 	'testhls' )
+		#Build the hls project and bring back the synthesis report
 		copyhls
-		ssh -q $HOSTNAME "cd $REMOTEPROJDIR; . $XILINXSCRIPT; vivado_hls autobuild.tcl"
-		#Bring back the synthesis report
-		scp -q $HOSTNAME:$REMOTEPROJDIR/prj/solution1/syn/report/hls_csynth.rpt $DIR/
+		ssh -q $BUILDSERVER "cd $REMOTEPROJDIR; . $XILINXSCRIPT; vivado_hls autobuild.tcl"
+		scp -q $BUILDSERVER:$REMOTEPROJDIR/prj/solution1/syn/report/hls_csynth.rpt $DIR/
 	;;
 	
 	'hls' )
+		#Rebuild the bitfile for the project $HLSPROJECT, and copy the bitfile to the testserver
 		copyhls
-		ssh -q $HOSTNAME "$TARGETDIR/hardware/make_reconfig single $HLSPROJECT"
-		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$HLSPROJECT.bit $TESTSERVER:"
+		ssh -q $BUILDSERVER "$BUILD_TARGETDIR/hardware/make_reconfig single $HLSPROJECT"
+		ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$HLSPROJECT.bit $TESTSERVER:"
 	;;
 	
 	'software' )
-		scp -q -r $DIR/software/src $HOSTNAME:$TARGETDIR/software
-		ssh -q $HOSTNAME "cd $TARGETDIR/software ; make"
-		ssh -q $HOSTNAME "scp $TARGETDIR/software/main $TESTSERVER:"
+		scp -q -r $DIR/software $TESTSERVER:$BUILD_TARGETDIRBASE
+		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make"
 	;;
 	
 	'testbit' )
-		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:"
+		ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:$BUILD_TARGETDIRBASE/"
 	;;
 
 	'' ) 
-		echo "Usage: $0 [ clean | copy | testhls | testbit | software ]"
+		echo "Usage: $0 [ clean | copy | software | testhls | testbit ]"
 	;;
 esac
