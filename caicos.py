@@ -107,7 +107,7 @@ def build_all(config):
 			target = os.path.join(config['outputdir'], "push.sh")
 			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
 			
-			make_executable([target, 
+			make_executable([target,
 							os.path.join(boarddir, 'build.sh'),
 							os.path.join(boarddir, 'make_base'),
 							os.path.join(boarddir, 'make_reconfig')

@@ -16,7 +16,7 @@ import flowanalysis
 from juniperrewrites import c_filename_of_java_method_sig, \
 	c_decl_node_of_java_sig, get_line_bounds_for_function, c_name_of_type
 from prepare_hls_project import get_paramlist_of_sig
-from utils import CaicosError, mkdir, copy_files, project_path
+from utils import CaicosError, mkdir, copy_files, project_path, make_executable
 
 
 def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver):
@@ -44,6 +44,8 @@ def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceRes
 	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls, interfaceResolver)
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
+	shutil.copy(project_path("projectfiles", "scripts", "run.sh"), targetdir)
+	make_executable([join(targetdir, "run.sh")])
 
 
 def refactor_src(bindings, jamaicaoutput, targetdir):
