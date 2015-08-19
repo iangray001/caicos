@@ -62,11 +62,17 @@ case "$1" in
 		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$HLSPROJECT.bit $TESTSERVER:"
 	;;
 	
+	'software' )
+		scp -q -r $DIR/software/src $HOSTNAME:$TARGETDIR/software
+		ssh -q $HOSTNAME "cd $TARGETDIR/software ; make"
+		ssh -q $HOSTNAME "scp $TARGETDIR/software/main $TESTSERVER:"
+	;;
+	
 	'testbit' )
 		ssh -q $HOSTNAME "scp $TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:"
 	;;
 
 	'' ) 
-		echo "Usage: $0 [ clean | copy | testhls | testbit ]"
+		echo "Usage: $0 [ clean | copy | testhls | testbit | software ]"
 	;;
 esac
