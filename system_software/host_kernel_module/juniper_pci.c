@@ -9,13 +9,18 @@
 #define JUNIPER_PCI_INTF_WIDTH 4 // 32-bit interface
 #define MEM_ORDER 2
 
-#define PCIE_ADDR_BASE 0x24000000
+#define JUNIPER_MEM_BAR 0
+#define JUNIPER_PERIPH_BAR 2
+
+//#define PCIE_ADDR_BASE 0x24000000
+#define PCIE_ADDR_BASE 0x04000000
 #define PCIE_OFF_BAR0U 0x208
 #define PCIE_OFF_BAR0L 0x20C
 
 #define PCIE_MASTER_BASE 0x40000000
 
-#define CDMA_ADDR_BASE 0x25000000
+//#define CDMA_ADDR_BASE 0x25000000
+#define CDMA_ADDR_BASE    0x05000000
 #define CDMA_OFF_CDMACR   0x0            // Control register
 #define CDMA_OFF_CDMASR   0x4            // Status register
 #define CDMA_OFF_SRCADDR  0x18           // DMA source address
@@ -33,7 +38,7 @@ static void juniper_remove(struct pci_dev *pdev);
 static irqreturn_t juniper_irqhandler(int irq, void* data);
 
 // This is the opaque pointer used for callbacks etc.
-// This just makes life easier. It might not be safe...
+// This just makes life easier.
 struct juniper_device 
 {
 	struct pci_dev* device;
@@ -42,7 +47,8 @@ struct juniper_device
 struct juniper_dev_privdata
 {
 	struct juniper_device* externDev; // Reference to the created device so we can keep track of it
-	unsigned int* registers;
+	unsigned int* memory_bar;
+	unsigned int* periph_bar;
 	int dma_using_dac;
 	unsigned int* dma_mem_backing;
 	wait_queue_head_t wait_queue;
@@ -53,6 +59,7 @@ struct juniper_dev_privdata
 static struct pci_device_id juniper_ids[] = 
 {
 	{ PCI_VDEVICE(XILINX, 0x7011) },
+	{ PCI_VDEVICE(XILINX, 0x6011) },
 	{}
 };
 
@@ -91,6 +98,17 @@ struct device* juniper_pci_getdev(struct juniper_device* dev)
 unsigned int juniper_pci_devidx(struct juniper_device* dev)
 {
 	return PCI_SLOT(dev->device->devfn);
+}
+
+resource_size_t juniper_pci_memory_size(struct juniper_device* dev)
+{
+	return pci_resource_len(dev->device, 0);
+}
+
+unsigned int juniper_pci_is_reconfigurable(struct juniper_device* dev)
+{
+	// Spartan 6 devices don't support PR, only 7-series devices.
+	return dev->device->device == 0x7011;
 }
 
 // TODO: More graceful error handling.
@@ -139,11 +157,18 @@ static int juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent)
 	}
 
 	// Map all of BAR 0
-	pd->registers = pci_iomap(pdev, 0, 0);
+	pd->memory_bar = pci_iomap(pdev, JUNIPER_MEM_BAR, 0);
 
-	if(!pd->registers)
+	if(!pd->memory_bar)
 	{
-		printk(KERN_ERR "JFM: Couldn't take registers. Aborting.\n");
+	  printk(KERN_ERR "JFM: Couldn't take memory BAR (%d). Aborting.\n", JUNIPER_MEM_BAR);
+		return -ENODEV;
+	}
+
+	pd->periph_bar = pci_iomap(pdev, JUNIPER_PERIPH_BAR, 0);
+	if(!pd->periph_bar)
+	{
+	  printk(KERN_ERR "JFM: Couldn't take peripheral BAR (%d). Aborting\n", JUNIPER_PERIPH_BAR);
 		return -ENODEV;
 	}
 
@@ -195,18 +220,18 @@ static int juniper_probe(struct pci_dev *pdev, const struct pci_device_id* ent)
 	}
 
 	// Notify the PCIE core of the DMA mapping.
-	iowrite32(((pd->dma_handle >> 32) & 0xFFFFFFFF), &pd->registers[(PCIE_ADDR_BASE + PCIE_OFF_BAR0U) / 4]);
-	iowrite32(pd->dma_handle & 0xFFFFFFFF, &pd->registers[(PCIE_ADDR_BASE + PCIE_OFF_BAR0L) / 4]);
+	iowrite32(((pd->dma_handle >> 32) & 0xFFFFFFFF), &pd->periph_bar[(PCIE_ADDR_BASE + PCIE_OFF_BAR0U) / 4]);
+	iowrite32(pd->dma_handle & 0xFFFFFFFF, &pd->periph_bar[(PCIE_ADDR_BASE + PCIE_OFF_BAR0L) / 4]);
 
 	// Set up the DMA controller
 	// Enable interrupt on completion
-	tmp = ioread32(&pd->registers[(CDMA_ADDR_BASE + CDMA_OFF_CDMACR) / 4]);
+	tmp = ioread32(&pd->periph_bar[(CDMA_ADDR_BASE + CDMA_OFF_CDMACR) / 4]);
 	tmp |= (1 << CDMA_CDMACR_IOC_IRQ_BIT);
-	iowrite32(tmp, &pd->registers[(CDMA_ADDR_BASE + CDMA_OFF_CDMACR) / 4]);
+	iowrite32(tmp, &pd->periph_bar[(CDMA_ADDR_BASE + CDMA_OFF_CDMACR) / 4]);
 
 	// Set the destination to the PCIE base (where it'll always go...)
 	tmp = 0x40000000;
-	iowrite32(tmp, &pd->registers[(CDMA_ADDR_BASE + CDMA_OFF_DESTADDR) / 4]);
+	iowrite32(tmp, &pd->periph_bar[(CDMA_ADDR_BASE + CDMA_OFF_DESTADDR) / 4]);
 
 	// Tell the upper level about it
 	if(new_device_callback != NULL)
@@ -229,7 +254,8 @@ static void juniper_remove(struct pci_dev *pdev)
 	free_irq(pdev->irq, pd);
 	pci_disable_msi(pdev);
 	pci_clear_master(pdev);
-	pci_iounmap(pdev, pd->registers);
+	pci_iounmap(pdev, pd->periph_bar);
+	pci_iounmap(pdev, pd->memory_bar);
 	pci_release_regions(pdev);
 
 	kfree(pd->externDev);
@@ -249,29 +275,46 @@ static irqreturn_t juniper_irqhandler(int irq, void* data)
 	return IRQ_HANDLED;
 }
 
-unsigned int juniper_pci_read(struct juniper_device* dev, unsigned int address)
+// TODO: Consider de-duplicating the code in the below methods.
+unsigned int juniper_pci_read_memory(struct juniper_device* dev, unsigned int address)
 {
 	struct juniper_dev_privdata* pd;
 	pd = pci_get_drvdata(dev->device);
 
-	return ioread32(&pd->registers[address / JUNIPER_PCI_INTF_WIDTH]);
+	return ioread32(&pd->memory_bar[address / JUNIPER_PCI_INTF_WIDTH]);
 }
 
-void juniper_pci_write(struct juniper_device* dev, unsigned int address, unsigned int value)
+void juniper_pci_write_memory(struct juniper_device* dev, unsigned int address, unsigned int value)
 {
 	struct juniper_dev_privdata* pd;
 	pd = pci_get_drvdata(dev->device);
 
-	iowrite32(value, &pd->registers[address / JUNIPER_PCI_INTF_WIDTH]);
+	iowrite32(value, &pd->memory_bar[address / JUNIPER_PCI_INTF_WIDTH]);
+}
+
+unsigned int juniper_pci_read_periph(struct juniper_device* dev, unsigned int address)
+{
+	struct juniper_dev_privdata* pd;
+	pd = pci_get_drvdata(dev->device);
+
+	return ioread32(&pd->periph_bar[address / JUNIPER_PCI_INTF_WIDTH]);
+}
+
+void juniper_pci_write_periph(struct juniper_device* dev, unsigned int address, unsigned int value)
+{
+	struct juniper_dev_privdata* pd;
+	pd = pci_get_drvdata(dev->device);
+
+	iowrite32(value, &pd->periph_bar[address / JUNIPER_PCI_INTF_WIDTH]);
 }
 
 // Consider making these actual DMA later...
-void juniper_pci_read_burst(struct juniper_device* dev, unsigned int base_address, unsigned int* data, unsigned int count)
+void juniper_pci_read_memory_burst(struct juniper_device* dev, unsigned int base_address, unsigned int* data, unsigned int count)
 {
 	int i = 0;
 	while(count--)
 	{
-		data[i++] = juniper_pci_read(dev, base_address);
+		data[i++] = juniper_pci_read_memory(dev, base_address);
 		base_address += JUNIPER_PCI_INTF_WIDTH;
 	}
 
@@ -309,12 +352,12 @@ void juniper_pci_read_burst(struct juniper_device* dev, unsigned int base_addres
 	pci_dma_sync_single_for_device(dev->device, pd->dma_handle, PAGE_SIZE * (1 << MEM_ORDER), PCI_DMA_FROMDEVICE);*/
 }
 
-void juniper_pci_write_burst(struct juniper_device* dev, unsigned int base_address, unsigned int* data, unsigned int count)
+void juniper_pci_write_memory_burst(struct juniper_device* dev, unsigned int base_address, unsigned int* data, unsigned int count)
 {
 	int i = 0;
 	while(count--)
 	{
-		juniper_pci_write(dev, base_address, data[i]);
+		juniper_pci_write_memory(dev, base_address, data[i]);
 		base_address += JUNIPER_PCI_INTF_WIDTH;
 	}
 }

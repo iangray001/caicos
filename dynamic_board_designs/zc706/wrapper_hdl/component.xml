@@ -503,6 +503,30 @@
         </spirit:parameter>
       </spirit:parameters>
     </spirit:busInterface>
+
+    <spirit:busInterface>
+      <spirit:name>signal_jamaica_syscall</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="interrupt" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="interrupt_rtl" spirit:version="1.0"/>
+      <spirit:master/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>JAMAICA_SYSCALL</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>jamaica_syscall</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>SENSITIVITY</spirit:name>
+          <spirit:value spirit:format="string" spirit:resolve="immediate" spirit:id="BUSIFPARAM_VALUE.SIGNAL_INTERRUPT.SENSITIVITY" spirit:choiceRef="choices_0">EDGE_RISING</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+
     <spirit:busInterface>
       <spirit:name>ap_signal_clock</spirit:name>
       <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="clock" spirit:version="1.0"/>
@@ -518,6 +542,14 @@
           </spirit:physicalPort>
         </spirit:portMap>
       </spirit:portMaps>
+
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>ASSOCIATED_BUSIF</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.M_AXI_S2MM_CLK.ASSOCIATED_BUSIF">s_axi_AXILiteS:m_axi_mem</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+
     </spirit:busInterface>
     <spirit:busInterface>
       <spirit:name>ap_rst_signal_reset</spirit:name>
@@ -645,7 +677,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="immediate">4</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="immediate">7</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="immediate">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -760,7 +792,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="immediate">4</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="immediate">7</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="immediate">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -901,6 +933,19 @@
         <spirit:name>ap_rst_n</spirit:name>
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>STD_LOGIC</spirit:typeName>
+              <spirit:viewNameRef>xilinx_vhdlsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_vhdlbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>jamaica_syscall</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
               <spirit:typeName>STD_LOGIC</spirit:typeName>

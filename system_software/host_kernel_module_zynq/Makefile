@@ -1,8 +1,10 @@
 obj-m += juniper.o
 juniper-objs := juniper_main.o juniper_pci.o juniper_sysfs.o juniper_interp.o
 
+KERN_PATH=/home/jamie/juniper/zc706_linux_buildroot/buildroot-2015.05/output/build/linux-4.0.5/
+
 all:
-	make -C ../zc706_linux_buildroot/output/build/linux-xlnx_3.17 ARCH=arm CROSS_COMPILE=arm-xilinx-eabi- M=$(PWD) modules
+	make -C ${KERN_PATH} ARCH=arm CROSS_COMPILE=arm-xilinx-eabi- M=$(PWD) modules
 
 clean:
-	make -C ../zc706_linux_buildroot/output/build/linux-xlnx_3.17 ARCH=arm CROSS_COMPILE=arm-xilinx-eabi- M=$(PWD) clean
+	make -C ${KERN_PATH} ARCH=arm CROSS_COMPILE=arm-xilinx-eabi- M=$(PWD) clean

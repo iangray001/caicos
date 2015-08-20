@@ -1,0 +1,45 @@
+#
+# pin constraints
+#
+NET CLK_N LOC = "K22"  |  DIFF_TERM = "TRUE"  |  IOSTANDARD = "LVDS_25";
+NET CLK_P LOC = "K21"  |  DIFF_TERM = "TRUE"  |  IOSTANDARD = "LVDS_25";
+NET RESET LOC = "H8"  |  IOSTANDARD = "LVCMOS15"  |  TIG;
+#
+# additional constraints
+#
+
+NET "CLK" TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 200000 kHz;
+
+#
+NET "*/REFCLK" TNM_NET = PCIe_Diff_Clk_TNM;
+# 125MHz refclk:
+TIMESPEC TS_PCIe_Diff_Clk = PERIOD PCIe_Diff_Clk_TNM 125000 kHz;
+# 100MHz refclk:
+#TIMESPEC TS_PCIe_Diff_Clk = PERIOD PCIe_Diff_Clk_TNM 100000 kHz;
+
+NET "*axi_aclk_out*" TNM_NET = axi_aclk_out_TNM;
+# 125MHz refclk:
+TIMESPEC TS_axi_aclk_out = PERIOD axi_aclk_out_TNM TS_PCIe_Diff_Clk/2.0 HIGH 50 % PRIORITY 1;
+# 100MHz refclk:
+#TIMESPEC TS_axi_aclk_out = PERIOD axi_aclk_out_TNM TS_PCIe_Diff_Clk/1.6 HIGH 50 % PRIORITY 1;
+
+
+#
+# Transceiver instance placement.  This constraint selects the
+# transceiver to be used, which also dictates the pinout for the
+# transmit and receive differential pairs.  Please refer to the
+# Spartan-6 GTP Transceiver User Guide for more
+# information.
+#
+# PCIe Lane 0
+
+
+NET  pcie_refclk_n LOC = B10;
+NET  pcie_refclk_p LOC = A10;
+
+INST */gtpa1_dual_i LOC = GTPA1_DUAL_X0Y0;
+NET  pcie_txp<0>  LOC = B6;
+NET  pcie_txn<0>  LOC = A6;
+NET  pcie_rxp<0>  LOC = D7;
+NET  pcie_rxn<0>  LOC = C7;

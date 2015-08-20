@@ -14,6 +14,7 @@
 // Max size of a bitfile
 #define FPGA_CONFIG_MAX_SIZE 128 * 1024 * 1024
 #define ACCEL_MEM_SIZE 512 * 1024 * 1024
+//#define ACCEL_MEM_SIZE 0
 
 #define WR_PERM (S_IWUSR | S_IWGRP)
 #define RD_PERM (S_IRUSR | S_IRGRP)
@@ -80,7 +81,6 @@ struct bin_attribute bin_attr_accel_mem = {
 struct attribute* accel_device_attrs[] = {
 	&dev_attr_accel_idle.attr,
 	&dev_attr_accel_start.attr,
-	&dev_attr_accel_hold.attr,
 	&dev_attr_accel_arg0.attr,
 	&dev_attr_accel_arg1.attr,
 	&dev_attr_accel_arg2.attr,
@@ -92,8 +92,17 @@ struct attribute* accel_device_attrs[] = {
 	NULL
 };
 
+struct attribute* accel_device_reconfig_attrs[] = {
+	&dev_attr_accel_hold.attr,
+	NULL
+};
+
 struct attribute_group accel_device_attr_group = {
 	.attrs = accel_device_attrs
+};
+
+struct attribute_group accel_device_reconfig_attr_group = {
+	.attrs = accel_device_reconfig_attrs
 };
 
 int juniper_sysfs_register()
@@ -145,11 +154,14 @@ int juniper_sysfs_new_device(struct juniper_device* dev)
 	}
 
 	// Create the binary attribute
-	rc = device_create_bin_file(new_dev, &bin_attr_reconfig);
-	if(rc)
+	if(juniper_pci_is_reconfigurable(dev))
 	{
-		printk(KERN_ERR "JFM: Failed to create reconfig bin file\n");
-		return -ENODEV;
+		rc = device_create_bin_file(new_dev, &bin_attr_reconfig);
+		if(rc)
+		{
+			printk(KERN_ERR "JFM: Failed to create reconfig bin file\n");
+			return -ENODEV;
+		}
 	}
 
 	// Do device specific initialisation
@@ -167,6 +179,7 @@ int juniper_sysfs_new_device(struct juniper_device* dev)
 
 		// Now create the sub-sub device
 		accel_dev = device_create(juniper_accel_class, new_dev, 0, accel_data, JUNIPER_DEVICE_NAME "%d%c", dev_idx, 'a'+i);
+
 		if(!accel_dev)
 		{
 			printk(KERN_ERR "JFM: Failed to create subsubdevice\n");
@@ -180,6 +193,21 @@ int juniper_sysfs_new_device(struct juniper_device* dev)
 			printk(KERN_ERR "JFM: Failed to create sysfs group for subsubdevice\n");
 			return -ENODEV;
 		}
+
+		if(juniper_pci_is_reconfigurable(dev))
+		{
+			rc = sysfs_create_group(&accel_dev->kobj, &accel_device_reconfig_attr_group);
+			if(rc)
+			{
+				printk(KERN_ERR "JFM: Failed to create sysfs group for subsubdevice\n");
+				return -ENODEV;
+			}
+		}
+
+		// Internally, the kernel frees based upon the attribute name, so we can tweak the parameters
+		// of the attribute here.
+		// This is, of course, a hack. But it works.
+		bin_attr_accel_mem.size = juniper_pci_memory_size(dev);
 
 		rc = device_create_bin_file(accel_dev, &bin_attr_accel_mem);
 		if(rc)
@@ -216,7 +244,9 @@ int juniper_sysfs_lost_device_iter(struct device* dev, void* data)
 	kfree(fpga_data);
 	dev_set_drvdata(dev, NULL);
 
-	device_remove_bin_file(dev, &bin_attr_reconfig);
+	if(juniper_pci_is_reconfigurable(fpga_data->phy_dev))
+		device_remove_bin_file(dev, &bin_attr_reconfig);
+
 	device_del(dev);
 	put_device(dev);
 
@@ -236,10 +266,10 @@ ssize_t accel_idle_show(struct device* dev, struct device_attribute* attr, char*
 {
 	// Get the status of the accelerator
 	struct juniper_accel_device* accel_data = dev_get_drvdata(dev);
-	int running = 0;
+	int idle = 0;
 
-	running = juniper_interp_accel_idle(accel_data);
-	buf[0] = running ? '1' : '0';
+	idle = juniper_interp_accel_idle(accel_data);
+	buf[0] = idle ? '1' : '0';
 	buf[1] = '\0';
 
 	return 2;
