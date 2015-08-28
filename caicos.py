@@ -31,7 +31,7 @@ import utils
 
 config_specification = {
 	#Standard options
-	'signatures': (True, ""), # list of Java method signatures to be compiled to hardware
+	'signatures': (False, ""), # list of Java method signatures to be compiled to hardware
 	'jamaicaoutputdir': (True, ""), # path to compiled C files from jamaicabuilder
 	'additionalhardwarefiles': (False, ""), # list of paths to additional files to add to the hardware project
 	'outputdir': (True, ""), # path to directory to output to
@@ -146,7 +146,7 @@ def load_config(filename):
 		raise CaicosError(str(filename) + " is not a valid file.")
 	f = open(filename)
 
-	config = {}
+	config = {'signatures': []}
 
 	lno = 1
 	for line in f.readlines():

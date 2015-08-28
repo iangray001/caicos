@@ -9,6 +9,7 @@ from os.path import join
 from pycparser import c_ast
 
 from flowanalysis import ReachableFunctions, get_files_to_search
+from interfaces import InterfaceResolver
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
 import juniperrewrites
 from utils import log, mkdir, copy_files, project_path
@@ -69,10 +70,12 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated):
 	"""
 	Given a list of java signatures, search for its funcdecl, then trace from each function 
-	flowwing funccall nodes to determine all reachable functions.
+	flowing funccall nodes to determine all reachable functions.
 	
 	Returns the interfaceResolver which contains information about encountered interface calls
 	"""
+	interfaceResolver = InterfaceResolver(jamaicaoutputdir)
+	
 	for sig in funcs:
 		filestosearch = get_files_to_search(sig, jamaicaoutputdir)
 		
@@ -83,7 +86,7 @@ def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filesto
 				filestobuild.add(f)
 
 		funcdecl = c_decl_node_of_java_sig(sig, jamaicaoutputdir)
-		rf = ReachableFunctions(funcdecl.parent, filestosearch, jamaicaoutputdir)
+		rf = ReachableFunctions(funcdecl.parent, filestosearch, jamaicaoutputdir, interfaceResolver)
 		
 		#Don't forget to include the starting point
 		all_reachable_functions.add(funcdecl.parent)
@@ -96,7 +99,7 @@ def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filesto
 		for r in rf.reachable_non_translated: 
 			reachable_non_translated.add(r)
 			
-	return rf.interfaceResolver
+	return interfaceResolver
 	
 
 def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls, interfaceResolver):

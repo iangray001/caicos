@@ -94,14 +94,14 @@ class ReachableFunctions(object):
 	Note that this class uses a global resolution cache, so that resolutions can be reused through the project preparation 
 	process. 
 	"""
-	def __init__(self, startfndef, filestosearch, jamaicaoutputdir):
+	def __init__(self, startfndef, filestosearch, jamaicaoutputdir, interfaceResolver):
 		self.filestosearch = filestosearch
 		self.reachable_functions = set()
 		self.reachable_non_translated = set()
 		self.func_defs_seen = []
 		self.files = set()
 		self.jamaicaoutputdir = jamaicaoutputdir
-		self.interfaceResolver = InterfaceResolver(jamaicaoutputdir)
+		self.interfaceResolver = interfaceResolver
 		self.find_reachable_functions(startfndef)
 		self.get_files()
 		
