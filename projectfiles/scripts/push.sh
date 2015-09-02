@@ -1,5 +1,4 @@
 #!/bin/bash
-
 BUILDSERVER=pegasus
 TESTSERVER=lunix
 
@@ -9,12 +8,14 @@ XILINXSCRIPT=/home/iang/xilinx.sh
 BUILD_TARGETDIRBASE=${BUILD_TARGETDIR##*/}
 HLSPROJECT=caicos
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+COL="\033[32m"
+RESET="\033[0m"
 
-echo -e "\033[31m===========================================================================\033[0m"
+echo -e "\033[31m===========================================================================$RESET"
 
 clean_dir () {
-	echo $1
 	if [ -n "$1" ]; then
+		echo -e "${COL}Cleaning remote directory$RESET $BUILDSERVER:$1"
 		ssh -q $BUILDSERVER "rm -rf $1"
 		ssh -q $BUILDSERVER "mkdir -p $1"
 	else
@@ -25,18 +26,17 @@ clean_dir () {
 copyhls () {
 	REMOTEPROJDIR=$BUILD_TARGETDIR/hardware/reconfig/$HLSPROJECT
 	clean_dir $REMOTEPROJDIR
+	echo -e "${COL}Copying$RESET $DIR/hardware/reconfig/$HLSPROJECT ${COL}to$RESET $BUILDSERVER:$BUILD_TARGETDIR/hardware/reconfig/"
 	scp -q -r $DIR/hardware/reconfig/$HLSPROJECT $BUILDSERVER:$BUILD_TARGETDIR/hardware/reconfig/
 }
 
-
 case "$1" in 
 	'clean' )
-		echo "Cleaning remote directory $BUILD_TARGETDIR..."
 		clean_dir $BUILD_TARGETDIR 
 	;;
 
 	'copy' )
-		echo "Copying project..."
+		echo -e "Copying ${COL}$DIR/* $RESET to ${COL} $BUILDSERVER:$BUILD_TARGETDIR/ $RESET"
 		ssh -q $BUILDSERVER "mkdir -p $BUILD_TARGETDIR"
 		scp -q -r $DIR/* $BUILDSERVER:$BUILD_TARGETDIR/
 		echo "done."
@@ -57,9 +57,10 @@ case "$1" in
 	;;
 	
 	'software' )
+		echo -e "Copying ${COL}$DIR/software/* $RESET to ${COL} $TESTSERVER:$BUILD_TARGETDIRBASE/software $RESET"
 		ssh -q $TESTSERVER "mkdir -p $BUILD_TARGETDIRBASE/software"
 		scp -q -r $DIR/software/* $TESTSERVER:$BUILD_TARGETDIRBASE/software
-		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make"
+		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make clean ; make"
 	;;
 	
 	'testbit' )
@@ -67,6 +68,6 @@ case "$1" in
 	;;
 
 	'' ) 
-		echo "Usage: $0 [ clean | copy | software | testhls | testbit ]"
+		echo -e "Usage: $0 [ clean | copy | software | testhls | testbit ]"
 	;;
 esac
