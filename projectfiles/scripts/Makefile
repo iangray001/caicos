@@ -33,3 +33,4 @@ obj/%.o: src/%.c
 clean:
 	cd juniper_fpga_interface && $(MAKE) clean
 	cd malloc_preload && $(MAKE) clean
+	rm -rf obj
