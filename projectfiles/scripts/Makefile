@@ -22,7 +22,8 @@ malloc_preload/malloc_preload.so:
 	cd malloc_preload && $(MAKE)
 	
 main: juniper_fpga_interface/libjuniper_fpga_interface.so malloc_preload/malloc_preload.so $(OBJ_FILES)
-	$(LD) $(OBJ_FILES) src/Main__nc.o $(LD_FLAGS) -o main
+	@echo [LD] main
+	@$(LD) $(OBJ_FILES) src/Main__nc.o $(LD_FLAGS) -o main
 
 obj/%.o: src/%.c
 	@echo [CC] $@
