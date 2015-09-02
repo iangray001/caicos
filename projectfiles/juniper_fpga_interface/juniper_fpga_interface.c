@@ -5,6 +5,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+//#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#define DBG(...)
+
 #define JUNIPER_PATH "/sys/class/juniper/juniper%d/juniper%d%c/"
 #define JUNIPER_PATH_BUFSZ 100
 
@@ -20,6 +23,8 @@ static int juniper_fpga_partition_read_bytes(int devNo, int partNo, char* flagNa
 	char path[JUNIPER_PATH_BUFSZ];
 	int fd;
 	int rdAmt;
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_read_bytes\n");
 
 	juniper_fpga_formatpath(devNo, partNo, flagName, path, JUNIPER_PATH_BUFSZ);
 
@@ -46,6 +51,8 @@ static int juniper_fpga_partition_write_bytes(int devNo, int partNo, char* flagN
 	int fd;
 	int wrAmt;
 
+	DBG("juniper_fpga_interface:juniper_fpga_partition_write_bytes\n");
+
 	juniper_fpga_formatpath(devNo, partNo, flagName, path, JUNIPER_PATH_BUFSZ);
 
 	//fprintf(stderr, "PATH: %s\n", path);
@@ -70,6 +77,8 @@ static int juniper_fpga_partition_read_flag(int devNo, int partNo, char* flagNam
 	char flag = 0;
 	int rv;
 
+	DBG("juniper_fpga_interface:juniper_fpga_partition_read_flag\n");
+
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, flagName, &flag, 1);
 
 	if(rv != JUNIPER_FPGA_OK)
@@ -81,6 +90,9 @@ static int juniper_fpga_partition_read_flag(int devNo, int partNo, char* flagNam
 static int juniper_fpga_partition_write_flag(int devNo, int partNo, char* flagName, int flag)
 {
 	char flagChar;
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_write_flag\n");
+
 	flagChar = flag ? '1' : '0';
 
 	return juniper_fpga_partition_write_bytes(devNo, partNo, flagName, &flagChar, 1);
@@ -138,6 +150,8 @@ int juniper_fpga_partition_get_mem_base(int devNo, int partNo, uint32_t* base)
 	uint32_t tmp;
 	int rv;
 
+	DBG("juniper_fpga_interface:juniper_fpga_partition_get_mem_base\n");
+
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
 
 	if(rv != JUNIPER_FPGA_OK)
@@ -154,6 +168,8 @@ int juniper_fpga_partition_get_retval(int devNo, int partNo, uint32_t* retOut)
 	unsigned char baseBuf[4];
 	uint32_t tmp;
 	int rv;
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_get_retval\n");
 
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_retval", baseBuf, 4);
 
@@ -175,6 +191,8 @@ int juniper_fpga_partition_set_mem_base(int devNo, int partNo, uint32_t base)
 	int wrAmt;
 	int rv;
 	
+	DBG("juniper_fpga_interface:juniper_fpga_partition_set_mem_base\n");
+
 	juniper_fpga_pack_int(base, baseBuf);
 
 	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
@@ -185,6 +203,8 @@ int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, uint32_t* a
 	unsigned char baseBuf[4];
 	uint32_t tmp;
 	int rv;
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_get_arg\n");
 
 	// Cheat...
 	char fileName[] = "accel_arg0";
@@ -210,6 +230,8 @@ int juniper_fpga_partition_set_arg(int devNo, int partNo, int argNo, uint32_t ar
 	int wrAmt;
 	int rv;
 
+	DBG("juniper_fpga_interface:juniper_fpga_partition_set_arg\n");
+
 	// Cheat...
 	char fileName[] = "accel_arg0";
 	int len = strlen(fileName);
@@ -225,6 +247,8 @@ int juniper_fpga_partition_get_syscall_args(int devNo, int partNo, juniper_fpga_
 {
 	int rv;
 	unsigned char buf[JUNIPER_FPGA_SYSCALL_IN_ARGS_SIZE];
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_get_syscall_args\n");
 
 	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_syscall_args", buf, JUNIPER_FPGA_SYSCALL_IN_ARGS_SIZE);
 
@@ -245,6 +269,8 @@ int juniper_fpga_partition_set_syscall_return(int devNo, int partNo, unsigned in
 {
 	int rv;
 	unsigned char buf[JUNIPER_FPGA_SYSCALL_OUT_ARGS_SIZE];
+
+	DBG("juniper_fpga_interface:juniper_fpga_partition_set_syscall_return\n");
 
 	buf[0] = JUNIPER_FPGA_SYSCALL_OUT_KNOCK1;
 	juniper_fpga_pack_int(val, &buf[1]);
