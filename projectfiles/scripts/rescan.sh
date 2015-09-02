@@ -24,7 +24,9 @@ lspci | grep Xilinx
 addr=`lspci -v | grep $devid -A 2 | grep "Memory at" | cut -d ' ' -f 3`
 echo "Card found at address: $addr"
 
+rmmod juniper
 rmmod mtdblock
 rmmod phram
 modprobe mtdblock
 modprobe phram phram=JUNIPER2,0x$addr,0x20000000
+insmod ../software/host_kernel_module/juniper.ko
