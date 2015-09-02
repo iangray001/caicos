@@ -58,9 +58,10 @@ case "$1" in
 	
 	'software' )
 		echo -e "Copying ${COL}$DIR/software/* $RESET to ${COL} $TESTSERVER:$BUILD_TARGETDIRBASE/software $RESET"
+		ssh -q $TESTSERVER "rm -rf $BUILD_TARGETDIRBASE/software"
 		ssh -q $TESTSERVER "mkdir -p $BUILD_TARGETDIRBASE/software"
 		scp -q -r $DIR/software/* $TESTSERVER:$BUILD_TARGETDIRBASE/software
-		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make clean ; make"
+		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make"
 	;;
 	
 	'testbit' )
