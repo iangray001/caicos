@@ -25,7 +25,8 @@ import pycparser
 import astcache
 import prepare_hls_project
 import prepare_src_project
-from utils import mkdir, CaicosError, log, project_path, make_executable
+from utils import mkdir, CaicosError, log, project_path, make_executable, \
+	copy_files
 import utils
 
 
@@ -39,6 +40,7 @@ config_specification = {
 	'cleanoutput': (False, ""), # if 'true', the contents of outputdir will be cleaned first
 	'hwoutputdir': (False, ""), #if set, then the hardware project will be put here instead of the default location
 	'swoutputdir': (False, ""), #if set, then the software project will be put here instead of the default location
+	'scriptsoutputdir': (False, ""), #if set, then the control scripts will be put here instead of the default location
 	'jamaicaoutputdir_hw': (False, ""), #if set, then caicos will use this Jamaica Builder output directory for the hardware project instead of jamaicaoutputdir
 	'notranslates': (False, ""), #A list of Java signatures which should not be translated into hardware
 	'targetboard': (True, ""), #Which board should we build the base system for (currently "vc707", or "zc706")
@@ -79,6 +81,7 @@ def build_all(config):
 		#Determine output paths
 		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
 		boarddir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
+		scriptsdir = config.get('scriptsoutputdir', os.path.join(config['outputdir'], "scripts"))
 		hwdir = os.path.join(boarddir, "reconfig", config.get('hlsprojectname', 'caicos'))
 		
 		if 'astcache' in config:
@@ -124,6 +127,15 @@ def build_all(config):
 		fout = open(os.path.join(swdir, "Makefile"), "w")
 		fout.write(template.safe_substitute(subs))
 		fout.close()
+		
+		#Output scripts folder
+		mkdir(scriptsdir)
+		for fn in ['cmd_template.bat', 'program.sh', 'rescan.sh']:
+			shutil.copyfile(project_path("projectfiles", "scripts", fn), os.path.join(scriptsdir, fn))
+		
+		#Output kernel module
+		copy_files(project_path("system_software", "host_kernel_module"), os.path.join(swdir, "host_kernel_module"))
+		
 	except CaicosError, e:
 		log().error("A critical error was encountered:\n\t" + str(e))
 
