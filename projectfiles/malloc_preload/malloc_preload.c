@@ -26,10 +26,9 @@ void* (*inner_mmap)(void* addr, size_t length, int prot, int flags, int fd, off_
 
 void init_preloader();
 
-// 1MB
-#define MALLOC_STORAGE_SIZE (1024 * 512 * 1024)
+#define MALLOC_STORAGE_SIZE (1024 * 256 * 1024)
 
-char malloc_storage2[MALLOC_STORAGE_SIZE] __attribute__((aligned(4096)));
+//char malloc_storage2[MALLOC_STORAGE_SIZE] __attribute__((aligned(4096)));
 unsigned int used_malloc_storage = 0;
 unsigned int used_malloc_storage_top = 0;
 
@@ -142,6 +141,8 @@ void* calloc(size_t num, size_t size)
 	if(!inited)
 		init_preloader();
 
+	DBG("malloc_preload:calloc: %d %d\n", num, size);
+
 	if(inited && malloc_storage == NULL)
 	{
 		// This is (annoyingly) needed.
@@ -157,7 +158,6 @@ void* calloc(size_t num, size_t size)
 	}
 
 	void* foo = inner_calloc(num, size);
-	DBG("malloc_preload:calloc: %d %d\n", num, size);
 	return foo;
 }
 
@@ -182,23 +182,28 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset)
 	if(!inited)
 		init_preloader();
 
-	//void* rv = inner_mmap(addr, length, prot, flags, fd, offset);
+	void* rv = inner_mmap(addr, length, prot, flags, fd, offset);
+	return malloc(length);
 
-	// Return from the top? :D
-	unsigned int topAddr = (unsigned int)STORAGE;
+	/*unsigned int topAddr = (unsigned int)STORAGE;
 	topAddr += MALLOC_STORAGE_SIZE;
 	topAddr -= used_malloc_storage_top;
+	DBG("MMAP topAddr: 0x%x\n", topAddr);
 	topAddr -= length;
 
 	// How much extra to page align it?
 	unsigned int pageMask = 4096 - 1;
 	unsigned int extra = topAddr & pageMask;
 	topAddr -= extra;
-
+	DBG("Extra bytes: 0x%x, New top: 0x%x, Old used: 0x%x\n", extra, topAddr, used_malloc_storage_top);
 	used_malloc_storage_top += length;
 	used_malloc_storage_top += extra;
+	DBG("NEW USED: 0x%x\n", used_malloc_storage_top);
 
 	DBG("malloc_preload:mmap: addr: 0x%x length %d prot 0x%x flags 0x%x fd %d offset 0x%x rv 0x%x, top 0x%x\n", addr, length, prot, flags, fd, offset, topAddr, topAddr + length);
 
-	return (void*)topAddr;
+	//mmap returns zero-filled pages
+	memset((void*) topAddr, 0, length);
+
+	return (void*) topAddr;*/
 }
