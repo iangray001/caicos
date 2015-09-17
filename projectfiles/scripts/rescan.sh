@@ -6,6 +6,11 @@
 # card's memory available to the kernel.
 # Must be run as root, and will only handle the first found FPGA.
 
+if [ "$(id -u)" != "0" ]; then
+	echo "This script must be run as root" 1>&2
+	exit 1
+fi
+
 devid=`lspci -mm | grep Xilinx | cut -d ' ' -f 1`
 device=/sys/bus/pci/devices/0000:$devid
 
