@@ -74,8 +74,10 @@ def build_all(config):
 	
 	try:
 		if config.get('cleanoutput', "false").lower() == "true":
-			shutil.rmtree(config['outputdir'], ignore_errors=True)
-		
+			if os.path.isdir(config['outputdir']):
+				for f in os.listdir(config['outputdir']):
+					shutil.rmtree(os.path.join(config['outputdir'], f), ignore_errors=True)
+					
 		mkdir(config['outputdir'])
 		
 		#Determine output paths
