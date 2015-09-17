@@ -66,6 +66,7 @@ case "$1" in
 	
 	'testbit' )
 		if [ -n "$2" ]; then
+			echo -e "Copying ${COL}$2 $RESET to ${COL} $TESTSERVER:$BUILD_TARGETDIRBASE $RESET"
 			ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:$BUILD_TARGETDIRBASE/"
 		else
 			echo "Bitfiles on build server:"
