@@ -65,7 +65,12 @@ case "$1" in
 	;;
 	
 	'testbit' )
-		ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:$BUILD_TARGETDIRBASE/"
+		if [ -n "$2" ]; then
+			ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:$BUILD_TARGETDIRBASE/"
+		else
+			echo "Bitfiles on build server:"
+			ssh -q $BUILDSERVER "cd $BUILD_TARGETDIR/hardware/assemble/bitstream/; ls *.bit"
+		fi
 	;;
 
 	'' ) 
