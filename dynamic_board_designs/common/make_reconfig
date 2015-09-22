@@ -3,6 +3,12 @@
 TCLFILE="assemble/prbuild.tcl"
 NUMPRJ=1
 
+RED=`echo -en '\e[41m\e[37m'`
+YELLOW=`echo -en '\e[93m'`
+NORMAL=`echo -en '\e[00m'`
+PATTERN="s/^ERROR.*$/$RED&$NORMAL/g;s/^CRITICAL.*$/$RED&$NORMAL/g;s/^WARNING.*$/$YELLOW&$NORMAL/g"
+LOGFILE=build-`date +%Y%m%d-%H%M`.log
+
 scriptforproject() {
 	NAME=`basename $1`
 	echo "# Project: $NAME" >> $TCLFILE
@@ -24,8 +30,8 @@ scriptforproject() {
 	echo "opt_design" >> $TCLFILE
 	echo "place_design" >> $TCLFILE
 	echo "route_design" >> $TCLFILE
-	echo "write_checkpoint ${NAME}_fulldesign_routed.dcp" >> $TCLFILE
-	echo "write_bitstream -file bitstream/${NAME}.bit" >> $TCLFILE
+	echo "write_checkpoint -force ${NAME}_fulldesign_routed.dcp" >> $TCLFILE
+	echo "write_bitstream -force -file bitstream/${NAME}.bit" >> $TCLFILE
 	echo "close_project" >> $TCLFILE	
 	echo "" >> $TCLFILE
 }
@@ -56,7 +62,7 @@ case "$1" in
 	'all' )
 		preparescript ""
 		cd assemble
-		vivado -mode batch -source `basename $TCLFILE`
+		vivado -mode batch -source `basename $TCLFILE` 2>&1 | sed -u -E $PATTERN | tee $LOGFILE
 		cd ../
 	;;
 	
@@ -66,7 +72,7 @@ case "$1" in
 		else
 			preparescript $2
 			cd assemble
-			vivado -mode batch -source `basename $TCLFILE`
+			vivado -mode batch -source `basename $TCLFILE` 2>&1 | sed -u -E $PATTERN | tee $LOGFILE
 			cd ../
 		fi
 	;;
