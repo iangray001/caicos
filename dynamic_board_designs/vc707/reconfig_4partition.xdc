@@ -10,10 +10,16 @@
 create_pblock pblock_top_0
 add_cells_to_pblock [get_pblocks pblock_top_0] [get_cells -quiet [list juniper_board_i/top_0/U0/brg]]
 
-resize_pblock [get_pblocks pblock_top_0] -add {SLICE_X0Y300:SLICE_X109Y349}
-resize_pblock [get_pblocks pblock_top_0] -add {DSP48_X0Y120:DSP48_X8Y139}
-resize_pblock [get_pblocks pblock_top_0] -add {RAMB18_X0Y120:RAMB18_X6Y139}
-resize_pblock [get_pblocks pblock_top_0] -add {RAMB36_X0Y60:RAMB36_X6Y69}
+resize_pblock [get_pblocks pblock_top_0] -add {SLICE_X0Y0:SLICE_X109Y349}
+resize_pblock [get_pblocks pblock_top_0] -add {DSP48_X0Y0:DSP48_X8Y139}
+resize_pblock [get_pblocks pblock_top_0] -add {PCIE_X0Y0:PCIE_X0Y1}
+resize_pblock [get_pblocks pblock_top_0] -add {RAMB18_X0Y0:RAMB18_X6Y139}
+resize_pblock [get_pblocks pblock_top_0] -add {RAMB36_X0Y0:RAMB36_X6Y69}
+
+#resize_pblock [get_pblocks pblock_top_0] -add {SLICE_X0Y300:SLICE_X109Y349}
+#resize_pblock [get_pblocks pblock_top_0] -add {DSP48_X0Y120:DSP48_X8Y139}
+#resize_pblock [get_pblocks pblock_top_0] -add {RAMB18_X0Y120:RAMB18_X6Y139}
+#resize_pblock [get_pblocks pblock_top_0] -add {RAMB36_X0Y60:RAMB36_X6Y69}
 
 set_property RESET_AFTER_RECONFIG true [get_pblocks pblock_top_0]
 set_property SNAPPING_MODE ON [get_pblocks pblock_top_0]
