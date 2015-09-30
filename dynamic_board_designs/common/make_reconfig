@@ -24,7 +24,7 @@ scriptforproject() {
 	NAME=`basename $1`
 
 	for i in $(seq 0 1 $((NUMPRJ-1))); do
-		echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg ${NAME}_synth.dcp" >> $TCLFILE
+		echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg ${NAME}_synth_noclock.dcp" >> $TCLFILE
 	done
             
 	echo "opt_design" >> $TCLFILE
@@ -34,6 +34,13 @@ scriptforproject() {
 	echo "write_bitstream -force -file bitstream/${NAME}.bit" >> $TCLFILE
 	echo "close_project" >> $TCLFILE	
 	echo "" >> $TCLFILE
+
+        # remove the clock
+        cd assemble
+        unzip ${NAME}_synth.dcp -d ${NAME}_unpack
+        sed -i s/create_clock/\#create_clock/ ${NAME}_unpack/hls.xdc
+        zip -j ${NAME}_synth_noclock.dcp ${NAME}_unpack/*
+        cd ../
 }
 
 preparescript () {

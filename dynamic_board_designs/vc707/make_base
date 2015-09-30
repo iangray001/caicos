@@ -19,7 +19,7 @@ cp base/juniperHLS/solution1/impl/ip/hls.dcp ./assemble/hls.dcp
 echo "open_checkpoint base_synth.dcp" > $TCLFILE
 
 for i in $(seq 0 1 $((NUMPRJ-1))); do
-    echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg hls.dcp" >> $TCLFILE
+    echo "read_checkpoint -cell juniper_board_i/top_${i}/U0/brg hls_noclock.dcp" >> $TCLFILE
     echo "set_property HD.RECONFIGURABLE 1 [get_cells */top_${i}/U0/brg]" >> $TCLFILE
 done
 
@@ -49,5 +49,11 @@ close_project
 EOF
 
 cd assemble
+
+# Remove the clock from the HLS component
+unzip hls.dcp -d hls_unpack
+sed -i s/create_clock/\#create_clock/ hls_unpack/hls.xdc
+zip -j hls_noclock.dcp hls_unpack/*
+
 vivado -mode batch -source `basename $TCLFILE`
 cd ../
