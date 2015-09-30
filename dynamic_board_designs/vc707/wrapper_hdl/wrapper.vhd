@@ -141,6 +141,9 @@ architecture rtl of hls_toplevel is
 	  );
 	END COMPONENT;
 
+        -- Insert a pipeline stage on hold_outputs
+        signal reg_hold_outputs : std_logic := '0';
+        
 	signal sig_s_axi_AXILiteS_AWVALID :  STD_LOGIC;
     signal sig_s_axi_AXILiteS_AWREADY :  STD_LOGIC;
     signal sig_s_axi_AXILiteS_AWADDR :  STD_LOGIC_VECTOR(7 DOWNTO 0);
@@ -212,6 +215,15 @@ architecture rtl of hls_toplevel is
     attribute S : string;
     attribute S of sig_dummy_user : signal is "TRUE";
 begin
+        update_output_hold: process(sig_ap_clk,sig_ap_rst_n)
+        begin
+          if (sig_ap_rst_n = '0') then
+            reg_hold_outputs <= '0';
+          elsif (sig_ap_clk = '1' and sig_ap_clk'event) then
+            reg_hold_outputs <= hold_outputs;
+          end if;
+        end process;
+  
 	brg : hls
 	  PORT MAP (
 	    s_axi_AXILiteS_AWVALID => 	sig_s_axi_AXILiteS_AWVALID,
@@ -284,44 +296,44 @@ begin
 	);
 
 	
-    s_axi_AXILiteS_AWREADY 	<= (not hold_outputs) and sig_s_axi_AXILiteS_AWREADY;
-	s_axi_AXILiteS_WREADY 	<= (not hold_outputs) and sig_s_axi_AXILiteS_WREADY ;
-	s_axi_AXILiteS_ARREADY 	<= (not hold_outputs) and sig_s_axi_AXILiteS_ARREADY;
-    s_axi_AXILiteS_RVALID 	<= (not hold_outputs) and sig_s_axi_AXILiteS_RVALID ;
-    s_axi_AXILiteS_RDATA 	<= (not (31 downto 0 => hold_outputs)) and sig_s_axi_AXILiteS_RDATA;
-    s_axi_AXILiteS_RRESP 	<= (not (1 downto 0 => hold_outputs)) and sig_s_axi_AXILiteS_RRESP;
-    s_axi_AXILiteS_BVALID 	<= (not hold_outputs) and sig_s_axi_AXILiteS_BVALID ;
-    s_axi_AXILiteS_BRESP 	<= (not (1 downto 0 => hold_outputs)) and sig_s_axi_AXILiteS_BRESP;
-    m_axi_mem_AWVALID 		<= (not hold_outputs) and sig_m_axi_mem_AWVALID ;
-    m_axi_mem_AWADDR 		<= (not (31 downto 0 => hold_outputs)) and sig_m_axi_mem_AWADDR ;
-    m_axi_mem_AWID 			<= (not (0 downto 0 => hold_outputs)) and sig_m_axi_mem_AWID 		;
-    m_axi_mem_AWLEN 		<= (not (7 downto 0 => hold_outputs)) and sig_m_axi_mem_AWLEN 	;
-    m_axi_mem_AWSIZE 		<= (not (2 downto 0 => hold_outputs)) and sig_m_axi_mem_AWSIZE ;
-    m_axi_mem_AWBURST 		<= (not (1 downto 0 => hold_outputs)) and sig_m_axi_mem_AWBURST ;
-    m_axi_mem_AWLOCK 		<= (not (1 downto 0 => hold_outputs)) and sig_m_axi_mem_AWLOCK ;
-    m_axi_mem_AWCACHE 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_AWCACHE ;
-    m_axi_mem_AWPROT 		<= (not (2 downto 0 => hold_outputs)) and sig_m_axi_mem_AWPROT ;
-    m_axi_mem_AWQOS 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_AWQOS 	;
-    m_axi_mem_AWREGION 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_AWREGION;
-    m_axi_mem_WVALID 		<= (not hold_outputs) and sig_m_axi_mem_WVALID ;
-    m_axi_mem_WDATA 		<= (not (31 downto 0 => hold_outputs)) and sig_m_axi_mem_WDATA;
-    m_axi_mem_WSTRB 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_WSTRB;
-    m_axi_mem_WLAST 		<= (not hold_outputs) and sig_m_axi_mem_WLAST ;
-    m_axi_mem_WID 			<= (not (0 downto 0 => hold_outputs)) and sig_m_axi_mem_WID;
-    m_axi_mem_ARVALID 		<= (not hold_outputs) and sig_m_axi_mem_ARVALID ;
-    m_axi_mem_ARADDR 		<= (not (31 downto 0 => hold_outputs)) and sig_m_axi_mem_ARADDR ;
-    m_axi_mem_ARID 			<= (not (0 downto 0 => hold_outputs)) and sig_m_axi_mem_ARID 		;
-    m_axi_mem_ARLEN 		<= (not (7 downto 0 => hold_outputs)) and sig_m_axi_mem_ARLEN 	;
-    m_axi_mem_ARSIZE 		<= (not (2 downto 0 => hold_outputs)) and sig_m_axi_mem_ARSIZE ;
-    m_axi_mem_ARBURST 		<= (not (1 downto 0 => hold_outputs)) and sig_m_axi_mem_ARBURST ;
-    m_axi_mem_ARLOCK 		<= (not (1 downto 0 => hold_outputs)) and sig_m_axi_mem_ARLOCK ;
-    m_axi_mem_ARCACHE 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_ARCACHE ;
-    m_axi_mem_ARPROT 		<= (not (2 downto 0 => hold_outputs)) and sig_m_axi_mem_ARPROT ;
-    m_axi_mem_ARQOS 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_ARQOS 	;
-    m_axi_mem_ARREGION 		<= (not (3 downto 0 => hold_outputs)) and sig_m_axi_mem_ARREGION;
-    m_axi_mem_RREADY 		<= (not hold_outputs) and sig_m_axi_mem_RREADY ;
-    m_axi_mem_BREADY 		<= (not hold_outputs) and sig_m_axi_mem_BREADY ;
-    interrupt 				<= (not hold_outputs) and sig_interrupt ;
+    s_axi_AXILiteS_AWREADY 	<= (not reg_hold_outputs) and sig_s_axi_AXILiteS_AWREADY;
+	s_axi_AXILiteS_WREADY 	<= (not reg_hold_outputs) and sig_s_axi_AXILiteS_WREADY ;
+	s_axi_AXILiteS_ARREADY 	<= (not reg_hold_outputs) and sig_s_axi_AXILiteS_ARREADY;
+    s_axi_AXILiteS_RVALID 	<= (not reg_hold_outputs) and sig_s_axi_AXILiteS_RVALID ;
+    s_axi_AXILiteS_RDATA 	<= (not (31 downto 0 => reg_hold_outputs)) and sig_s_axi_AXILiteS_RDATA;
+    s_axi_AXILiteS_RRESP 	<= (not (1 downto 0 => reg_hold_outputs)) and sig_s_axi_AXILiteS_RRESP;
+    s_axi_AXILiteS_BVALID 	<= (not reg_hold_outputs) and sig_s_axi_AXILiteS_BVALID ;
+    s_axi_AXILiteS_BRESP 	<= (not (1 downto 0 => reg_hold_outputs)) and sig_s_axi_AXILiteS_BRESP;
+    m_axi_mem_AWVALID 		<= (not reg_hold_outputs) and sig_m_axi_mem_AWVALID ;
+    m_axi_mem_AWADDR 		<= (not (31 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWADDR ;
+    m_axi_mem_AWID 			<= (not (0 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWID 		;
+    m_axi_mem_AWLEN 		<= (not (7 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWLEN 	;
+    m_axi_mem_AWSIZE 		<= (not (2 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWSIZE ;
+    m_axi_mem_AWBURST 		<= (not (1 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWBURST ;
+    m_axi_mem_AWLOCK 		<= (not (1 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWLOCK ;
+    m_axi_mem_AWCACHE 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWCACHE ;
+    m_axi_mem_AWPROT 		<= (not (2 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWPROT ;
+    m_axi_mem_AWQOS 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWQOS 	;
+    m_axi_mem_AWREGION 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_AWREGION;
+    m_axi_mem_WVALID 		<= (not reg_hold_outputs) and sig_m_axi_mem_WVALID ;
+    m_axi_mem_WDATA 		<= (not (31 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_WDATA;
+    m_axi_mem_WSTRB 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_WSTRB;
+    m_axi_mem_WLAST 		<= (not reg_hold_outputs) and sig_m_axi_mem_WLAST ;
+    m_axi_mem_WID 			<= (not (0 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_WID;
+    m_axi_mem_ARVALID 		<= (not reg_hold_outputs) and sig_m_axi_mem_ARVALID ;
+    m_axi_mem_ARADDR 		<= (not (31 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARADDR ;
+    m_axi_mem_ARID 			<= (not (0 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARID 		;
+    m_axi_mem_ARLEN 		<= (not (7 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARLEN 	;
+    m_axi_mem_ARSIZE 		<= (not (2 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARSIZE ;
+    m_axi_mem_ARBURST 		<= (not (1 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARBURST ;
+    m_axi_mem_ARLOCK 		<= (not (1 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARLOCK ;
+    m_axi_mem_ARCACHE 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARCACHE ;
+    m_axi_mem_ARPROT 		<= (not (2 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARPROT ;
+    m_axi_mem_ARQOS 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARQOS 	;
+    m_axi_mem_ARREGION 		<= (not (3 downto 0 => reg_hold_outputs)) and sig_m_axi_mem_ARREGION;
+    m_axi_mem_RREADY 		<= (not reg_hold_outputs) and sig_m_axi_mem_RREADY ;
+    m_axi_mem_BREADY 		<= (not reg_hold_outputs) and sig_m_axi_mem_BREADY ;
+    interrupt 				<= (not reg_hold_outputs) and sig_interrupt ;
 
 
     sig_s_axi_AXILiteS_AWVALID 	<= s_axi_AXILiteS_AWVALID;
@@ -334,7 +346,7 @@ begin
     sig_s_axi_AXILiteS_RREADY 	<= s_axi_AXILiteS_RREADY ;
     sig_s_axi_AXILiteS_BREADY 	<= s_axi_AXILiteS_BREADY ;
     sig_ap_clk 					<= ap_clk 				;
-    sig_ap_rst_n 				<= (not hold_outputs) and ap_rst_n; -- Also hold reset when isolated...
+    sig_ap_rst_n 				<= (not reg_hold_outputs) and ap_rst_n; -- Also hold reset when isolated...
     sig_m_axi_mem_AWREADY 		<= m_axi_mem_AWREADY 	;
 	sig_m_axi_mem_WREADY 		<= m_axi_mem_WREADY 	;
 	sig_m_axi_mem_ARREADY 		<= m_axi_mem_ARREADY 	;
@@ -348,5 +360,5 @@ begin
     sig_m_axi_mem_BID			<= m_axi_mem_BID		;
     sig_dummy_user <= sig_m_axi_mem_AWUSER or sig_m_axi_mem_WUSER or sig_m_axi_mem_ARUSER;
 
-    jamaica_syscall <= (not hold_outputs) and sig_syscall_interrupt_o;
+    jamaica_syscall <= (not reg_hold_outputs) and sig_syscall_interrupt_o;
 end architecture rtl;
