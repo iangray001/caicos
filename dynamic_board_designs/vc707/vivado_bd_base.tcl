@@ -385,6 +385,7 @@ proc create_root_design { parentCell } {
   # Create instance: mem_interconnect, and set properties
   set mem_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 mem_interconnect ]
   set_property -dict [ list CONFIG.NUM_MI {2} CONFIG.NUM_SI {2} CONFIG.STRATEGY {0}  ] $mem_interconnect
+  set_property -dict [list CONFIG.S00_HAS_REGSLICE {3} CONFIG.S01_HAS_REGSLICE {3} CONFIG.M00_HAS_REGSLICE {3} CONFIG.M01_HAS_REGSLICE {3}] $mem_interconnect
 
   # Create instance: pcie_mem_periph_split, and set properties
   set pcie_mem_periph_split [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 pcie_mem_periph_split ]
@@ -392,6 +393,13 @@ proc create_root_design { parentCell } {
   # Create instance: periph_interconnect, and set properties
   set periph_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 periph_interconnect ]
   set_property -dict [ list CONFIG.NUM_MI {6}  ] $periph_interconnect
+  set_property -dict [list CONFIG.S00_HAS_REGSLICE {3} \
+			   CONFIG.M00_HAS_REGSLICE {3} \
+			   CONFIG.M01_HAS_REGSLICE {3} \
+			   CONFIG.M02_HAS_REGSLICE {3} \
+			   CONFIG.M03_HAS_REGSLICE {3} \
+			   CONFIG.M04_HAS_REGSLICE {3} \
+			   CONFIG.M05_HAS_REGSLICE {3}] $periph_interconnect
 
   # Create instance: axi_pcie_0, and set properties
   set axi_pcie_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_pcie:2.5 axi_pcie_0 ]
