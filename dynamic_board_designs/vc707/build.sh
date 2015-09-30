@@ -27,6 +27,16 @@ cat > ./vivado_bd_cores.tcl <<EOF
     set_property -dict [ list CONFIG.NUM_PORTS {$((NUMPRJ+1))} ] [get_bd_cells axi_intc_concat]
 EOF
 
+# Add in the buffers
+# Seq is inclusive (start, step, end)
+for i in $(seq 2 1 $((NUMPRJ+1))); do
+    echo "set_property CONFIG.S0${i}_HAS_REGSLICE 3 [get_bd_cells mem_interconnect]"
+done
+
+for i in $(seq 6 1 $((NUMPRJ+5))); do
+    echo "set_property CONFIG.M0${i}_HAS_REGSLICE 3 [get_bd_cells periph_interconnect]"
+done
+
 # And sub into the MHS file
 # TODO: This may be fragile
 for i in $(seq 0 1 $((NUMPRJ-1))); do
