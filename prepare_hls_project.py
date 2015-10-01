@@ -146,7 +146,7 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 				
 	s = s + 'open_solution "solution1"\n'
 	s = s + 'set_part {' + fpgapartname + '}\n'
-	s = s + 'create_clock -period 10 -name default\n'
+	s = s + 'create_clock -period 8 -name default\n'
 	s = s + 'csynth_design\n'
 	s = s + 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 	#s = s + 'export_design -format ip_catalog -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'

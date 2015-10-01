@@ -14,7 +14,7 @@ foreach f [exec ls | grep -F .h] {
 # Use VC707
 set_part {xc7vx485tffg1761-2}
 
-create_clock -period 10 -name default
+create_clock -period 8 -name default
 
 # Create some hardware
 csynth_design
