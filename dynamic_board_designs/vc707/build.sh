@@ -30,11 +30,11 @@ EOF
 # Add in the buffers
 # Seq is inclusive (start, step, end)
 for i in $(seq 2 1 $((NUMPRJ+1))); do
-    echo "set_property CONFIG.S0${i}_HAS_REGSLICE 3 [get_bd_cells mem_interconnect]"
+    echo "set_property CONFIG.S0${i}_HAS_REGSLICE 3 [get_bd_cells mem_interconnect]" >> ./vivado_bd_cores.tcl
 done
 
 for i in $(seq 6 1 $((NUMPRJ+5))); do
-    echo "set_property CONFIG.M0${i}_HAS_REGSLICE 3 [get_bd_cells periph_interconnect]"
+    echo "set_property CONFIG.M0${i}_HAS_REGSLICE 3 [get_bd_cells periph_interconnect]" >> ./vivado_bd_cores.tcl
 done
 
 # And sub into the MHS file
