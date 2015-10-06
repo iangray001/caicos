@@ -1,20 +1,30 @@
 #include "juniper_interp.h"
 
-#define PCI_CORE_BASE            0x00000000
-#define PCI_CORE_ACCEL_BASE      0x00000000
-#define PCI_CORE_ACCEL_RETVAL    0x00000010
-#define PCI_CORE_ACCEL_MASTER0   0x00000018
-#define PCI_CORE_ACCEL_MASTER1   0x00000018
-#define PCI_CORE_ACCEL_MASTER2   0x00000018
-#define PCI_CORE_ACCEL_ARG0      0x00000020
-#define PCI_CORE_ACCEL_ARG1      0x00000028
-#define PCI_CORE_ACCEL_ARG2      0x00000030
-#define PCI_CORE_ACCEL_ARG3      0x00000038
-#define PCI_CORE_ACCEL_ARGSTRIDE 0x8
-#define PCI_CORE_ACCEL_SYSCALL_ARG0          0x00000040
-#define PCI_CORE_ACCEL_SYSCALL_ARGSTRIDE     0x8
-#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG0      0x00000070
-#define PCI_CORE_ACCEL_SYSCALL_OUT_ARGSTRIDE 0x8
+/*
+ * These offsets can be determined by running scripts/getoffsets.py
+ */
+#define PCI_CORE_BASE 0x00000000
+#define PCI_CORE_ACCEL_BASE 0x00000000
+#define PCI_CORE_ACCEL_RETVAL 0x00000010
+#define PCI_CORE_ACCEL_MASTER0 0x00000018
+#define PCI_CORE_ACCEL_MASTER1 0x00000020
+#define PCI_CORE_ACCEL_MASTER2 0x00000028
+#define PCI_CORE_ACCEL_ARG0 0x00000030
+#define PCI_CORE_ACCEL_ARG1 0x00000038
+#define PCI_CORE_ACCEL_ARG2 0x00000040
+#define PCI_CORE_ACCEL_ARG3 0x00000048
+#define PCI_CORE_ACCEL_SYSCALL_ARG0 0x00000060
+#define PCI_CORE_ACCEL_SYSCALL_ARG1 0x00000050
+#define PCI_CORE_ACCEL_SYSCALL_ARG2 0x00000070
+#define PCI_CORE_ACCEL_SYSCALL_ARG3 0x00000080
+#define PCI_CORE_ACCEL_SYSCALL_ARG4 0x00000090
+#define PCI_CORE_ACCEL_SYSCALL_ARG5 0x000000a0
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG0 0x00000068
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG1 0x00000058
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG2 0x00000078
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG3 0x00000088
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG4 0x00000098
+#define PCI_CORE_ACCEL_SYSCALL_OUT_ARG5 0x000000a8
 
 #define PCI_CORE_GPIO 0x03000000
 #define PCI_CORE_GPIO_TRI (PCI_CORE_GPIO + 4)
@@ -223,19 +233,31 @@ uint32_t juniper_interp_get_arg(struct juniper_accel_device* dev, int argN)
 {
 	// We just need to read from the PCI-E device...
 	// Figure out the address
-	unsigned int addr = PCI_CORE_ACCEL_ARG0;
-	addr |= dev->idx << PCI_CORE_ID_SHIFT;
-	addr += argN * PCI_CORE_ACCEL_ARGSTRIDE;
+	unsigned int addr = 0;
 
+	switch(argN) {
+		case 0: addr = PCI_CORE_ACCEL_ARG0; break;
+		case 1: addr = PCI_CORE_ACCEL_ARG1; break;
+		case 2: addr = PCI_CORE_ACCEL_ARG2; break;
+		case 3: addr = PCI_CORE_ACCEL_ARG3; break;
+	}
+
+	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	return juniper_pci_read_periph(dev->fpga->phy_dev, addr);
 }
 
 void juniper_interp_set_arg(struct juniper_accel_device* dev, int argN, uint32_t val)
 {
-	unsigned int addr = PCI_CORE_ACCEL_ARG0;
-	addr |= dev->idx << PCI_CORE_ID_SHIFT;
-	addr += argN * PCI_CORE_ACCEL_ARGSTRIDE;
+	unsigned int addr = 0;
 
+	switch(argN) {
+		case 0: addr = PCI_CORE_ACCEL_ARG0; break;
+		case 1: addr = PCI_CORE_ACCEL_ARG1; break;
+		case 2: addr = PCI_CORE_ACCEL_ARG2; break;
+		case 3: addr = PCI_CORE_ACCEL_ARG3; break;
+	}
+
+	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	juniper_pci_write_periph(dev->fpga->phy_dev, addr, val);
 }
 
@@ -243,19 +265,31 @@ uint32_t juniper_interp_get_syscall_arg(struct juniper_accel_device* dev, int ar
 {
 	// We just need to read from the PCI-E device...
 	// Figure out the address
-	unsigned int addr = PCI_CORE_ACCEL_SYSCALL_ARG0;
-	addr |= dev->idx << PCI_CORE_ID_SHIFT;
-	addr += argN * PCI_CORE_ACCEL_SYSCALL_ARGSTRIDE;
+	unsigned int addr = 0;
 
+	switch(argN) {
+		case 1: addr = PCI_CORE_ACCEL_SYSCALL_ARG1; break;
+		case 2: addr = PCI_CORE_ACCEL_SYSCALL_ARG2; break;
+		case 3: addr = PCI_CORE_ACCEL_SYSCALL_ARG3; break;
+		case 4: addr = PCI_CORE_ACCEL_SYSCALL_ARG4; break;
+		case 5: addr = PCI_CORE_ACCEL_SYSCALL_ARG5; break;
+	}
+	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	return juniper_pci_read_periph(dev->fpga->phy_dev, addr);
 }
 
 void juniper_interp_set_syscall_arg(struct juniper_accel_device* dev, int argN, uint32_t val)
 {
-	unsigned int addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG0;
-	addr |= dev->idx << PCI_CORE_ID_SHIFT;
-	addr += argN * PCI_CORE_ACCEL_SYSCALL_OUT_ARGSTRIDE;
+	unsigned int addr = 0;
 
+	switch(argN) {
+		case 1: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG1; break;
+		case 2: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG2; break;
+		case 3: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG3; break;
+		case 4: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG4; break;
+		case 5: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG5; break;
+	}
+	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	juniper_pci_write_periph(dev->fpga->phy_dev, addr, val);
 }
 
