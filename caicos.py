@@ -132,7 +132,7 @@ def build_all(config):
 		
 		#Output scripts folder
 		mkdir(scriptsdir)
-		for fn in ['cmd_template.bat', 'program.sh', 'rescan.sh']:
+		for fn in ['cmd_template.bat', 'program.sh', 'rescan.sh', 'getoffsets.py']:
 			shutil.copyfile(project_path("projectfiles", "scripts", fn), os.path.join(scriptsdir, fn))
 		
 		#Output kernel module
