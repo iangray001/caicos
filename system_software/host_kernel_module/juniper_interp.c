@@ -120,6 +120,9 @@ void juniper_interp_accel_start(struct juniper_accel_device* dev)
 
 	status = juniper_pci_read_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT));
 	status |= (1 << PCI_CORE_START_BIT);
+
+	printk(KERN_INFO "JFM: Starting. Status: 0x%x\n", status);
+
 	juniper_pci_write_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT), status);
 }
 
@@ -268,11 +271,13 @@ uint32_t juniper_interp_get_syscall_arg(struct juniper_accel_device* dev, int ar
 	unsigned int addr = 0;
 
 	switch(argN) {
+		case 0: addr = PCI_CORE_ACCEL_SYSCALL_ARG0; break;
 		case 1: addr = PCI_CORE_ACCEL_SYSCALL_ARG1; break;
 		case 2: addr = PCI_CORE_ACCEL_SYSCALL_ARG2; break;
 		case 3: addr = PCI_CORE_ACCEL_SYSCALL_ARG3; break;
 		case 4: addr = PCI_CORE_ACCEL_SYSCALL_ARG4; break;
 		case 5: addr = PCI_CORE_ACCEL_SYSCALL_ARG5; break;
+		default: printk(KERN_ERR "JFM: Invalid argN in juniper_interp_get_syscall_arg\n"); return -1;
 	}
 	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	return juniper_pci_read_periph(dev->fpga->phy_dev, addr);
@@ -283,11 +288,13 @@ void juniper_interp_set_syscall_arg(struct juniper_accel_device* dev, int argN, 
 	unsigned int addr = 0;
 
 	switch(argN) {
+		case 0: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG0; break;
 		case 1: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG1; break;
 		case 2: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG2; break;
 		case 3: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG3; break;
 		case 4: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG4; break;
 		case 5: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG5; break;
+		default: printk(KERN_ERR "JFM: Invalid argN in juniper_interp_set_syscall_arg\n"); return -1;
 	}
 	addr |= dev->idx << PCI_CORE_ID_SHIFT;
 	juniper_pci_write_periph(dev->fpga->phy_dev, addr, val);
