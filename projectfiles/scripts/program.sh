@@ -13,3 +13,5 @@ fi
 sed -e "s|BITFILENAME|$1|g" cmd_template.bat > cmd.bat
 
 impact -batch cmd.bat
+
+./rescan.sh
