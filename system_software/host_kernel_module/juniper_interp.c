@@ -264,6 +264,9 @@ void juniper_interp_set_arg(struct juniper_accel_device* dev, int argN, uint32_t
 	juniper_pci_write_periph(dev->fpga->phy_dev, addr, val);
 }
 
+#define JUNIPER_GET_SYSCALL_ADDR(n) case n: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG##n; break;
+#define JUNIPER_SET_SYSCALL_ADDR(n) case n: addr = PCI_CORE_ACCEL_SYSCALL_ARG##n; break;
+
 uint32_t juniper_interp_get_syscall_arg(struct juniper_accel_device* dev, int argN)
 {
 	// We just need to read from the PCI-E device...
@@ -271,12 +274,12 @@ uint32_t juniper_interp_get_syscall_arg(struct juniper_accel_device* dev, int ar
 	unsigned int addr = 0;
 
 	switch(argN) {
-		case 0: addr = PCI_CORE_ACCEL_SYSCALL_ARG0; break;
-		case 1: addr = PCI_CORE_ACCEL_SYSCALL_ARG1; break;
-		case 2: addr = PCI_CORE_ACCEL_SYSCALL_ARG2; break;
-		case 3: addr = PCI_CORE_ACCEL_SYSCALL_ARG3; break;
-		case 4: addr = PCI_CORE_ACCEL_SYSCALL_ARG4; break;
-		case 5: addr = PCI_CORE_ACCEL_SYSCALL_ARG5; break;
+		JUNIPER_GET_SYSCALL_ADDR(0)
+		JUNIPER_GET_SYSCALL_ADDR(1)
+		JUNIPER_GET_SYSCALL_ADDR(2)
+		JUNIPER_GET_SYSCALL_ADDR(3)
+		JUNIPER_GET_SYSCALL_ADDR(4)
+		JUNIPER_GET_SYSCALL_ADDR(5)
 		default: printk(KERN_ERR "JFM: Invalid argN in juniper_interp_get_syscall_arg\n"); return -1;
 	}
 	addr |= dev->idx << PCI_CORE_ID_SHIFT;
@@ -288,12 +291,12 @@ void juniper_interp_set_syscall_arg(struct juniper_accel_device* dev, int argN, 
 	unsigned int addr = 0;
 
 	switch(argN) {
-		case 0: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG0; break;
-		case 1: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG1; break;
-		case 2: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG2; break;
-		case 3: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG3; break;
-		case 4: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG4; break;
-		case 5: addr = PCI_CORE_ACCEL_SYSCALL_OUT_ARG5; break;
+		JUNIPER_SET_SYSCALL_ADDR(0)
+		JUNIPER_SET_SYSCALL_ADDR(1)
+		JUNIPER_SET_SYSCALL_ADDR(2)
+		JUNIPER_SET_SYSCALL_ADDR(3)
+		JUNIPER_SET_SYSCALL_ADDR(4)
+		JUNIPER_SET_SYSCALL_ADDR(5)
 		default: printk(KERN_ERR "JFM: Invalid argN in juniper_interp_set_syscall_arg\n"); return -1;
 	}
 	addr |= dev->idx << PCI_CORE_ID_SHIFT;
