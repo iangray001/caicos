@@ -48,7 +48,8 @@ unsigned int pcie_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg
 	syscall_args.arg4 = arg4;
 	syscall_args.arg5 = arg5;
 	do_syscall_interrupt();
-	while(syscall_args.cmd != 0);
+	while(syscall_args.cmd != 0xAA); //Wait for 'knock' sequence from host
+	while(syscall_args.cmd != 0x55);
 	return syscall_args.arg1;
 }
 
