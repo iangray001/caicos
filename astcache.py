@@ -127,7 +127,7 @@ def parse_jamaica_output(filename, includepath = None):
 	cppargs = ['-E', 
 			   '-DNDEBUG', #Disable Jamaica debug support 
 			   '-U__GNUC__', #Prevents use of __attribute__, will cause an "unsupported compiler" #warning
-			   '-W#warnings', #And this hides that warning
+			   #'-W#warnings', #And this hides that warning
 			   '-DJAMAICA_NATIVE_TIME_GET_HIGH_RESOLUTION_TIMESTAMP', #These use volatile asm() which is not supported by pycparser
 			   '-DJAMAICA_NATIVE_THREAD_COMPARE_AND_SWAP',
 			   '-D__CAICOS__', #So we can tell if we are being parsed by caicos
