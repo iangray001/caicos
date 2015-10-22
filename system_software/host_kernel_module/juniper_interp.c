@@ -123,22 +123,16 @@ int juniper_interp_accel_idle(struct juniper_accel_device* dev)
 void juniper_interp_accel_start(struct juniper_accel_device* dev)
 {
 	unsigned int status = 0;
-	int i = 0;
 
 	if(dev->held)
 		return;
 
-	//	printk(KERN_WARNING "JFM: Hack in place. Writing VALID to all syscall arg registers to make the accelerator start properly.\n");
-	
 	status = juniper_pci_read_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT));
 	status |= (1 << PCI_CORE_START_BIT);
 
 	printk(KERN_INFO "JFM: Starting. Status: 0x%x\n", status);
 
 	juniper_pci_write_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT), status);
-
-	//	for(i = 0; i <= 5; i++)
-	//	  juniper_interp_set_syscall_arg(dev, i, 0x0);
 }
 
 void juniper_interp_accel_hold(struct juniper_accel_device* dev, int hold)
