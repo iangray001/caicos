@@ -17,6 +17,7 @@ Multiple definitions of the same variable are valid, and the last definition
 takes precedence.
 """
 
+import logging
 import os, shutil, sys
 from string import Template
 
@@ -70,8 +71,9 @@ def build_all(config):
 	"""
 	Build a JUNIPER project. Format of the config dictionary is described in the docstring for config_specification.
 	"""
+	utils.log().setLevel(logging.INFO)
+	utils.remove_slots_from_classes(pycparser.c_ast)
 	utils.remove_slots_from_classes(pycparser)
-	
 	try:
 		if config.get('cleanoutput', "false").lower() == "true":
 			if os.path.isdir(config['outputdir']):
@@ -215,7 +217,7 @@ if __name__ == "__main__":
 	if len(sys.argv) < 2:
 		print "Usage: caicos.py <configfile>"
 		sys.exit(1)
-
+		
 	if os.path.exists(sys.argv[1]) and os.path.isfile(sys.argv[1]):
 		build_all(load_config(sys.argv[1]))
 	else:
