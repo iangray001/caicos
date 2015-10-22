@@ -5,7 +5,7 @@
 #include <fpgaporting.h>
 #include <ap_cint.h>
 
-#define VERSION 30
+#define VERSION 34
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -105,6 +105,15 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 			}
 			return total;
 		}
+
+	case OP_TEST_1234:
+		return 1234;
+
+	case OP_TEST_SYSCALL:
+		pcie_syscall(0x20, 0x21, 0x22, 0x23, 0x24, 0x25);
+		pcie_syscall(0x30, 0x31, 0x32, 0x33, 0x34, 0x35);
+		return 55;
+
 	}
 
 	return 0;
