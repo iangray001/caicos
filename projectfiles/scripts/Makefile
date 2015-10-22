@@ -22,7 +22,7 @@ malloc_preload/malloc_preload.so:
 	cd malloc_preload && $(MAKE)
 	
 host_kernel_module/juniper.ko:
-	cd malloc_preload && $(MAKE)
+	cd host_kernel_module && $(MAKE)
 	
 main: juniper_fpga_interface/libjuniper_fpga_interface.so malloc_preload/malloc_preload.so host_kernel_module/juniper.ko $(OBJ_FILES)
 	@echo [LD] main
@@ -37,4 +37,5 @@ obj/%.o: src/%.c
 clean:
 	cd juniper_fpga_interface && $(MAKE) clean
 	cd malloc_preload && $(MAKE) clean
+	cd host_kernel_module && $(MAKE) clean
 	rm -rf obj
