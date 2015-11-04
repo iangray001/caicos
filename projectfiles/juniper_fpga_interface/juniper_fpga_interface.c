@@ -152,7 +152,7 @@ int juniper_fpga_partition_get_mem_base(int devNo, int partNo, uint32_t* base)
 
 	DBG("juniper_fpga_interface:juniper_fpga_partition_get_mem_base\n");
 
-	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
+	rv = juniper_fpga_partition_read_bytes(devNo, partNo, "accel_ram_base", baseBuf, 4);
 
 	if(rv != JUNIPER_FPGA_OK)
 		return rv;
@@ -195,7 +195,7 @@ int juniper_fpga_partition_set_mem_base(int devNo, int partNo, uint32_t base)
 
 	juniper_fpga_pack_int(base, baseBuf);
 
-	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_mem_base", baseBuf, 4);
+	return juniper_fpga_partition_write_bytes(devNo, partNo, "accel_ram_base", baseBuf, 4);
 }
 
 int juniper_fpga_partition_get_arg(int devNo, int partNo, int argNo, uint32_t* arg)

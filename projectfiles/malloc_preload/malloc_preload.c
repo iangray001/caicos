@@ -36,8 +36,8 @@ char* malloc_storage = NULL;
 char malloc_supertemp_storage[1024];
 
 #define STORAGE malloc_storage
-//#define STORAGE_PATH "/sys/bus/pci/devices/0000:02:00.0/resource0"
-#define STORAGE_PATH "/dev/mtdblock0"
+#define STORAGE_PATH "/sys/bus/pci/devices/0000:02:00.0/resource0"
+//#define STORAGE_PATH "/dev/mtdblock0"
 
 void* override_morecore(ptrdiff_t sz)
 {
