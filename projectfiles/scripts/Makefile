@@ -7,7 +7,7 @@ JAMAICATARGET := $SUB_JAMAICATARGET
 C_FILES := $(wildcard src/*.c)
 OBJ_FILES := $(addprefix obj/,$(notdir $(C_FILES:.c=.o)))
 
-CC_FLAGS := -m32 -O2 -I$(JAMAICATARGET)/include -Isrc -Ijuniper_fpga_interface -DNDEBUG 
+CC_FLAGS := -m32 -O2 -fno-builtin -I$(JAMAICATARGET)/include -Isrc -Ijuniper_fpga_interface -DNDEBUG 
 LD_FLAGS := -m32 -L$(JAMAICATARGET)/lib -Ljuniper_fpga_interface -ljuniper_fpga_interface -pthread -lrt -ljamaica_ -lm -ldl
 
 all: mkdirs main
