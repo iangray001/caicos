@@ -125,3 +125,6 @@ target/
 
 /lextab.py
 /yacctab.py
+
+#pycharm files
+.idea
