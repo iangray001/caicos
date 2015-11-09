@@ -135,7 +135,7 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	this should be called after rest of the project has been set up.
 	"""
 	s = "open_project prj\n"
-	s = s + "set_top hls\n"
+	s += "set_top hls\n"
 	
 	for f in os.listdir(targetsrcdir):
 		abspath = os.path.join(targetsrcdir, f)
@@ -143,12 +143,12 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 			#Only bother adding HLS-supported file types
 			if abspath.endswith(".cpp") or abspath.endswith(".c") or abspath.endswith(".h"):
 				s = s + 'add_files src/' + f + ' -cflags "-Iinclude/."\n'
-				
-	s = s + 'open_solution "solution1"\n'
-	s = s + 'set_part {' + fpgapartname + '}\n'
-	s = s + 'create_clock -period 8 -name default\n'
-	s = s + 'csynth_design\n'
-	s = s + 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
+
+	s += 'open_solution "solution1"\n'
+	s += 'set_part {' + fpgapartname + '}\n'
+	s += 'create_clock -period 8 -name default\n'
+	s += 'csynth_design\n'
+	s += 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 	#s = s + 'export_design -format ip_catalog -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 
 	script = open(outputfilename, "w")
@@ -190,16 +190,16 @@ def write_toplevel_header(functions, jamaicaoutputdir, outputfile):
 	functions = [java_signatures_of_functions_to_prototype]
 	"""
 	s = 	"#ifndef TOPLEVEL_H_\n"
-	s = s + "#define TOPLEVEL_H_\n"
-	s = s + "\n"
-	s = s + "#include <jamaica.h>\n"
-	s = s + "\n"
+	s += "#define TOPLEVEL_H_\n"
+	s += "\n"
+	s += "#include <jamaica.h>\n"
+	s += "\n"
 	s = s + "#define ARGS_MAX " + str(get_args_max(functions, jamaicaoutputdir))
-	s = s + "\n"
+	s += "\n"
 	for f in functions:
 		s = s + c_prototype_of_java_sig(f, jamaicaoutputdir) + "\n"
-	s = s + "\n"
-	s = s + "#endif /* TOPLEVEL_H_ */\n"
+	s += "\n"
+	s += "#endif /* TOPLEVEL_H_ */\n"
 	hfile = open(outputfile, "w")
 	hfile.write(s)
 	hfile.close()
