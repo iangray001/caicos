@@ -21,7 +21,7 @@ void init_preloader();
 
 #define MALLOC_STORAGE_SIZE (1024 * 256 * 1024)
 
-#define STORAGE_PATH "/sys/bus/pci/devices/0000:02:00.0/resource0"
+#define STORAGE_PATH "/sys/bus/pci/devices/0000:02:00.0/resource0_wc"
 
 void __attribute__((constructor)) setup_preloader()
 		{
