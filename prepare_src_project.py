@@ -86,7 +86,7 @@ def refactor_src(bindings, jamaicaoutput, targetdir, debug):
 				toreplace.sort() #Sort by ascending line number
 
 				filecontents = open(filepath).readlines()
-				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n#include \"jamaica.h\"\n\n"
+				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n#include \"jamaica.h\"\n#include <sys/mman.h>\n\n"
 				output += "extern void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo);\n\n"
 				if debug:
 					output += "#include \"caicos_debug.h\"\n\n"
@@ -149,8 +149,8 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		code += "	}\n"
 		return code
 	
-	def fpga_set_base():
-		code = "int *base = malloc(0);\n"
+	def fpga_set_base():		
+		code = "void *base = mmap((void *) -1, 0, 0, 0, 0, 0);\n"
 		code += "\tint rv;\n\n"
 		code += "\tjuniper_fpga_partition_set_mem_base(" + devNoPartNo + ", -((int) base));\n"
 		return code

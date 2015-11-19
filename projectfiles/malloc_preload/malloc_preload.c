@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <dlfcn.h>
 #include <malloc.h>
+#include <string.h>
 
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -55,7 +56,7 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t
 	 * By attempting to mmap address -1, the source application can request the FPGA's base phyiscal address.
 	 * This must be done after Jamaica has actually mmapped its heap.
 	 */
-	if(addr == ~0) {
+	if((int) addr == ~0) {
 		if(last_mmap_result == 0) {
 			DBG("MMAP: Requested Jamaica heap base address but Jamaica hasn't allocated yet. Aborting.\n");
 			abort();
