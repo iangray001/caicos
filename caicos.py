@@ -50,7 +50,8 @@ config_specification = {
 	
 	#Developer options
 	'dev_softwareonly': (False, ""),
-	'astcache': (False, ""), #If set to a directory, caches parsed ASTs here 
+	'astcache': (False, ""), #If set to a directory, caches parsed ASTs here
+	'debug': (False, ""), #Include debugging software to the build
 	
 	#Array singletons
 	'signature': (False, "signatures"),
@@ -122,7 +123,7 @@ def build_all(config):
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
-		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver)
+		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver, config.get('debug', False))
 	
 		#Output templated Makefile
 		contents = open(project_path("projectfiles", "scripts", "Makefile")).read()
@@ -139,6 +140,8 @@ def build_all(config):
 		
 		#Output kernel module
 		copy_files(project_path("system_software", "host_kernel_module"), os.path.join(swdir, "host_kernel_module"))
+		
+		log().info("caicos done.")
 		
 	except CaicosError, e:
 		log().error("A critical error was encountered:\n\t" + str(e))

@@ -19,7 +19,7 @@ from prepare_hls_project import get_paramlist_of_sig
 from utils import CaicosError, mkdir, copy_files, project_path, make_executable
 
 
-def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver):
+def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver, debug):
 	"""
 	Construct the software portion of the project. Copy the C source code for the Jamaica project, 
 	refactoring the functions that are implemented on the FPGA.
@@ -40,7 +40,9 @@ def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceRes
 	mkdir(targetdir)
 	copy_files(project_path("projectfiles", "juniper_fpga_interface"), join(targetdir, "juniper_fpga_interface"))
 	copy_files(project_path("projectfiles", "malloc_preload"), join(targetdir, "malloc_preload"))
-	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"))
+	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"), debug)
+	if debug:
+		copy_files(project_path("debug_software"), join(targetdir, "src"))
 	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls, interfaceResolver)
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
@@ -48,7 +50,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceRes
 	make_executable([join(targetdir, "run.sh")])
 
 
-def refactor_src(bindings, jamaicaoutput, targetdir):
+def refactor_src(bindings, jamaicaoutput, targetdir, debug):
 	"""
 	Copy the C source code for the Jamaica project. For files that contain functions that have
 	been implemented on the FPGA, replace their contents with code to invoke the FPGA instead.
@@ -86,6 +88,8 @@ def refactor_src(bindings, jamaicaoutput, targetdir):
 				filecontents = open(filepath).readlines()
 				output = "#include <juniper_fpga_interface.h>\n#include <juniperoperations.h>\n#include \"jamaica.h\"\n\n"
 				output += "extern void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo);\n\n"
+				if debug:
+					output += "#include \"caicos_debug.h\"\n\n"
 				lineno = 1
 
 				for bounds, callid, sig, decl in toreplace:
