@@ -134,7 +134,9 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	All .cpp, .c or .h files in targetsrcdir will be added as sources in the script, so 
 	this should be called after rest of the project has been set up.
 	"""
-	s = "open_project prj\n"
+
+	s = 'source "../../config.tcl"'
+	s += "open_project prj\n"
 	s += "set_top hls\n"
 	
 	for f in os.listdir(targetsrcdir):
@@ -145,8 +147,9 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 				s = s + 'add_files src/' + f + ' -cflags "-Iinclude/."\n'
 
 	s += 'open_solution "solution1"\n'
-	s += 'set_part {' + fpgapartname + '}\n'
-	s += 'create_clock -period 8 -name default\n'
+	s += 'set_part [dict get $project_config "project_part"]'
+	#s += 'set_part {' + fpgapartname + '}\n'
+	s += 'create_clock -period [dict get $project_config "hls_clock_period"] -name default\n'
 	s += 'csynth_design\n'
 	s += 'export_design -format syn_dcp -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
 	#s = s + 'export_design -format ip_catalog -description "caicos project" -vendor "york.ac.uk" -version "1.0"\n'
