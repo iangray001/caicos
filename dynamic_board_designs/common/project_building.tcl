@@ -16,7 +16,7 @@ proc synth_base_design { project_config } {
     open_run synth_1
 
     # Write out the auto-gen'd constraints
-    if { [file exists "$root_dir/assemble"] } {
+    if { ![file exists "$root_dir/assemble"] } {
         file mkdir "$root_dir/assemble"
         file mkdir "$root_dir/assemble/bitstream"
     }
