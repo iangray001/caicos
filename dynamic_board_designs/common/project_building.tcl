@@ -73,7 +73,7 @@ proc implement_base_design { project_config } {
 	# Are we making a reconfigurable design?
 	if { $partition_layout != "" } {
 		foreach cell $reconfig_sites {
-			update_cell -cell $cell -black_box
+			update_design -cell $cell -black_box
 		}
 
 		lock_design -level routing
