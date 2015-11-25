@@ -99,7 +99,7 @@ proc add_accel { project_config } {
     }
 
     # How many top level components currently exist?
-    set new_top_index [llength [get_bd_cells "top_*"]]
+    set new_top_index [llength [get_bd_cells -quiet "top_*"]]
 
     # Create our core, named appropriately
     set new_cell [create_bd_cell -vlnv $ip_vlnv -type IP "top_$new_top_index"]
