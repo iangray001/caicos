@@ -80,3 +80,34 @@ proc implement_base_design { project_config } {
 		write_checkpoint "$root_dir/assemble/base_static.dcp"
 	}
 }
+
+proc build_reconfig_design { project_config reconfig_dcp } {
+	set root_dir [dict get $project_config "root_dir"]
+	set filename [file rootname [file tail $reconfig_dcp]]
+
+	if { ![file exists "$root_dir/assemble/base_static.dcp"] } {
+		error "Could not find static design - have you built the base project in reconfigurable mode?"
+	}
+
+	# Again, we're just working on checkpoints, so make sure we don't
+	# actually have anything open
+	if { [current_project] != "" } {
+		close_project
+	}
+
+	open_checkpoint "$root_dir/assemble/base_static.dcp"
+
+	# Sub the new checkpoint in and go from there
+	set reconfig_sites [get_cells "*/top_*/U0/brg"]
+
+	foreach cell $reconfig_sites {
+		read_checkpoint -cell $cell "$root_dir/$reconfig_dcp"
+	}
+
+	# Checkpoint is pre-synthesized, just opt, place and route!
+	opt_design
+	place_design
+	route_design
+	write_checkpoint "$root_dir/assemble/[set filename]_routed.dcp"
+	write_bitstream -bin_file -file "$root_dir/assemble/bitstream/[set filename].bit"
+}
