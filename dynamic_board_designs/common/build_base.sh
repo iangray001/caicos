@@ -6,4 +6,4 @@ cd base
 ./build_hls.sh
 cd ../
 
-vivado -mode batch -source build_base.tcl -tclargs base
+vivado -mode batch -source project_driver.tcl -tclargs base

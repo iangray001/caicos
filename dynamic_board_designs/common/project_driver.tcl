@@ -1,5 +1,5 @@
-require "project_management.tcl"
-require "project_building.tcl"
+source "project_management.tcl"
+source "project_building.tcl"
 
 # Startup and initial argument parsing
 if { [catch {source "config.tcl"} errMsg] } {
