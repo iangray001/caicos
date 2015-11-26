@@ -3,7 +3,8 @@ proc synth_base_design { project_config } {
 	set autoclose 0
 	set root_dir [dict get $project_config "root_dir"]
 
-	if { [current_project] == "" } {
+        # Quiet MUST be specified, or current_project will throw an error if there is no current project
+	if { [current_project -quiet] == "" } {
 		set project_name [dict get $project_config "project_name"]
 		set root_dir [dict get $project_config "root_dir"]
 		open_project "$root_dir/$project_name/$project_name.xpr"
@@ -34,7 +35,7 @@ proc implement_base_design { project_config } {
 	set partition_layout ""
 
 	# Do we have a project open? If so, close it; we're currently working on checkpoints...
-	if { [current_project] != "" } {
+	if { [current_project -quiet] != "" } {
 		close_project
 	}
 
@@ -91,7 +92,7 @@ proc build_reconfig_design { project_config reconfig_dcp } {
 
 	# Again, we're just working on checkpoints, so make sure we don't
 	# actually have anything open
-	if { [current_project] != "" } {
+	if { [current_project -quiet] != "" } {
 		close_project
 	}
 

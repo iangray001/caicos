@@ -27,6 +27,6 @@ case "$1" in
 		build_hls $2
 	;;
 
-	'' )
+	* )
 		echo "Usage: $0 [ all | single <reconfig_name> ]"
 	;;
