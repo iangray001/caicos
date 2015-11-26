@@ -12,7 +12,7 @@ build_hls() {
 
 		cd ../../
 
-		vivado -mode batch -source make_reconfig.tcl -tclargs ./reconfig/${1}/${1}_synth_noclock.dcp
+		vivado -mode batch -source make_reconfig.tcl -tclargs reconfig ./reconfig/${1}/${1}_synth_noclock.dcp
 	fi
 }
 

@@ -1,5 +1,4 @@
 package require "cmdline"
-source "project_building.tcl"
 
 proc create_juniper_project { project_config } {
     # Check that the project config has the required keys set
@@ -166,16 +165,3 @@ proc add_accel { project_config } {
     create_bd_addr_seg -range $mem_size -offset $mem_offset [get_bd_addr_spaces $new_cell/m_axi_mem] [get_bd_addr_segs $mem_slave] "SEG_top_[set new_top_index]_mem"
     create_bd_addr_seg -range 0x10000 -offset [expr {$periph_offset + (0x100000 * $new_top_index)}] [get_bd_addr_spaces $periph_master] [get_bd_addr_segs $new_cell/s_axi_AXILiteS/reg0] "SEG_top_[set new_top_index]_periph"
 }
-
-# Startup and initial argument parsing
-if { [catch {source "config.tcl"} errMsg] } {
-    puts "Could not find project config, aborting."
-    puts "Detailed error: $errMsg"
-    exit 1
-}
-
-# Finally, add the working directory to the project config
-# This is just incase we change the PWD and want to go back again
-# This also allows us to change the behaviour in future (i.e. to always cd to the folder with
-# the config file in it, rather than always working out of the current directory).
-dict append project_config "root_dir" [file normalize "."]
