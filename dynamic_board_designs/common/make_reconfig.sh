@@ -30,3 +30,4 @@ case "$1" in
 	* )
 		echo "Usage: $0 [ all | single <reconfig_name> ]"
 	;;
+esac
