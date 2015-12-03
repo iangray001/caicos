@@ -200,7 +200,7 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		code += "	return;\n"
 	elif rettype in ["jamaica_int8", "jamaica_int16", "jamaica_int32", 
 					"jamaica_uint8", "jamaica_uint16", "jamaica_uint32", 
-					"jamaica_bool"
+					"jamaica_bool",
 					"jamaica_ref", "jamaica_address"
 					]:
 		code += fpga_retval("&rv")
@@ -215,7 +215,7 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		#TODO
 		code += "	return 0;\n"
 	else:
-		raise CaicosError("Unknown return type " + str(typename) + " in function " + str(java_sig))
+		raise CaicosError("Unknown return type " + str(rettype) + " in function " + str(java_sig))
 	
 	return code
 
