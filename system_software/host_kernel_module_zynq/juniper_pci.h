@@ -1,7 +1,7 @@
 #ifndef __JUNIPER_PCI_H__
 #define __JUNIPER_PCI_H__
 
-#include <linux/pci.h>
+#include <linux/ioport.h>
 
 // Opaque handle presented by juniper_pci. This is to abstract away from the inner device object used by
 // juniper_pci.c. All other modules should use the handle provided to them.
