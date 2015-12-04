@@ -116,9 +116,8 @@ def build_all(config):
 			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
 			
 			make_executable([target,
-							os.path.join(boarddir, 'build.sh'),
-							os.path.join(boarddir, 'make_base'),
-							os.path.join(boarddir, 'make_reconfig')
+							os.path.join(boarddir, 'build_base.sh'),
+							os.path.join(boarddir, 'make_reconfig.sh')
 			])
 			
 		#Build software project
@@ -126,7 +125,7 @@ def build_all(config):
 		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver, config.get('debug', False))
 	
 		#Output templated Makefile
-		contents = open(project_path("projectfiles", "scripts", "Makefile")).read()
+		contents = open(project_path("projectfiles", "templates", "Makefile")).read()
 		subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
 		template = Template(contents)
 		fout = open(os.path.join(swdir, "Makefile"), "w")
