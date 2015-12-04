@@ -108,7 +108,10 @@ def make_executable(targets):
 	Stat an array of file absolute paths to make them executable
 	"""
 	for f in targets:
-		os.chmod(f, os.stat(f).st_mode | stat.S_IEXEC) 
+		try:
+			os.chmod(f, os.stat(f).st_mode | stat.S_IEXEC)
+		except OSError as e:
+			log().warning("Error whilst making scripts executable: " + str(e)) 
 	
 
 def remove_slots_from_classes(module):
