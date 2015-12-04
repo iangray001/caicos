@@ -23,6 +23,11 @@ int __juniper_call(int call_id);
 void create_jamaica_thread();
 void force_synthesis_of_syscall_interface();
 
+jamaica_ref jamaicaInterpreter_allocJavaObject(jamaica_thread *ct, int classindex);
+jamaica_ref jamaicaInterpreter_allocSimpleArray(jamaica_thread *ct, jamaica_int32 sz, int classindex);
+jamaica_bool jamaicaInterpreter_initialize_class_helper(jamaica_thread *ct, int classindex, jamaica_int32 startpc);
+
+
 //PCIe system call declarations
 typedef struct {
 	volatile unsigned char cmd;

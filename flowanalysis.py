@@ -18,9 +18,11 @@ from utils import log, deglob_file, CaicosError, project_path
 
 
 #Excluded functions cannot be translated, so are converted into system calls
-excluded_functions = ['jamaicaGC_PlainAllocHeadBlock', 'jamaicaInterpreter_allocJavaObject', 'jamaicaInterpreter_allocSimpleArray', 
-					'jamaicaInterpreter_allocMultiArray', 'jamaicaInterpreter_initialize_class_helper', 
-					'jamaicaInterpreter_enterMonitor', 'jamaicaInterpreter_exitMonitor', 'jamaicaInterpreter_getInterfaceMethod']
+excluded_functions = ['jamaicaGC_PlainAllocHeadBlock',  
+					'jamaicaInterpreter_allocMultiArray', 
+					'jamaicaInterpreter_enterMonitor', 
+					'jamaicaInterpreter_exitMonitor', 
+					'jamaicaInterpreter_getInterfaceMethod']
 
 #Calls to Ignore will still be included, but we simply don't descend into them for the purpose of flow analysis
 calls_to_ignore = ["printf", "sprintf",
@@ -33,6 +35,9 @@ calls_to_ignore = ["printf", "sprintf",
 	"fabs", "floor", "ceil", "sqrt", "pow", "log", "exp", "rint",
 	
 #No need to resolve in the porting layer as we will be including that anyway
+	'jamaicaInterpreter_allocJavaObject',
+	'jamaicaInterpreter_allocSimpleArray',
+	'jamaicaInterpreter_initialize_class_helper', 
 	"jamaicaThreads_checkCStackOverflow",
 	"jamaicaGC_GetArray32", "jamaicaGC_SetArray32", 
 	"jamaicaGC_GetArray16", "jamaicaGC_SetArray16", 

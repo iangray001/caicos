@@ -57,6 +57,18 @@ unsigned int pcie_syscall(unsigned char cmd, unsigned int arg1, unsigned int arg
 #define LOBYTE(a) ((a) & 0xFF)
 #define SAR(a, b) (((signed) (a))>>(b)) //Assumes a is int type
 
+jamaica_ref jamaicaInterpreter_allocJavaObject(jamaica_thread *ct, int classindex) {
+	pcie_syscall(5000, classindex, 0, 0, 0, 0);
+}
+
+jamaica_ref jamaicaInterpreter_allocSimpleArray(jamaica_thread *ct, jamaica_int32 sz, int classindex) {
+	pcie_syscall(5001, sz, classindex, 0, 0, 0);
+}
+
+jamaica_bool jamaicaInterpreter_initialize_class_helper(jamaica_thread *ct, int classindex, jamaica_int32 startpc) {
+	pcie_syscall(5002, classindex, startpc, 0, 0, 0);
+}
+
 
 //We cannot run out of stack when it is in hardware!
 jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
