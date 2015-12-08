@@ -69,7 +69,18 @@ def refactor_src(bindings, jamaicaoutput, targetdir, debug):
 	for item in os.listdir(jamaicaoutput):
 		filepath = os.path.join(jamaicaoutput, item)
 		if os.path.isfile(filepath) and (filepath.endswith(".c") or filepath.endswith(".h")):
-			if not filepath in filestoedit:
+			if item == "Main__.c":
+				#Main__.c declares some class structures as static (thereby preventing us from linking to them)
+				#so we remove the static storage specifier
+				with open(os.path.join(targetdir, item), "w") as outf:
+					with open(filepath, 'r') as f:
+						for line in f:
+							if line.startswith("static jamaica_initClassEntry initClassesTable"):
+								line = line[7:] 
+							outf.write(line)
+							
+				
+			elif not filepath in filestoedit:
 				#Just copy the file, no edits required
 				shutil.copy(filepath, targetdir)
 			else:
