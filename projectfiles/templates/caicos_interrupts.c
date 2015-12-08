@@ -20,13 +20,13 @@ void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
 		
 	switch(args.cmd) {
 		case 250:
-			rv = jamaicaInterpreter_allocJavaObject(ct, initClassesTable[args.arg1].variable);
+			rv = jamaicaInterpreter_allocJavaObject(ct, (jamaica_ref) initClassesTable[args.arg1].variable);
 			break;
 		case 249:
-			rv = jamaicaInterpreter_allocSimpleArray(ct, (jamaica_int32) args.arg1, initClassesTable[args.arg2].variable);
+			rv = jamaicaInterpreter_allocSimpleArray(ct, (jamaica_int32) args.arg1, (jamaica_ref) initClassesTable[args.arg2].variable);
 			break;
 		case 248:
-			rv = jamaicaInterpreter_initialize_class_helper(ct, initClassesTable[args.arg1].variable, (jamaica_int32) args.arg2);
+			rv = jamaicaInterpreter_initialize_class_helper(ct, (jamaica_ref) initClassesTable[args.arg1].variable, (jamaica_int32) args.arg2);
 			break;
 $ADDITIONAL_SYSCALLS
 		default:
