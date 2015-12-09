@@ -64,6 +64,11 @@ jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
 }
 
 
+jamaica_ref juniper_get_class_reference(int reftype, int refidx) {
+	return (jamaica_ref) pcie_syscall(250, reftype, refidx);
+}
+
+
 jamaica_ref juniper_ram_get_r(int addr, int subwordoffset) {
 #ifdef INLINE_MEMORY_ACCESS_FUNCTIONS
 #pragma HLS INLINE

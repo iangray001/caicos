@@ -25,5 +25,6 @@
 #define OP_TEST_ARRAY_SUM 0x51
 #define OP_TEST_SYSCALL 0x52
 #define OP_TEST_1234 1234
+#define OP_TEST_CLASSREF 0x53
 
 #endif
