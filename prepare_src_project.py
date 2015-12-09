@@ -10,6 +10,7 @@ from os.path import join
 import shutil
 
 from pycparser import c_ast
+from string import Template
 
 import astcache
 import flowanalysis
@@ -221,28 +222,7 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 
 
 def generate_interrupt_handler(outputfile, syscalls, interfaceResolver):
-	code = """#include <juniper_fpga_interface.h>
-#include <juniperoperations.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <jamaica.h>
-#include <jni.h>
-#include <jbi.h>
-#include "Main__.h"
-
-void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
-	int rv = 0;
-	juniper_fpga_syscall_args args;
-	memset(&args, 0, sizeof(juniper_fpga_syscall_args));
-	rv = juniper_fpga_partition_get_syscall_args(devNo, partNo, &args);
-	
-	if(rv != JUNIPER_FPGA_OK)
-		fprintf(stderr, "Failed to open syscall file with code %d.\\n", rv);
-		
-	switch(args.cmd) {
-"""
-
+	code = ""
 	for funcname, fid in syscalls.iteritems():
 		funcdecl = flowanalysis.get_funcdecl_of_system_funccall(funcname)
 		
@@ -276,15 +256,8 @@ void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
 			
 		code += "\t\t\tbreak;\n"
 
-	code += """
-		default:
-			rv = -1;
-			break;
-	}
-	
-	juniper_fpga_partition_set_syscall_return(devNo, partNo, rv);
-}
-"""
+	contents = open(project_path("projectfiles", "templates", "caicos_interrupts.c")).read()
+	template = Template(contents)
 	
 	with open(outputfile, "w") as outf:
-		outf.write(code)
+		outf.write(template.safe_substitute({'ADDITIONAL_SYSCALLS': code}))
