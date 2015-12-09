@@ -5,7 +5,7 @@
 #include <fpgaporting.h>
 #include <ap_cint.h>
 
-#define VERSION 34
+#define VERSION 42
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -115,6 +115,9 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 		return 55;
 
 	}
+
+	case OP_TEST_CLASSREF:
+		return juniper_get_class_reference(1, 2);
 
 	return 0;
 }
