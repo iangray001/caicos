@@ -139,7 +139,7 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 	this should be called after rest of the project has been set up.
 	"""
 
-	s = 'source "../../config.tcl"'
+	s = 'source "../../config.tcl"\n'
 	s += "open_project prj\n"
 	s += "set_top hls\n"
 	
@@ -151,7 +151,7 @@ def write_hls_script(targetsrcdir, fpgapartname, outputfilename):
 				s = s + 'add_files src/' + f + ' -cflags "-Iinclude/."\n'
 
 	s += 'open_solution "solution1"\n'
-	s += 'set_part [dict get $project_config "project_part"]'
+	s += 'set_part [dict get $project_config "project_part"]\n'
 	#s += 'set_part {' + fpgapartname + '}\n'
 	s += 'create_clock -period [dict get $project_config "hls_clock_period"] -name default\n'
 	s += 'csynth_design\n'
