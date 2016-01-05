@@ -103,7 +103,7 @@ def build_all(config):
 			log().warning("dev_softwareonly is set. Generating software only.")
 			bindings = __getfakebindings(config['signatures'])
 		else:	
-			bindings, syscalls, interfaceResolver = prepare_hls_project.build_from_functions(
+			bindings, syscalls, interfaceResolver, classrefs = prepare_hls_project.build_from_functions(
 				config['signatures'], 
 				config.get('jamaicaoutputdir_hw', config['jamaicaoutputdir']),
 				hwdir, 
@@ -122,7 +122,7 @@ def build_all(config):
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
-		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver, config.get('debug', False))
+		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver, config.get('debug', False), classrefs)
 	
 		#Output templated Makefile
 		contents = open(project_path("projectfiles", "templates", "Makefile")).read()

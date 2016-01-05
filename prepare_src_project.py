@@ -20,7 +20,7 @@ from prepare_hls_project import get_paramlist_of_sig
 from utils import CaicosError, mkdir, copy_files, project_path, make_executable
 
 
-def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver, debug):
+def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceResolver, debug, classrefs):
 	"""
 	Construct the software portion of the project. Copy the C source code for the Jamaica project, 
 	refactoring the functions that are implemented on the FPGA.
@@ -44,7 +44,7 @@ def build_src_project(bindings, jamaicaoutput, targetdir, syscalls, interfaceRes
 	refactor_src(bindings, jamaicaoutput, join(targetdir, "src"), debug)
 	if debug:
 		copy_files(project_path("debug_software"), join(targetdir, "src"))
-	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls, interfaceResolver)
+	generate_interrupt_handler(join(targetdir, "src", "caicos_interrupts.c"), syscalls, interfaceResolver, classrefs)
 	shutil.copy(join(jamaicaoutput, "Main__nc.o"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "include", "juniperoperations.h"), join(targetdir, "src"))
 	shutil.copy(project_path("projectfiles", "scripts", "run.sh"), targetdir)
@@ -201,11 +201,12 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 		code += "	return;\n"
 	elif rettype in ["jamaica_int8", "jamaica_int16", "jamaica_int32", 
 					"jamaica_uint8", "jamaica_uint16", "jamaica_uint32", 
-					"jamaica_bool",
-					"jamaica_ref", "jamaica_address"
-					]:
+					"jamaica_bool"]:
 		code += fpga_retval("&rv")
 		code += "	return rv;\n"
+	elif rettype in ["jamaica_ref", "jamaica_address"]:
+		code += fpga_retval("&rv")
+		code += "	return (" + rettype + ") rv;\n"
 	elif rettype == "jamaica_float":
 		code += fpga_retval("&rv")
 		code += "	return *((float *)(&rv));\n"
@@ -221,7 +222,29 @@ def generate_replacement_code(java_sig, decl, callid, jamaicaoutput, device):
 	return code
 
 
-def generate_interrupt_handler(outputfile, syscalls, interfaceResolver):
+def generate_interrupt_handler(outputfile, syscalls, interfaceResolver, classrefs):
+	contents = open(project_path("projectfiles", "templates", "caicos_interrupts.c")).read()
+	template = Template(contents)
+	
+	with open(outputfile, "w") as outf:
+		outf.write(template.safe_substitute({
+					'ADDITIONAL_SYSCALLS': interrupt_handler_syscall_code(syscalls, interfaceResolver),
+					'ADDITIONAL_CLASSREFS': interrupt_handler_classref_code(classrefs),
+		}))
+
+
+def interrupt_handler_classref_code(classrefs):
+	t = "\t\t\t"
+	code = t + "switch(args.arg1) {\n"
+	for refname, refid in classrefs.referenced.iteritems():
+		code += t + "\tcase " + str(refid) + ":\n"
+		code += t + "\t\trv = (int) " + refname + ";\n"
+		code += t + "\t\tbreak;\n"
+	code += t + "}\n"
+	return code
+	
+
+def interrupt_handler_syscall_code(syscalls, interfaceResolver):
 	code = ""
 	for funcname, fid in syscalls.iteritems():
 		funcdecl = flowanalysis.get_funcdecl_of_system_funccall(funcname)
@@ -232,7 +255,7 @@ def generate_interrupt_handler(outputfile, syscalls, interfaceResolver):
 		if funcname == "jamaicaInterpreter_getInterfaceMethod":
 			code += interfaceResolver.get_host_code()
 		else:
-			code += "\t\t\trv = " + funcname + "(ct, "
+			code += "\t\t\trv = (int) " + funcname + "(ct, "
 			
 			paramlist = funcdecl.children()[0][1]
 			for pid in xrange(1, len(paramlist.params)): #Skip the CT argument which is already handled
@@ -255,9 +278,4 @@ def generate_interrupt_handler(outputfile, syscalls, interfaceResolver):
 			code += ");\n"
 			
 		code += "\t\t\tbreak;\n"
-
-	contents = open(project_path("projectfiles", "templates", "caicos_interrupts.c")).read()
-	template = Template(contents)
-	
-	with open(outputfile, "w") as outf:
-		outf.write(template.safe_substitute({'ADDITIONAL_SYSCALLS': code}))
+	return code

@@ -6,6 +6,7 @@
 #include <jamaica.h>
 #include <jni.h>
 #include <jbi.h>
+#include <Main__.h>
 
 extern jamaica_initClassEntry initClassesTable[];
 
@@ -20,12 +21,9 @@ void caicos_handle_pcie_interrupt(jamaica_thread *ct, int devNo, int partNo) {
 
 	switch(args.cmd) {
 		case 250:
-			//rv = (int) reference based on args.arg1 and args.arg2
-			rv = 0;
+$ADDITIONAL_CLASSREFS
 			break;
-
 $ADDITIONAL_SYSCALLS
-
 		default:
 			rv = -1;
 			break;

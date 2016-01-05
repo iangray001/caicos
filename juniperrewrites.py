@@ -7,8 +7,10 @@ from pycparser.c_generator import CGenerator
 
 from astcache import add_parent_links
 import astcache
+import class_references
 from utils import CaicosError, log
 import utils
+
 
 RAM_NAME = '__juniper_ram_master'
 RAM_GET_NAME = 'juniper_ram_get_'
@@ -236,9 +238,10 @@ def c_prototype_of_java_sig(sig, c_output_base):
 	return pycparser.c_generator.CGenerator().visit(c_decl_node_of_java_sig(sig, c_output_base)) + ";"
 	
 
-def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls, interfaceResolver):
+def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls, interfaceResolver, classrefs):
 	"""
 	Parse inputfile, rewrite the AST, save the result to outputfile. All paths should be absolute.
+	This function performs rewrites for the HLS hardware design 
 	"""
 	def is_funcdef_in_reachable_list(funcdef):
 		for r in reachable_functions:
@@ -248,7 +251,7 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls, in
 	
 	ast = astcache.get(inputfile)
 	rewrite_RAM_structure_dereferences(ast)
-	
+
 	outf = open(outputfile, "w")
 	outf.write('#include "jamaica.h"\n')
 	outf.write('#include "jni.h"\n')
@@ -260,6 +263,7 @@ def rewrite_source_file(inputfile, outputfile, reachable_functions, syscalls, in
 	for c in ast.children():
 		if isinstance(c[1], c_ast.FuncDef):
 			if reachable_functions == None or is_funcdef_in_reachable_list(c[1]):
+				class_references.replace_class_references(c[1], classrefs)
 				rewrite_ct_refs(c[1])
 				interfaceResolver.rewrite_interface_calls(c[1])
 				rewrite_syscall_calls(c[1], syscalls)

@@ -8,6 +8,7 @@ from os.path import join
 
 from pycparser import c_ast
 
+import class_references
 from flowanalysis import ReachableFunctions, get_files_to_search
 from interfaces import InterfaceResolver
 from juniperrewrites import c_prototype_of_java_sig, c_decl_node_of_java_sig, rewrite_source_file
@@ -27,10 +28,11 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		part: The FPGA part to target. Passed directly to the Xilinx tools and not checked.
 		notranslatesigs: Signatures of methods that should not be translated
 	Returns:
-		A tuple of (bindings, syscalls, interfaceResolver)
+		A tuple of (bindings, syscalls, interfaceResolver, classrefs)
 			bindings = A dictionary of {int -> Java sig} of the hardware methods and their associated call ids.
 			syscalls = A dictionary of {callname -> callid} of the sys calls that the hardware may make
 			interfaceResolver = Instance of interfaces.InterfaceResolver which contains information about encountered interface calls
+			classrefs = Instance of ClassRefs describing the static class references that are used by the hardware
 	"""
 	filestobuild = set()
 	filestobuild.add(project_path("projectfiles", "src", "fpgaporting.c"))
@@ -41,6 +43,8 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 	reachable_non_translated = set() 
 	
 	interfaceResolver = trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated)
+
+	classrefs = class_references.enumerate_static_refs(os.path.join(jamaicaoutputdir, "Main__.c"))
 
 	log().info("All reachable functions:")
 	for f in all_reachable_functions:
@@ -59,12 +63,12 @@ def build_from_functions(funcs, jamaicaoutputdir, outputdir, additionalsourcefil
 		for callname, sysid in syscalls.iteritems():
 			log().info("\t" + str(sysid) + ": " + str(callname))
 	
-	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions, syscalls, interfaceResolver)
+	copy_project_files(outputdir, jamaicaoutputdir, part, filestobuild, all_reachable_functions, syscalls, interfaceResolver, classrefs)
 	
 	write_toplevel_header(funcs, jamaicaoutputdir, os.path.join(outputdir, "include", "toplevel.h"))
 	bindings = write_functions_c(funcs, jamaicaoutputdir, os.path.join(outputdir, "src", "functions.c"))
 	write_hls_script(os.path.join(outputdir, "src"), part, os.path.join(outputdir, "autobuild.tcl"))
-	return (bindings, syscalls, interfaceResolver)
+	return (bindings, syscalls, interfaceResolver, classrefs)
 
 
 def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filestobuild, all_reachable_functions, reachable_non_translated):
@@ -102,7 +106,7 @@ def trace_from_functions(funcs, jamaicaoutputdir, additionalsourcefiles, filesto
 	return interfaceResolver
 	
 
-def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls, interfaceResolver):
+def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, reachable_functions, syscalls, interfaceResolver, classrefs):
 	"""
 	Prepare an HLS project. Copies all required files from the local 'projectfiles' dir into targetdir
 	along with any extra required files.
@@ -124,7 +128,7 @@ def copy_project_files(targetdir, jamaicaoutputdir, fpgapartname, filestobuild, 
 			log().info("Adding source file: " + f)
 			if f.endswith(".c"): #We only parse C files
 				targetfile = os.path.join(targetdir, "src", os.path.basename(f))
-				rewrite_source_file(f, targetfile, reachable_functions, syscalls, interfaceResolver)
+				rewrite_source_file(f, targetfile, reachable_functions, syscalls, interfaceResolver, classrefs)
 		
 
 	
