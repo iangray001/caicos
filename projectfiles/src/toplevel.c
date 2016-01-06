@@ -114,10 +114,10 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 		pcie_syscall(0x30, 0x31, 0x32, 0x33, 0x34, 0x35);
 		return 55;
 
-	}
-
 	case OP_TEST_CLASSREF:
 		return juniper_get_class_reference(1, 2);
+
+	}
 
 	return 0;
 }

@@ -65,7 +65,7 @@ jamaica_bool jamaicaThreads_checkCStackOverflow(jamaica_thread *ct) {
 
 
 jamaica_ref juniper_get_class_reference(int reftype, int refidx) {
-	return (jamaica_ref) pcie_syscall(250, reftype, refidx);
+	return (jamaica_ref) pcie_syscall(250, reftype, refidx, 0, 0, 0);
 }
 
 
