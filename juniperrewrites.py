@@ -15,7 +15,7 @@ import utils
 RAM_NAME = '__juniper_ram_master'
 RAM_GET_NAME = 'juniper_ram_get_'
 RAM_SET_NAME = 'juniper_ram_set_'
-MAX_SYSCALL_ARGS = 5
+MAX_SYSCALL_ARGS = 6
 SYSCALL_NAME = 'pcie_syscall'
 
 logreplacements = False
