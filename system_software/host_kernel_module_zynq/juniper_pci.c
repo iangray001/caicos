@@ -147,9 +147,15 @@ static int juniper_probe(struct platform_device* pdev)
 	uio_reg->name = "juniper_uio";
 	uio_reg->version = "1.0";
 	uio_reg->mem[0].name = "juniper_uio_mem";
-	uio_reg->mem[0].memtype = UIO_MEM_VIRTUAL;
+
+	/*uio_reg->mem[0].memtype = UIO_MEM_VIRTUAL;
 	uio_reg->mem[0].addr = (phys_addr_t)mem_storage;
+	uio_reg->mem[0].size = mem_resource->end - mem_resource->start + 1;*/
+
+	uio_reg->mem[0].addr = mem_resource->start;
 	uio_reg->mem[0].size = mem_resource->end - mem_resource->start + 1;
+	uio_reg->mem[0].memtype = UIO_MEM_PHYS;
+	uio_reg->mem[0].internal_addr = mem_storage;
 
 	jdev->uio_reg = uio_reg;
 
