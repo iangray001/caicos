@@ -1,0 +1,8 @@
+This contains a set of working files for booting a ZC706 with the JUNIPER images.
+
+BOOT.bin is composed of a Xilinx-created FSBL, and the Xilinx-extended uBoot.
+system.dtb is the system device tree with the JUNIPER extensions.
+uImage is a 4.0.5 Linux kernel that can be botoed by the ARM core.
+
+Alternatively, a 3.x series kernel is provided with associated device tree and boot 
+image which should also work.
