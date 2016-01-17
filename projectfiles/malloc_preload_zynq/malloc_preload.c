@@ -2,76 +2,100 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <dlfcn.h>
+#include <malloc.h>
+#include <string.h>
 
 #include <sys/mman.h>
 #include <fcntl.h>
 
-// We can't pull in malloc.h without screwing stuff up.
-// This is the linkage to morecore() to override it later.
-// Note that this is glibc specific, unless it wasn't obvious :P
-extern void* (*__morecore)(ptrdiff_t sz);
+#undef sbrk
+void abort(void);
 
-void* (*inner_malloc)(size_t size) = NULL;
-//void (*_inner_free)(void* ptr) = NULL;
+//#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#define DBG(...)
 
-// 4MB
-#define MALLOC_STORAGE_SIZE (1024 * 4 * 1024)
-//char malloc_storage[MALLOC_STORAGE_SIZE];
-int used_malloc_storage = 0;
+int inited = 0;
+void* (*inner_mmap)(void* addr, size_t length, int prot, int flags, int fd, off_t offset) = NULL;
+void* last_mmap_result = 0;
 
-char* malloc_storage = NULL;
+void init_preloader();
 
-void* override_morecore(ptrdiff_t sz)
+#define MALLOC_STORAGE_SIZE (1024 * 256 * 1024)
+
+#define STORAGE_PATH "/dev/uio0"
+
+void __attribute__((constructor)) setup_preloader()
+		{
+	init_preloader();
+		}
+
+void init_preloader()
 {
-    fprintf(stderr, "Calling morecore. Requesting %ld bytes\n", sz);
+	int i = 0;
+	inited = 1;
 
-    if((used_malloc_storage + sz) > MALLOC_STORAGE_SIZE)
-        return (void*)-1;
-    
-    used_malloc_storage += sz;
-
-    fprintf(stderr, "Ptr: 0x%x\n", &malloc_storage[used_malloc_storage - sz]);
-
-    return &malloc_storage[used_malloc_storage - sz];
+	if(inner_mmap == NULL)
+	{
+		inner_mmap = dlsym(RTLD_NEXT, "mmap");
+		if(inner_mmap == NULL)
+		{
+			DBG("malloc_preload:init_preloader: Failed to dlsym next-mmap\n");
+			abort();
+		}
+	}
 }
 
-void* malloc(size_t size)
+void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t offset)
 {
-    if(inner_malloc == NULL)
-    {
-        // Find it!
-        inner_malloc = dlsym(RTLD_NEXT, "malloc");
-        if(inner_malloc == NULL)
-            fprintf(stderr, "Failed to dlsym next-malloc");
+	if(!inited)
+		init_preloader();
 
-        // Now redirect morecore()
-	// Try and mmap the PCIe
-	int fd = open("/dev/uio0", O_RDWR | O_SYNC);
-	if(!fd)
-	  fprintf(stderr, "Failed to open /dev/uio0\n");
-	malloc_storage = mmap(0, MALLOC_STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if(!malloc_storage)
-	  fprintf(stderr, "Failed to mmap...\n");
-	
-        __morecore = override_morecore;
-    }
+	DBG("MMAP: %p 0x%x, %d, %d, %d, 0x%x\n", addr, length, prot, flags, fd_ignored, offset);
 
-    fprintf(stderr, "Allocating %d bytes\n", size);
+	/*
+	 * By attempting to mmap address -1, the source application can request the FPGA's base phyiscal address.
+	 * This must be done after Jamaica has actually mmapped its heap.
+	 */
+	if((int) addr == ~0) {
+		if(last_mmap_result == 0) {
+			DBG("MMAP: Requested Jamaica heap base address but Jamaica hasn't allocated yet. Aborting.\n");
+			abort();
+		}
+		return last_mmap_result;
+	}
 
-    return inner_malloc(size);
+	/*
+	 * Only the first mmap is remapped onto the FPGA. This may be expandable, but it is not necessary for
+	 * Java-based systems in which the entire heap is mapped first.
+	 */
+	if(last_mmap_result != 0) {
+		DBG("MMAP: mmap has already been called once - can't redirect again to the FPGA, aborting.\n");
+		abort();
+	}
+
+	int fd = open(STORAGE_PATH, O_RDWR | O_SYNC);
+	if(fd == -1)
+	{
+		DBG("malloc_preload:setup_preloader: Failed to open " STORAGE_PATH "\n");
+		return (void*)-1;
+	}
+
+	void* storage = inner_mmap(0, MALLOC_STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if(storage == (void*)-1)
+	{
+		DBG("malloc_preload:setup_preloader: Failed to mmap...\n");
+		return (void*)-1;
+	}
+
+	last_mmap_result = storage;
+
+	DBG("MMAP: Clearing region...\n");
+
+	/*
+	 * It appears that Jamaica relies on its heap being zeroed so we memset it as per the mmap specification.
+	 */
+	memset(storage, 0, length);
+	DBG("MMAP: Cleared region.\n");
+
+	return storage;
 }
-
-/*void free(void* ptr)
-{
-//    fprintf(stderr, "Attempting to free from 0x%x\n", ptr);
-    if(_inner_free == NULL)
-    {
-        _inner_free = dlsym(RTLD_NEXT, "free");
-        if(_inner_free == NULL)
-            fprintf(stderr, "Failed to dlsym next-free");
-    }
-
-    //  fprintf(stderr, "Calling free from 0x%x\n", ptr);
-    _inner_free(ptr);
-    }*/
-
