@@ -133,7 +133,7 @@ void juniper_interp_accel_start(struct juniper_accel_device* dev)
 	status = juniper_pci_read_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT));
 	status |= (1 << PCI_CORE_START_BIT);
 
-	printk(KERN_INFO "JFM: Starting. Status: 0x%x\n", status);
+	//printk(KERN_INFO "JFM: Starting. Status: 0x%x\n", status);
 
 	juniper_pci_write_periph(dev->fpga->phy_dev, PCI_CORE_ACCEL_BASE | (dev->idx << PCI_CORE_ID_SHIFT), status);
 }

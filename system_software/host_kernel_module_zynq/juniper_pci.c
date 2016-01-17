@@ -291,6 +291,5 @@ static irqreturn_t juniper_irqhandler(int irq, void* data)
 	struct juniper_device* dev = data;
 	interrupted_callback(dev);
 
-	printk(KERN_INFO "JFM: INTERRUPT!\n");
 	return IRQ_HANDLED;
 }

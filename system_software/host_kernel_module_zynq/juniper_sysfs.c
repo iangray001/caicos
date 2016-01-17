@@ -557,7 +557,7 @@ static int juniper_sysfs_interrupted_find_accel(struct device* dev, void* userDa
 {
 	struct juniper_accel_device* accel = dev_get_drvdata(dev);
 
-	printk(KERN_INFO "JFM: Find device, curIdx = %d userdata = %ld drvdata: %p\n", accel->idx, (long)userData, accel);
+	//printk(KERN_INFO "JFM: Find device, curIdx = %d userdata = %ld drvdata: %p\n", accel->idx, (long)userData, accel);
 
 	if(accel->idx == (long)userData)
 		return 1;
@@ -567,7 +567,12 @@ static int juniper_sysfs_interrupted_find_accel(struct device* dev, void* userDa
 
 static int juniper_sysfs_interrupted_find_device(struct device* dev, void* userData)
 {
-	return 1;
+  const char* device_name = dev_name(dev);
+
+  // it's either juniper0 or uio0.
+  if(device_name[0] == 'j')
+    return 1;
+  return 0;
 }
 
 void juniper_sysfs_interrupted(struct juniper_device* dev)
@@ -580,13 +585,19 @@ void juniper_sysfs_interrupted(struct juniper_device* dev)
 	struct juniper_accel_device* accel_data = NULL;
 
 	long hp_intr = -1;
+	int dodgy_platformdevice_hack = 0;
 
 	jdev = juniper_pci_getdev(dev);
+	
+	// Get the device
+	childDev = device_find_child(jdev, &dodgy_platformdevice_hack, juniper_sysfs_interrupted_find_device);
+	if(childDev == NULL)
+	{
+		printk(KERN_ERR "JFM: Could not find child device %ld in interrupt!\n", hp_intr);
+		return;
+	}
 
-	fpga_data = dev_get_drvdata(jdev);
-
-	// We now finally have an FPGA device.
-	// Pass that through to the interpretation layer to figure out the caller
+	fpga_data = dev_get_drvdata(childDev);
 	hp_intr = juniper_interp_get_interrupt_id(fpga_data);
 
 	// Break out if it didn't originate from the accelerators.
@@ -596,20 +607,15 @@ void juniper_sysfs_interrupted(struct juniper_device* dev)
 		return;
 	}
 
-	// Now set the interrupt flag inside the device
-	// Get the device
-	childDev = device_find_child(jdev, (void*)hp_intr, juniper_sysfs_interrupted_find_device);
-	if(childDev == NULL)
-	{
-		printk(KERN_ERR "JFM: Could not find child device %ld in interrupt!\n", hp_intr);
-		return;
-	}
-
 	// Then the accelerator
 	childAccel = device_find_child(childDev, (void*)hp_intr, juniper_sysfs_interrupted_find_accel);
+	if(childAccel == NULL)
+	{
+	  printk(KERN_ERR "childAccel IS NULL in JUNIPER module\n");
+	}
 
 	accel_data = dev_get_drvdata(childAccel);
-	printk(KERN_INFO "JFM: Got interrupt for accelerator number %ld TEST: %d ADDR %p\n", hp_intr, accel_data->idx, accel_data);
+	//printk(KERN_INFO "JFM: Got interrupt for accelerator number %ld TEST: %d ADDR %p\n", hp_intr, accel_data->idx, accel_data);
 	
 	accel_data->interrupted = 1;
 	put_device(childDev);
