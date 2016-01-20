@@ -117,7 +117,8 @@ def build_all(config):
 			
 			make_executable([target,
 							os.path.join(boarddir, 'build_base.sh'),
-							os.path.join(boarddir, 'make_reconfig.sh')
+							os.path.join(boarddir, 'make_reconfig.sh'),
+							os.path.join(boarddir, 'base', 'build_hls.sh')
 			])
 			
 		#Build software project
