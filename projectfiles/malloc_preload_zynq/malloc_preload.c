@@ -10,8 +10,8 @@
 
 #undef sbrk
 
-#define DBG(...) fprintf(stderr, __VA_ARGS__)
-//#define DBG(...)
+//#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#define DBG(...)
 #define MALLOC_STORAGE_SIZE (1024 * 1024 * 256)
 #define STORAGE_PATH "/dev/uio0"
 
@@ -23,8 +23,6 @@ void init_preloader();
 void abort(void);
 
 void* (*inner_mmap)(void* addr, size_t length, int prot, int flags, int fd, off_t offset) = NULL;
-//void* (*inner_malloc)(size_t size) = NULL;
-//void (*inner_free)(void *ptr) = NULL;
 
 void __attribute__((constructor)) setup_preloader() {
 	init_preloader();
@@ -48,40 +46,8 @@ void init_preloader() {
 		}
 	}
 
-/*	if(inner_malloc == NULL) {
-		inner_malloc = dlsym(RTLD_NEXT, "malloc");
-		if(inner_malloc == NULL) {
-			DBG("[JUNIPER] Failed to dlsym next-malloc\n");
-			abort();
-		}
-	}
-
-	if(inner_free == NULL) {
-		inner_free = dlsym(RTLD_NEXT, "free");
-		if(inner_free == NULL) {
-			DBG("[JUNIPER] Failed to dlsym next-free\n");
-			abort();
-		}
-	}*/
-
 	get_storage();
 }
-
-/*void* malloc(size_t size) {
-	if(!inited) init_preloader();
-	DBG("[JUNIPER] Call malloc(%d)\n", size);
-	void *storage = inner_malloc(size);
-	return storage;
-}*/
-
-/*void free(void *ptr) {
-	if(ptr != NULL) {
-		if(!inited) init_preloader();
-		DBG("[JUNIPER] Call free(%p)\n", ptr);
-		inner_free(ptr);
-	}
-}*/
-
 
 void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t offset) {
 	if(!inited) init_preloader();
@@ -97,16 +63,10 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t
 		return fpga_memory;
 	}
 
-	//if(fpga_memory != 0) {
-	//	DBG("[MMAP] mmap has already been called once - can't redirect again to the FPGA, aborting.\n");
-	//	abort();
-	//}
-
 	//Jamaica relies on its heap being zeroed so we memset it (as per the specification)
 	DBG("[JUNIPER] Clearing region...\n");
 	memset(fpga_memory, 0, length);
 	DBG("[JUNIPER] Cleared region.\n");
-
 
 	return fpga_memory;
 }
