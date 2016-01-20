@@ -9,93 +9,122 @@
 #include <fcntl.h>
 
 #undef sbrk
-void abort(void);
 
-//#define DBG(...) fprintf(stderr, __VA_ARGS__)
-#define DBG(...)
-
-int inited = 0;
-void* (*inner_mmap)(void* addr, size_t length, int prot, int flags, int fd, off_t offset) = NULL;
-void* last_mmap_result = 0;
-
-void init_preloader();
-
-#define MALLOC_STORAGE_SIZE (1024 * 256 * 1024)
-
+#define DBG(...) fprintf(stderr, __VA_ARGS__)
+//#define DBG(...)
+#define MALLOC_STORAGE_SIZE (1024 * 1024 * 256)
 #define STORAGE_PATH "/dev/uio0"
 
-void __attribute__((constructor)) setup_preloader()
-		{
-	init_preloader();
-		}
+int inited = 0;
+void *fpga_memory = 0;
+int mmapfd = -1;
 
-void init_preloader()
-{
+void init_preloader();
+void abort(void);
+
+void* (*inner_mmap)(void* addr, size_t length, int prot, int flags, int fd, off_t offset) = NULL;
+//void* (*inner_malloc)(size_t size) = NULL;
+//void (*inner_free)(void *ptr) = NULL;
+
+void __attribute__((constructor)) setup_preloader() {
+	init_preloader();
+}
+
+void get_storage();
+
+
+
+void init_preloader() {
 	int i = 0;
 	inited = 1;
 
-	if(inner_mmap == NULL)
-	{
+	DBG("[JUNIPER] Initialising preloader\n");
+
+	if(inner_mmap == NULL) {
 		inner_mmap = dlsym(RTLD_NEXT, "mmap");
-		if(inner_mmap == NULL)
-		{
-			DBG("malloc_preload:init_preloader: Failed to dlsym next-mmap\n");
+		if(inner_mmap == NULL) {
+			DBG("[JUNIPER] Failed to dlsym next-mmap\n");
 			abort();
 		}
 	}
+
+/*	if(inner_malloc == NULL) {
+		inner_malloc = dlsym(RTLD_NEXT, "malloc");
+		if(inner_malloc == NULL) {
+			DBG("[JUNIPER] Failed to dlsym next-malloc\n");
+			abort();
+		}
+	}
+
+	if(inner_free == NULL) {
+		inner_free = dlsym(RTLD_NEXT, "free");
+		if(inner_free == NULL) {
+			DBG("[JUNIPER] Failed to dlsym next-free\n");
+			abort();
+		}
+	}*/
+
+	get_storage();
 }
 
-void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t offset)
-{
-	if(!inited)
-		init_preloader();
+/*void* malloc(size_t size) {
+	if(!inited) init_preloader();
+	DBG("[JUNIPER] Call malloc(%d)\n", size);
+	void *storage = inner_malloc(size);
+	return storage;
+}*/
 
-	DBG("MMAP: %p 0x%x, %d, %d, %d, 0x%x\n", addr, length, prot, flags, fd_ignored, offset);
+/*void free(void *ptr) {
+	if(ptr != NULL) {
+		if(!inited) init_preloader();
+		DBG("[JUNIPER] Call free(%p)\n", ptr);
+		inner_free(ptr);
+	}
+}*/
 
-	/*
-	 * By attempting to mmap address -1, the source application can request the FPGA's base phyiscal address.
-	 * This must be done after Jamaica has actually mmapped its heap.
-	 */
+
+void* mmap(void* addr, size_t length, int prot, int flags, int fd_ignored, off_t offset) {
+	if(!inited) init_preloader();
+
+	DBG("[JUNIPER] Call mmap(%p, 0x%x, %d, %d, %d, 0x%x)\n", addr, length, prot, flags, fd_ignored, offset);
+
+	//By attempting to mmap address -1, the application can request the FPGA's base phyiscal address.
 	if((int) addr == ~0) {
-		if(last_mmap_result == 0) {
-			DBG("MMAP: Requested Jamaica heap base address but Jamaica hasn't allocated yet. Aborting.\n");
+		if(fpga_memory == 0) {
+			DBG("[MMAP] Requested Jamaica heap base address but Jamaica hasn't allocated yet. Aborting.\n");
 			abort();
 		}
-		return last_mmap_result;
+		return fpga_memory;
 	}
 
-	/*
-	 * Only the first mmap is remapped onto the FPGA. This may be expandable, but it is not necessary for
-	 * Java-based systems in which the entire heap is mapped first.
-	 */
-	if(last_mmap_result != 0) {
-		DBG("MMAP: mmap has already been called once - can't redirect again to the FPGA, aborting.\n");
+	//if(fpga_memory != 0) {
+	//	DBG("[MMAP] mmap has already been called once - can't redirect again to the FPGA, aborting.\n");
+	//	abort();
+	//}
+
+	//Jamaica relies on its heap being zeroed so we memset it (as per the specification)
+	DBG("[JUNIPER] Clearing region...\n");
+	memset(fpga_memory, 0, length);
+	DBG("[JUNIPER] Cleared region.\n");
+
+
+	return fpga_memory;
+}
+
+
+void get_storage() {
+	mmapfd = open(STORAGE_PATH, O_RDWR | O_SYNC);
+	if(mmapfd == -1) {
+		DBG("[JUNIPER] Failed to open " STORAGE_PATH "\n");
 		abort();
 	}
 
-	int fd = open(STORAGE_PATH, O_RDWR | O_SYNC);
-	if(fd == -1)
-	{
-		DBG("malloc_preload:setup_preloader: Failed to open " STORAGE_PATH "\n");
-		return (void*)-1;
+	DBG("[JUNIPER] Opened %s\n", STORAGE_PATH);
+
+	fpga_memory = inner_mmap(0, MALLOC_STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mmapfd, 0);
+	if(fpga_memory == (void*)-1) {
+		DBG("[JUNIPER] Failed to mmap...\n");
+		abort();
 	}
-
-	void* storage = inner_mmap(0, MALLOC_STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if(storage == (void*)-1)
-	{
-		DBG("malloc_preload:setup_preloader: Failed to mmap...\n");
-		return (void*)-1;
-	}
-
-	last_mmap_result = storage;
-
-	DBG("MMAP: Clearing region...\n");
-
-	/*
-	 * It appears that Jamaica relies on its heap being zeroed so we memset it as per the mmap specification.
-	 */
-	memset(storage, 0, length);
-	DBG("MMAP: Cleared region.\n");
-
-	return storage;
 }
+
