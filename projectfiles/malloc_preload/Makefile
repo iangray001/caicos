@@ -1,17 +1,17 @@
-CC=gcc
-LD=gcc
+include ../Makefile.inc
 
-CFLAGS=-m32 -fPIC
-TESTCFLAGS=-m32
-LDFLAGS=-m32 -shared -fPIC -ldl
-TESTLDFLAGS=-m32
-
+CFLAGS=-fPIC -DSTORAGE_PATH="\"$(STORAGE_PATH)\"" -DSTORAGE_SIZE="$(STORAGE_SIZE)"
+LDFLAGS=-shared
 OBJS=malloc_preload.o
 
 all: malloc_preload.so
 
 malloc_preload.so: $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
+
+%.o: %.c
+	@echo [CC] $@
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 .PHONY: clean
 

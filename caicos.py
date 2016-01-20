@@ -26,10 +26,9 @@ import pycparser
 import astcache
 import prepare_hls_project
 import prepare_src_project
-from utils import mkdir, CaicosError, log, project_path, make_executable, \
-	copy_files
+from utils import mkdir, CaicosError, log, project_path, make_executable, copy_files
 import utils
-
+from os.path import join
 
 config_specification = {
 	#Standard options
@@ -68,6 +67,29 @@ fpgapart = {
 }
 
 
+"""
+A dictionary of build options that are passed to the makefiles of the software projects for each supported board. 
+"""
+make_options = {
+	'vc707': {
+		'SUB_CC': 'gcc',
+		'SUB_LD': 'ld',
+		'SUB_MAKE': 'make',
+		'SUB_M32': '-m32',
+		'SUB_STORAGE_PATH': '/sys/bus/pci/devices/0000:02:00.0/resource0_wc',
+		'SUB_STORAGE_SIZE': '(1024 * 1024 * 128)',
+	},
+	'zc706': {
+		'SUB_CC': 'arm-xilinx-linux-gnueabi-gcc',
+		'SUB_LD': 'arm-xilinx-linux-gnueabi-gcc',
+		'SUB_MAKE': 'make',
+		'SUB_M32': '',
+		'SUB_STORAGE_PATH': '/dev/uio0',
+		'SUB_STORAGE_SIZE': '(1024 * 1024 * 256)',
+	}
+}
+
+
 def build_all(config):
 	"""
 	Build a JUNIPER project. Format of the config dictionary is described in the docstring for config_specification.
@@ -79,15 +101,15 @@ def build_all(config):
 		if config.get('cleanoutput', "false").lower() == "true":
 			if os.path.isdir(config['outputdir']):
 				for f in os.listdir(config['outputdir']):
-					shutil.rmtree(os.path.join(config['outputdir'], f), ignore_errors=True)
+					shutil.rmtree(join(config['outputdir'], f), ignore_errors=True)
 					
 		mkdir(config['outputdir'])
 		
 		#Determine output paths
-		swdir = config.get('swoutputdir', os.path.join(config['outputdir'], "software"))
-		boarddir = config.get('hwoutputdir', os.path.join(config['outputdir'], "hardware"))
-		scriptsdir = config.get('scriptsoutputdir', os.path.join(config['outputdir'], "scripts"))
-		hwdir = os.path.join(boarddir, "reconfig", config.get('hlsprojectname', 'caicos'))
+		swdir = config.get('swoutputdir', join(config['outputdir'], "software"))
+		boarddir = config.get('hwoutputdir', join(config['outputdir'], "hardware"))
+		scriptsdir = config.get('scriptsoutputdir', join(config['outputdir'], "scripts"))
+		hwdir = join(boarddir, "reconfig", config.get('hlsprojectname', 'caicos'))
 		
 		if 'astcache' in config:
 			astcache.activate_cache(config['astcache'])
@@ -112,34 +134,38 @@ def build_all(config):
 				config.get('notranslates', [])
 			)
 		
-			target = os.path.join(config['outputdir'], "push.sh")
+			target = join(config['outputdir'], "push.sh")
 			shutil.copyfile(project_path("projectfiles", "scripts", "push.sh"), target)
 			
 			make_executable([target,
-							os.path.join(boarddir, 'build_base.sh'),
-							os.path.join(boarddir, 'make_reconfig.sh'),
-							os.path.join(boarddir, 'base', 'build_hls.sh')
+							join(boarddir, 'build_base.sh'),
+							join(boarddir, 'make_reconfig.sh'),
+							join(boarddir, 'base', 'build_hls.sh')
 			])
 			
 		#Build software project
 		log().info("Building software project in " + str(swdir) + "...")
 		prepare_src_project.build_src_project(bindings, config['jamaicaoutputdir'], swdir, syscalls, interfaceResolver, config.get('debug', False), classrefs)
 	
-		#Output templated Makefile
-		contents = open(project_path("projectfiles", "templates", "Makefile")).read()
-		subs = {'SUB_JAMAICATARGET': config['jamaicatarget']}
+		#Output templated Makefile.inc
+		contents = open(project_path("projectfiles", "templates", "Makefile.inc")).read()
+		subs = make_options[config['targetboard']]
+		subs['SUB_JAMAICATARGET'] = config['jamaicatarget']
 		template = Template(contents)
-		fout = open(os.path.join(swdir, "Makefile"), "w")
+		fout = open(join(swdir, "Makefile.inc"), "w")
 		fout.write(template.safe_substitute(subs))
 		fout.close()
 		
+		#Output main makefile
+		shutil.copyfile(project_path("projectfiles", "templates", "Makefile"), join(swdir, "Makefile"))
+
 		#Output scripts folder
 		mkdir(scriptsdir)
 		for fn in ['cmd_template.bat', 'program.sh', 'rescan.sh', 'getoffsets.py']:
-			shutil.copyfile(project_path("projectfiles", "scripts", fn), os.path.join(scriptsdir, fn))
+			shutil.copyfile(project_path("projectfiles", "scripts", fn), join(scriptsdir, fn))
 		
 		#Output kernel module
-		copy_files(project_path("system_software", "host_kernel_module"), os.path.join(swdir, "host_kernel_module"))
+		copy_files(project_path("system_software", "host_kernel_module"), join(swdir, "host_kernel_module"))
 		
 		log().info("caicos done.")
 		
