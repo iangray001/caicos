@@ -1,6 +1,7 @@
 #!/bin/bash
 BUILDSERVER=pegasus
-TESTSERVER=lunix
+TESTSERVER=zynqhome
+BITFILELOCATION=/boot/base.bit
 
 BUILD_TARGETDIR=/home/iang/caicosvc707
 XILINXSCRIPT=/home/iang/xilinx.sh
@@ -50,26 +51,17 @@ case "$1" in
 	;;
 	
 	'hls' )
-		#Rebuild the bitfile for the project $HLSPROJECT, and copy the bitfile to the testserver
+		#Rebuild the bitfile for the project $HLSPROJECT
 		copyhls
-		ssh -q $BUILDSERVER "$BUILD_TARGETDIR/hardware/make_reconfig single $HLSPROJECT"
-		ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$HLSPROJECT.bit $TESTSERVER:"
+		ssh -q $BUILDSERVER ". $XILINXSCRIPT; cd $BUILD_TARGETDIR/hardware; make_reconfig.sh single $HLSPROJECT"
 	;;
-	
-	'software' )
-		echo -e "Copying ${COL}$DIR/software/* $RESET to ${COL} $TESTSERVER:$BUILD_TARGETDIRBASE/software $RESET"
-		ssh -q $TESTSERVER "rm -rf $BUILD_TARGETDIRBASE/software"
-		ssh -q $TESTSERVER "mkdir -p $BUILD_TARGETDIRBASE/software"
-		ssh -q $TESTSERVER "mkdir -p $BUILD_TARGETDIRBASE/scripts"
-		scp -q -r $DIR/software/* $TESTSERVER:$BUILD_TARGETDIRBASE/software
-		scp -q -r $DIR/scripts/* $TESTSERVER:$BUILD_TARGETDIRBASE/scripts
-		ssh -q $TESTSERVER "cd $BUILD_TARGETDIRBASE/software ; make"
-	;;
-	
-	'testbit' )
+		
+	'bit' )
 		if [ -n "$2" ]; then
-			echo -e "Copying ${COL}$2 $RESET to ${COL} $TESTSERVER:$BUILD_TARGETDIRBASE $RESET"
-			ssh -q $BUILDSERVER "scp $BUILD_TARGETDIR/hardware/assemble/bitstream/$2 $TESTSERVER:$BUILD_TARGETDIRBASE/"
+			echo -e "Copying ${COL}$2 $RESET to ${COL} $TESTSERVER:$BITFILELOCATION $RESET"
+			scp $BUILDSERVER:$BUILD_TARGETDIR/hardware/assemble/bitstream/$2 __testbit
+			scp __testbit $TESTSERVER:$BITFILELOCATION
+			rm __testbit
 		else
 			echo "Bitfiles on build server:"
 			ssh -q $BUILDSERVER "cd $BUILD_TARGETDIR/hardware/assemble/bitstream/; ls *.bit"
@@ -77,6 +69,6 @@ case "$1" in
 	;;
 
 	'' ) 
-		echo -e "Usage: $0 [ clean | copy | software | testhls | testbit ]"
+		echo -e "Usage: $0 [ clean | copy | hls | bit ]"
 	;;
 esac
