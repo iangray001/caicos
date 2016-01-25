@@ -53,7 +53,7 @@ case "$1" in
 	'hls' )
 		#Rebuild the bitfile for the project $HLSPROJECT
 		copyhls
-		ssh -q $BUILDSERVER ". $XILINXSCRIPT; cd $BUILD_TARGETDIR/hardware; make_reconfig.sh single $HLSPROJECT"
+		ssh -q $BUILDSERVER ". $XILINXSCRIPT; cd $BUILD_TARGETDIR/hardware; ./make_reconfig.sh single $HLSPROJECT"
 	;;
 		
 	'bit' )
