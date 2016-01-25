@@ -22,6 +22,7 @@
 int __juniper_call(int call_id);
 void create_jamaica_thread();
 void force_synthesis_of_syscall_interface();
+int resolve_tree_array(int ref, int *idx, unsigned char byteoffset);
 
 //PCIe system call declarations
 typedef struct {

@@ -8,8 +8,47 @@
 #include "Main__.h"
 #include <sys/mman.h>
 #include "caicos_debug.h"
+#include <sys/time.h>
 
-#define TEST_SIZE 5000
+struct timespec timing_start;
+struct timespec timing_end;
+
+long *samples = NULL;
+int num_samples = 0;
+int current_sample = 0;
+
+void caicos_timing_start(int size) {
+	if(num_samples == 0) {
+		void *mem = malloc(sizeof(long) * size);
+		if(mem == NULL) {
+			printf("[CAICOS] Failed to allocate memory for timing samples.");
+		}
+		samples = (long *) mem;
+		num_samples = size;
+		current_sample = 0;
+	}
+
+	clock_gettime(CLOCK_REALTIME, &timing_start);
+}
+
+void caicos_timing_end() {
+	clock_gettime(CLOCK_REALTIME, &timing_end);
+	long ns = timing_end.tv_nsec - timing_start.tv_nsec;
+
+	if(current_sample < num_samples) {
+		samples[current_sample] = ns;
+		current_sample++;
+
+		if(current_sample >= num_samples) {
+			int i;
+			printf("Timing results:\n");
+			for(i = 0; i < num_samples; i++) {
+				printf("%lu\n", samples[i]);
+			}
+		}
+	}
+}
+
 
 int caicos_docall(int op, int argc, ...) {
         int rv, i;

@@ -5,7 +5,7 @@
 #include <fpgaporting.h>
 #include <ap_cint.h>
 
-#define VERSION 42
+#define VERSION 43
 
 jamaica_thread __juniper_thread;
 int __juniper_args[ARGS_MAX];
@@ -98,13 +98,16 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 		return JAMAICA_GET_ARRAY_LENGTH(*arg1);
 
 	case OP_TEST_ARRAY_SUM: {
-			int len = JAMAICA_GET_ARRAY_LENGTH(*arg1);
-			int total = 0;
-			for(int i = 0; i < len; i++) {
-				total += jamaicaGC_GetArray32(*arg1, i);
-			}
-			return total;
+		int len = JAMAICA_GET_ARRAY_LENGTH(*arg1);
+		int total = 0;
+		for(int i = 0; i < len; i++) {
+			total += jamaicaGC_GetArray32(*arg1, i);
 		}
+		return total;
+	}
+
+	case OP_TEST_GETARRAY32:
+		return jamaicaGC_GetArray32(*arg1, *arg2);
 
 	case OP_TEST_1234:
 		return 1234;
@@ -116,6 +119,11 @@ int hls(int *opid, int *arg1, int *arg2, int *arg3) {
 
 	case OP_TEST_CLASSREF:
 		return juniper_get_class_reference(1, 2);
+
+	case OP_TEST_RESOLVETREEARRAY:{
+		int idx = *arg2;
+		return resolve_tree_array(*arg1, &idx, 0);
+	}
 
 	}
 

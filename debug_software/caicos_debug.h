@@ -7,6 +7,11 @@ int caicos_docall(int op, int argc, ...);
 void caicos_mdump(volatile void *mem, int count);
 void caicos_check(int a, int b);
 
+void caicos_timing_start(int size);
+void caicos_timing_end();
+
+#define TEST_SIZE 500
+
 #define TEST_FUNCTION(NAME, TYPE, PEEKMODE, POKEMODE, DIV) void NAME(volatile TYPE *memory, int offset) {\
         int i;\
         for(i = 0; i < TEST_SIZE; i++) memory[i] = i+offset;\
