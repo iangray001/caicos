@@ -10,8 +10,8 @@
 #include "caicos_debug.h"
 #include <sys/time.h>
 
-struct timespec timing_start;
-struct timespec timing_end;
+struct timeval timing_start;
+struct timeval timing_end;
 
 long *samples = NULL;
 int num_samples = 0;
@@ -28,15 +28,15 @@ void caicos_timing_start(int size) {
 		current_sample = 0;
 	}
 
-	clock_gettime(CLOCK_REALTIME, &timing_start);
+	gettimeofday(&timing_start, NULL);
 }
 
 void caicos_timing_end() {
-	clock_gettime(CLOCK_REALTIME, &timing_end);
-	long ns = timing_end.tv_nsec - timing_start.tv_nsec;
+	gettimeofday(&timing_end, NULL);
+	unsigned long usec = (timing_end.tv_usec + (timing_end.tv_sec * 1000000)) - (timing_start.tv_usec + (timing_start.tv_sec * 1000000));
 
 	if(current_sample < num_samples) {
-		samples[current_sample] = ns;
+		samples[current_sample] = usec;
 		current_sample++;
 
 		if(current_sample >= num_samples) {
