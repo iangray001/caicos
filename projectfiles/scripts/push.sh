@@ -1,6 +1,6 @@
 #!/bin/bash
 BUILDSERVER=pegasus
-TESTSERVER=zynqhome
+TESTSERVER=zynq
 BITFILELOCATION=/boot/base.bit
 
 BUILD_TARGETDIR=/home/iang/caicosvc707
@@ -53,6 +53,11 @@ case "$1" in
 	'hls' )
 		#Rebuild the bitfile for the project $HLSPROJECT
 		copyhls
+		ssh -q $BUILDSERVER "rm $BUILD_TARGETDIR/hardware/assemble/${HLSPROJECT}_synth_noclock_routed.dcp"
+		ssh -q $BUILDSERVER "rm $BUILD_TARGETDIR/hardware/assemble/bitstream/${HLSPROJECT}_synth_noclock.bit"
+		ssh -q $BUILDSERVER "rm $BUILD_TARGETDIR/hardware/assemble/bitstream/${HLSPROJECT}_synth_noclock.bin"
+		ssh -q $BUILDSERVER "rm $BUILD_TARGETDIR/hardware/assemble/bitstream/${HLSPROJECT}_synth_noclock_pblock_top_0_partial.bit"
+		ssh -q $BUILDSERVER "rm $BUILD_TARGETDIR/hardware/assemble/bitstream/${HLSPROJECT}_synth_noclock_pblock_top_0_partial.bin"
 		ssh -q $BUILDSERVER ". $XILINXSCRIPT; cd $BUILD_TARGETDIR/hardware; ./make_reconfig.sh single $HLSPROJECT"
 	;;
 		
